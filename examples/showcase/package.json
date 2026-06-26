@@ -1,0 +1,25 @@
+{
+  "name": "@noy-db/showcase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@noy-db/hub": "file:../../../noy-db/packages/hub",
+    "@noy-db/to-memory": "file:../../../noy-db/packages/to-memory",
+    "@noy-db/as-noydb": "file:../../../noy-db/packages/as-noydb",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@noy-db/attestation": "file:../../../noy-db/packages/attestation"
+    }
+  }
+}
