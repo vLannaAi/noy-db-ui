@@ -727,6 +727,8 @@ git commit --no-verify -m "feat(showcase): typed vinyl dataset + TH/EN dicts wit
 
 ```ts
 import { describe, it, expect } from 'vitest'
+import { ref } from '@noy-db/hub'
+import { dictKey } from '@noy-db/hub/i18n'
 import { toBytes } from '@noy-db/as-noydb'
 import { seedVault, coverFiles } from '../../../scripts/seed'
 import { openVaultFromBundle } from '../vault'
@@ -739,7 +741,15 @@ describe('seeded vault', () => {
     const bytes = await toBytes(vault)
     const v = await openVaultFromBundle(bytes, PASS)
 
-    const records = v.collection('records', { blobFields: { cover: { retainDays: 36500 } } })
+    // Reopened caches are empty — declare records with its refs (so joins know
+    // their target collections) and hydrate all three collections first (Task 2 finding).
+    const records = v.collection('records', {
+      refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
+      dictKeyFields: { genre: dictKey('genre'), format: dictKey('format'), condition: dictKey('condition') },
+    })
+    await records.list()
+    await v.collection('artists').list()
+    await v.collection('labels').list()
     const rows = records.query().join('artistId', { as: 'artist' }).join('labelId', { as: 'label' }).toArray()
     expect(rows).toHaveLength(24)
     expect((rows[0] as any).artist).toBeTruthy()      // join resolved
@@ -822,8 +832,8 @@ export async function seedVault(): Promise<Vault> {
     dictKeyFields: { genre: dictKey('genre'), format: dictKey('format'), condition: dictKey('condition') },
     blobFields: { cover: { retainDays: 36500 } },
     fieldMeta: fieldMeta('records', {
-      artistId: { semanticType: 'entity', displayFor: 'artistId' },
-      labelId: { semanticType: 'entity', displayFor: 'labelId' },
+      artistId: { semanticType: 'entity' },
+      labelId: { semanticType: 'entity' },
       priceUsd: { semanticType: 'money', unit: 'USD' },
       durationMin: { semanticType: 'number', unit: 'min' },
       purchasedOn: { semanticType: 'date' },
