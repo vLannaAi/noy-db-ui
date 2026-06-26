@@ -749,15 +749,15 @@ describe('seeded vault', () => {
     expect(covers).toHaveLength(24)
     expect(Array.from(covers[0]!.bytes.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47])
 
-    const en = await records.get('rc01', { locale: 'en' })  // label localized
+    const en = await records.get('rc01', { locale: 'en' })  // enum label localized (rc01 genre = 'rock')
     const th = await records.get('rc01', { locale: 'th' })
-    expect((en as any).genreLabel ?? (en as any).genre_label).toBeTruthy()
-    expect((th as any).genreLabel ?? (th as any).genre_label).not.toBe((en as any).genreLabel ?? (en as any).genre_label)
+    expect((en as any).genreLabel).toBe('Rock')
+    expect((th as any).genreLabel).toBe('ร็อก')
   }, 30_000)
 })
 ```
 
-> Note: align the label-field key (`genreLabel` vs `genre_label`) with whatever Task 4 proved; drop the `??` once known.
+> Task 4 proved: enum dict labels resolve as `record.<field>Label` via `get(id, { locale })`, using `dictKey('<field>')` on the collection + `vault.dictionary('<field>').put(key, { en, th })`. **Risk to watch here:** like blobs, dictionaries may live in internal `_*` storage and might NOT survive the `.noydb` bundle. This test reopens from the bundle and asserts the Thai label — if it fails because the dict didn't survive, that is a real finding: report it. Fallback: localize enum values at the app level (Plan B) using `GENRE_LABELS`/`FORMAT_LABELS`/`CONDITION_LABELS` from `dicts.ts` (which carry `en`+`th`), keeping only records in the vault.
 
 - [ ] **Step 2: Run it**
 
