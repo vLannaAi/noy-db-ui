@@ -1,0 +1,61 @@
+// Detail-view value formatting — the Item-family counterpart to the table's column derivation.
+// Turns a `describe()` field + a record into a display cell: formatted value, entity link, PII mask.
+// Pure + framework-free, so RecordDetail (and an export/print view) share it.
+import type { DescribedField } from '@noy-db/hub'
+
+export interface DetailCell {
+  key: string
+  label: string
+  /** Human-ready display string ('—' when empty, '••••••' when masked). */
+  display: string
+  /** Direct link target (url / mailto). */
+  href?: string
+  /** Entity reference → the host turns this into a route via `routeFor(collection, id)`. */
+  ref?: { collection: string; id: string }
+  masked: boolean
+  empty: boolean
+}
+
+const MASK = '••••••'
+
+/** Format one field of a record for display, honouring semanticType, enum labels, refs and PII. */
+export function formatDetailCell(
+  field: DescribedField,
+  record: Record<string, unknown>,
+  opts: { reveal?: boolean } = {},
+): DetailCell {
+  const { key, label } = field
+  const raw = record[key]
+  const empty = raw == null || raw === ''
+  if (empty) return { key, label, display: '—', masked: false, empty: true }
+
+  const sensitive = field.sensitivity === 'pii' || field.sensitivity === 'secret'
+  if (sensitive && !opts.reveal) return { key, label, display: MASK, masked: true, empty: false }
+
+  // entity pairing: the id field carries ref + displayFor → show the human name, link to the record
+  if (field.displayFor && field.ref) {
+    return {
+      key, label, masked: false, empty: false,
+      display: String(record[field.displayFor] ?? raw),
+      ref: { collection: field.ref.target, id: String(raw) },
+    }
+  }
+
+  switch (field.semanticType) {
+    case 'currency': return { key, label, display: `${raw}${field.unit ? ` ${field.unit}` : ''}`, masked: false, empty: false }
+    case 'percent': return { key, label, display: `${raw}%`, masked: false, empty: false }
+    case 'url': return { key, label, display: String(raw), href: String(raw), masked: false, empty: false }
+    case 'email': return { key, label, display: String(raw), href: `mailto:${raw}`, masked: false, empty: false }
+  }
+  // enum → prefer the dictionary's human label over the raw code
+  const dictLabel = field.dict?.values?.find((v) => v.value === raw)?.label
+  return { key, label, display: dictLabel ?? String(raw), masked: false, empty: false }
+}
+
+/** The fields a detail view should render: drop ids/audit internals and the display-target names
+ *  (those surface via their id field as a link). The host groups them into cards (view choice). */
+export function detailFields(fields: readonly DescribedField[]): DescribedField[] {
+  const displayTargets = new Set(fields.map((f) => f.displayFor).filter(Boolean) as string[])
+  const HIDE = new Set(['id', 'deletedAt'])
+  return fields.filter((f) => !displayTargets.has(f.key) && !HIDE.has(f.key) && !f.key.startsWith('_'))
+}
