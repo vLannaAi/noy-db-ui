@@ -3,7 +3,7 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { ref, type Vault } from '@noy-db/hub'
 import { toBytes } from '@noy-db/as-noydb'
-import { buildVault } from '../src/data/vault'
+import { buildVault, COVER_FIELD } from '../src/data/vault'
 import { makeCover } from '../src/data/cover'
 import { artists, labels, records } from '../src/data/dataset'
 import { FIELD_LABELS } from '../src/data/dicts'
@@ -42,7 +42,7 @@ export async function seedVault(): Promise<Vault> {
   const recordsCol = vault.collection('records', {
     schema: RecordSchema,
     refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
-    blobFields: { cover: { retainDays: 36500 } },
+    blobFields: { [COVER_FIELD]: { retainDays: 36500 } }, // slot declared for Plan B's browser-side cover write (no blob written at seed)
     fieldMeta: fieldMeta('records', {
       artistId: { semanticType: 'entity' },
       labelId: { semanticType: 'entity' },

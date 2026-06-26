@@ -6,6 +6,10 @@ import { memory } from '@noy-db/to-memory'
 export const VAULT_NAME = 'vinyl'
 export const LANGS = ['en', 'th'] as const
 
+/** Blob field declared on the `records` collection, and the slot under it that holds the cover PNG. */
+export const COVER_FIELD = 'cover'
+export const COVER_SLOT = 'art'
+
 /**
  * Create a fresh in-memory, encrypted vault with blobs + i18n enabled.
  *
