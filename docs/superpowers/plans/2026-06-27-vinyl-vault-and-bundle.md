@@ -23,7 +23,8 @@
 
 ```
 examples/showcase/
-  package.json                 # file: deps, scripts (test, seed); NOT in root workspace
+  package.json                 # file: deps + pnpm.overrides (@noy-db/attestation → sibling file:); scripts (test, seed)
+  pnpm-workspace.yaml          # makes the showcase its own pnpm root (isolates it from the parent noy-db-ui workspace)
   tsconfig.json
   vitest.config.ts
   scripts/
