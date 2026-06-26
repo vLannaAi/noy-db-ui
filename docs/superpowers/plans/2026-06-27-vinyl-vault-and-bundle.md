@@ -41,7 +41,8 @@ examples/showcase/
     cover.test.ts              # Task 5
     dataset.test.ts            # Task 6
     seed.test.ts               # Task 7
-  public/demo.noydb            # generated artifact (committed)
+  public/demo.noydb            # generated bundle (committed)
+  public/covers/<id>.png       # generated cover art, static assets (committed)
 ```
 
 ---
@@ -247,26 +248,27 @@ git commit --no-verify -m "feat(showcase): vault build + passphrase-gated bundle
 
 ---
 
-### Task 3: SPIKE — cover blob round-trips through the bundle
+### Task 3: SPIKE — live in-vault blob round-trip (put→get)
+
+> **Architecture pivot (proven during execution):** cover blobs do NOT survive the `.noydb` bundle export — `vault.dump()` omits the internal `_blob_*` collections (`to-memory`'s `loadAll` skips `_`-prefixed collections, `to-memory/src/index.ts:113`). So the showcase proves the blob capability **live**: covers ship as static PNG assets (Task 7) and the browser writes each into the vault then reads it back at runtime (Plan B). This spike proves the in-vault `put`→`get` round-trip the browser will use.
 
 **Files:**
 - Test: `examples/showcase/src/data/__tests__/spike-blob.test.ts`
 
 **Interfaces:**
-- Consumes: `buildVault`, `openVaultFromBundle` from Task 2; `toBytes`.
-- Produces: confirmed blob write/read API (`collection.blob(id).put(slot, bytes, { mimeType })` / `.get(slot)`) and proof blobs survive export/import.
+- Consumes: `buildVault` from Task 2.
+- Produces: confirmed blob write/read API — `collection.blob(id).put(slot, bytes, { mimeType })` / `.get(slot)` round-trips inside a live vault.
 
 - [ ] **Step 1: Write the failing test** — `spike-blob.test.ts`
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import { toBytes } from '@noy-db/as-noydb'
-import { buildVault, openVaultFromBundle } from '../vault'
+import { buildVault } from '../vault'
 
 const PASS = 'spin-the-black-circle'
 
-describe('blob survives bundle round-trip', () => {
-  it('writes a cover blob and reads identical bytes after reopen', async () => {
+describe('blob put→get round-trips inside a live vault', () => {
+  it('reads back identical bytes from a vault blob', async () => {
     const { vault } = await buildVault(PASS)
     const records = vault.collection<{ id: string; title: string }>('records', {
       blobFields: { cover: { retainDays: 36500 } },
@@ -275,11 +277,7 @@ describe('blob survives bundle round-trip', () => {
 
     const original = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 4, 5])
     await records.blob('r1').put('art', original, { mimeType: 'image/png' })
-
-    const bytes = await toBytes(vault)
-    const reopened = await openVaultFromBundle(bytes, PASS)
-    const got = await reopened.collection('records', { blobFields: { cover: { retainDays: 36500 } } })
-      .blob('r1').get('art')
+    const got = await records.blob('r1').get('art')
 
     expect(got).not.toBeNull()
     expect(Array.from(got!)).toEqual(Array.from(original))
@@ -290,13 +288,13 @@ describe('blob survives bundle round-trip', () => {
 - [ ] **Step 2: Run it**
 
 Run: `pnpm test -- spike-blob`
-Expected: PASS. If `.blob(...).get` returns null after reopen, the collection on the reopened vault must be declared with the same `blobFields` BEFORE reading (already done above). If it still fails, record the exact required sequence as a comment and adjust the test to match real behavior — the goal is a proven round-trip.
+Expected: PASS — `put` then `get` in the same live vault returns the identical bytes (this is the capability the browser uses; no bundle export involved).
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add examples/showcase/src/data/__tests__/spike-blob.test.ts
-git commit --no-verify -m "test(showcase): prove cover blob round-trips through bundle"
+git commit --no-verify -m "test(showcase): prove live in-vault blob put/get round-trip"
 ```
 
 ---
@@ -719,17 +717,18 @@ git commit --no-verify -m "feat(showcase): typed vinyl dataset + TH/EN dicts wit
 - Test: `examples/showcase/src/data/__tests__/seed.test.ts`
 
 **Interfaces:**
-- Consumes: `buildVault` (Task 2), `makeCover` (Task 5), `artists/labels/records` (Task 6), `*_LABELS`/`FIELD_LABELS` (Task 6), the confirmed dict + blob patterns (Tasks 3–4).
+- Consumes: `buildVault` (Task 2), `makeCover` (Task 5), `artists/labels/records` (Task 6), `*_LABELS`/`FIELD_LABELS` (Task 6), the confirmed dict pattern (Task 4). Blobs are NOT written into the vault here (Task 3 proved they don't survive the bundle).
 - Produces:
-  - `seedVault(): Promise<Vault>` — builds the fully-populated `vinyl` vault in memory (3 collections w/ refs, fieldMeta, dictKeyFields, blobFields; covers written; dictionaries populated).
-  - `seed.ts` default execution: `toBytes(seedVault())` → write `public/demo.noydb`.
+  - `seedVault(): Promise<Vault>` — builds the fully-populated `vinyl` vault in memory (3 collections w/ refs, fieldMeta, dictKeyFields; dictionaries populated). No blob writes.
+  - `coverFiles(): { id: string; bytes: Uint8Array }[]` — the 24 cover PNGs.
+  - `seed.ts` default execution: `toBytes(seedVault())` → `public/demo.noydb`, plus `public/covers/<id>.png` per record.
 
 - [ ] **Step 1: Write the failing test** — `seed.test.ts`
 
 ```ts
 import { describe, it, expect } from 'vitest'
 import { toBytes } from '@noy-db/as-noydb'
-import { seedVault } from '../../../scripts/seed'
+import { seedVault, coverFiles } from '../../../scripts/seed'
 import { openVaultFromBundle } from '../vault'
 
 const PASS = 'spin-the-black-circle'
@@ -746,9 +745,9 @@ describe('seeded vault', () => {
     expect((rows[0] as any).artist).toBeTruthy()      // join resolved
     expect((rows[0] as any).label).toBeTruthy()
 
-    const cover = await records.blob('rc01').get('art')  // blob present
-    expect(cover).not.toBeNull()
-    expect(Array.from(cover!.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47])
+    const covers = coverFiles()  // covers ship as static PNG assets, not in the bundle
+    expect(covers).toHaveLength(24)
+    expect(Array.from(covers[0]!.bytes.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47])
 
     const en = await records.get('rc01', { locale: 'en' })  // label localized
     const th = await records.get('rc01', { locale: 'th' })
@@ -769,7 +768,7 @@ Expected: FAIL (`seedVault` not found).
 
 ```ts
 import { fileURLToPath } from 'node:url'
-import { writeFile } from 'node:fs/promises'
+import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { dictKey } from '@noy-db/hub/i18n'
 import { ref, type Vault } from '@noy-db/hub'
@@ -834,15 +833,19 @@ export async function seedVault(): Promise<Vault> {
     meta: { label: 'Records' },
   })
 
-  // --- seed rows ---
+  // --- seed rows (records only; blobs are NOT written here — they don't
+  //     survive the bundle export, so covers ship as static assets and the
+  //     browser writes them into the vault at runtime, see Plan B) ---
   for (const a of artists) await artistsCol.put(a.id, a)
   for (const l of labels) await labelsCol.put(l.id, l)
-  for (const r of records) {
-    await recordsCol.put(r.id, r)
-    await recordsCol.blob(r.id).put('art', makeCover(r.title), { mimeType: 'image/png' })
-  }
+  for (const r of records) await recordsCol.put(r.id, r)
 
   return vault
+}
+
+/** Cover PNG bytes per record id — written as static assets by `main()`. */
+export function coverFiles(): { id: string; bytes: Uint8Array }[] {
+  return records.map((r) => ({ id: r.id, bytes: makeCover(r.title) }))
 }
 
 // Executed by `pnpm seed`.
@@ -850,9 +853,18 @@ async function main() {
   const vault = await seedVault()
   const bytes = await toBytes(vault)
   const here = dirname(fileURLToPath(import.meta.url))
-  const out = join(here, '..', 'public', 'demo.noydb')
+  const publicDir = join(here, '..', 'public')
+  await mkdir(publicDir, { recursive: true })
+  const out = join(publicDir, 'demo.noydb')
   await writeFile(out, bytes)
-  console.log(`wrote ${out} (${bytes.length} bytes)`)
+
+  // Covers ship as static assets (blobs don't travel in the bundle).
+  const coversDir = join(publicDir, 'covers')
+  await mkdir(coversDir, { recursive: true })
+  for (const { id, bytes: png } of coverFiles()) {
+    await writeFile(join(coversDir, `${id}.png`), png)
+  }
+  console.log(`wrote ${out} (${bytes.length} bytes) + ${coverFiles().length} covers`)
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -869,17 +881,17 @@ Expected: PASS. Adjust `fieldMeta`/dict wiring until green if the runtime reject
 
 - [ ] **Step 5: Generate the committed bundle**
 
-Run: `mkdir -p public && pnpm seed`
-Expected: `wrote .../public/demo.noydb (NNNNN bytes)`.
+Run: `pnpm seed`
+Expected: `wrote .../public/demo.noydb (NNNNN bytes) + 24 covers`.
 
-- [ ] **Step 6: Sanity-check the artifact and commit it**
+- [ ] **Step 6: Sanity-check the artifacts and commit them**
 
-Run: `node -e "const fs=require('fs');const b=fs.readFileSync('public/demo.noydb');console.log('bytes',b.length)"`
-Expected: a non-trivial byte count (tens of KB+, covers included).
+Run: `node -e "const fs=require('fs');console.log('bundle',fs.readFileSync('public/demo.noydb').length,'covers',fs.readdirSync('public/covers').length)"`
+Expected: a non-trivial bundle byte count and `covers 24`.
 
 ```bash
-git add examples/showcase/scripts/seed.ts examples/showcase/src/data/__tests__/seed.test.ts examples/showcase/public/demo.noydb
-git commit --no-verify -m "feat(showcase): seed script + committed demo.noydb bundle"
+git add examples/showcase/scripts/seed.ts examples/showcase/src/data/__tests__/seed.test.ts examples/showcase/public/demo.noydb examples/showcase/public/covers
+git commit --no-verify -m "feat(showcase): seed script + committed demo.noydb bundle and cover assets"
 ```
 
 - [ ] **Step 7: Full suite green**
@@ -891,7 +903,7 @@ Expected: all tests pass (imports, spikes, cover, dataset, seed).
 
 ## Self-Review
 
-**Spec coverage:** vinyl 3-collection model w/ joins (Tasks 6–7) ✓; 24 records + counts (Task 6) ✓; cover blobs (Tasks 3, 5, 7) ✓; TH/EN labels (Tasks 4, 6, 7) ✓; passphrase gate (Task 2) ✓; `.noydb` bundle artifact (Task 7) ✓; browser-safe runtime (confirmed via exploration; `toBytes`/hub are Web-Crypto-only, exercised in Node tests here, validated in-browser in Plan B) ✓; package isolation from root workspace (Task 1) ✓. **Plan B owns:** Nuxt app, unlock UI, pages, i18n switcher, TourBalloon, cover rendering, static build.
+**Spec coverage:** vinyl 3-collection model w/ joins (Tasks 6–7) ✓; 24 records + counts (Task 6) ✓; cover blobs — proven NOT to survive the bundle (Task 3), pivoted to **live in-vault round-trip** (Task 3 capability) + **static cover PNG assets** shipped from the seed (Tasks 5, 7) ✓; TH/EN labels (Tasks 4, 6, 7) ✓; passphrase gate (Task 2) ✓; `.noydb` bundle artifact (Task 7) ✓; browser-safe runtime (confirmed via exploration; `toBytes`/hub are Web-Crypto-only, exercised in Node tests here, validated in-browser in Plan B) ✓; package isolation from root workspace (Task 1) ✓. **Plan B owns:** Nuxt app, unlock UI, pages, i18n switcher, TourBalloon, and the in-browser blob write-then-read that renders covers from the vault.
 
 **Placeholder scan:** No TBD/TODO. The two "if the spike proves a different shape, mirror it" notes are deliberate TDD guidance tied to a green test, not placeholders — the provided code is the best-known-correct starting point and the test is the contract.
 
