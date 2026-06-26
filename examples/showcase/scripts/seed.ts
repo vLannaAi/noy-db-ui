@@ -1,15 +1,12 @@
 import { fileURLToPath } from 'node:url'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { dictKey } from '@noy-db/hub/i18n'
 import { ref, type Vault } from '@noy-db/hub'
 import { toBytes } from '@noy-db/as-noydb'
 import { buildVault } from '../src/data/vault'
 import { makeCover } from '../src/data/cover'
 import { artists, labels, records } from '../src/data/dataset'
-import {
-  GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS, FIELD_LABELS,
-} from '../src/data/dicts'
+import { FIELD_LABELS } from '../src/data/dicts'
 import { ArtistSchema, LabelSchema, RecordSchema } from '../src/data/types'
 
 const PASS = 'spin-the-black-circle'
@@ -26,19 +23,14 @@ function fieldMeta(collection: string, overrides: Record<string, Record<string, 
 export async function seedVault(): Promise<Vault> {
   const { vault } = await buildVault(PASS)
 
-  // --- dictionaries (TH/EN) ---
-  const putDict = async (name: string, table: Record<string, { en: string; th: string }>) => {
-    const dict = vault.dictionary(name)
-    for (const [k, v] of Object.entries(table)) await dict.put(k, { en: v.en, th: v.th })
-  }
-  await putDict('genre', GENRE_LABELS)
-  await putDict('format', FORMAT_LABELS)
-  await putDict('condition', CONDITION_LABELS)
+  // Note: enum-value dictionaries are NOT seeded — they do not survive the .noydb
+  // bundle (internal _* collections, same as blobs). The bundle carries the raw enum
+  // keys (e.g. `genre: 'rock'`); enum values are localized at the app level from
+  // dicts.ts (Plan B).
 
   // --- collections ---
   const artistsCol = vault.collection('artists', {
     schema: ArtistSchema,
-    dictKeyFields: { genre: dictKey('genre') },
     fieldMeta: fieldMeta('artists', { country: { semanticType: 'country' } }),
     meta: { label: 'Artists' },
   })
@@ -50,7 +42,6 @@ export async function seedVault(): Promise<Vault> {
   const recordsCol = vault.collection('records', {
     schema: RecordSchema,
     refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
-    dictKeyFields: { genre: dictKey('genre'), format: dictKey('format'), condition: dictKey('condition') },
     blobFields: { cover: { retainDays: 36500 } },
     fieldMeta: fieldMeta('records', {
       artistId: { semanticType: 'entity' },
