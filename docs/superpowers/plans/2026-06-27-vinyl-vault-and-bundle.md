@@ -719,7 +719,7 @@ git commit --no-verify -m "feat(showcase): typed vinyl dataset + TH/EN dicts wit
 **Interfaces:**
 - Consumes: `buildVault` (Task 2), `makeCover` (Task 5), `artists/labels/records` (Task 6), `*_LABELS`/`FIELD_LABELS` (Task 6), the confirmed dict pattern (Task 4). Blobs are NOT written into the vault here (Task 3 proved they don't survive the bundle).
 - Produces:
-  - `seedVault(): Promise<Vault>` — builds the fully-populated `vinyl` vault in memory (3 collections w/ refs, fieldMeta, dictKeyFields; dictionaries populated). No blob writes.
+  - `seedVault(): Promise<Vault>` — builds the fully-populated `vinyl` vault in memory (3 collections w/ refs + fieldMeta English labels; raw enum keys). No dict seeding, no blob writes (neither survives the bundle).
   - `coverFiles(): { id: string; bytes: Uint8Array }[]` — the 24 cover PNGs.
   - `seed.ts` default execution: `toBytes(seedVault())` → `public/demo.noydb`, plus `public/covers/<id>.png` per record.
 
@@ -728,10 +728,10 @@ git commit --no-verify -m "feat(showcase): typed vinyl dataset + TH/EN dicts wit
 ```ts
 import { describe, it, expect } from 'vitest'
 import { ref } from '@noy-db/hub'
-import { dictKey } from '@noy-db/hub/i18n'
 import { toBytes } from '@noy-db/as-noydb'
 import { seedVault, coverFiles } from '../../../scripts/seed'
 import { openVaultFromBundle } from '../vault'
+import { GENRE_LABELS } from '../dicts'
 
 const PASS = 'spin-the-black-circle'
 
@@ -745,7 +745,6 @@ describe('seeded vault', () => {
     // their target collections) and hydrate all three collections first (Task 2 finding).
     const records = v.collection('records', {
       refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
-      dictKeyFields: { genre: dictKey('genre'), format: dictKey('format'), condition: dictKey('condition') },
     })
     await records.list()
     await v.collection('artists').list()
@@ -759,15 +758,17 @@ describe('seeded vault', () => {
     expect(covers).toHaveLength(24)
     expect(Array.from(covers[0]!.bytes.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47])
 
-    const en = await records.get('rc01', { locale: 'en' })  // enum label localized (rc01 genre = 'rock')
-    const th = await records.get('rc01', { locale: 'th' })
-    expect((en as any).genreLabel).toBe('Rock')
-    expect((th as any).genreLabel).toBe('ร็อก')
+    // Dictionaries do NOT survive the bundle (internal _* storage, like blobs), so the
+    // reopened record carries the raw enum key; enum values are localized at the app level
+    // (Plan B) from dicts.ts, which holds the EN/TH labels.
+    const rec = await records.get('rc01')
+    expect((rec as any).genre).toBe('rock')
+    expect(GENRE_LABELS['rock']).toEqual({ en: 'Rock', th: 'ร็อก' })
   }, 30_000)
 })
 ```
 
-> Task 4 proved: enum dict labels resolve as `record.<field>Label` via `get(id, { locale })`, using `dictKey('<field>')` on the collection + `vault.dictionary('<field>').put(key, { en, th })`. **Risk to watch here:** like blobs, dictionaries may live in internal `_*` storage and might NOT survive the `.noydb` bundle. This test reopens from the bundle and asserts the Thai label — if it fails because the dict didn't survive, that is a real finding: report it. Fallback: localize enum values at the app level (Plan B) using `GENRE_LABELS`/`FORMAT_LABELS`/`CONDITION_LABELS` from `dicts.ts` (which carry `en`+`th`), keeping only records in the vault.
+> **Confirmed during execution:** dictionaries do NOT survive the `.noydb` bundle (internal `_*` collections are dropped, same as blobs). So the vault does not seed dictionaries; the bundle carries raw enum keys (`genre: 'rock'`), and enum values are localized at the **app level** in Plan B using `GENRE_LABELS`/`FORMAT_LABELS`/`CONDITION_LABELS` from `dicts.ts` (each carries `en`+`th`). Field headers + collection names localize app-side via `FIELD_LABELS`. The app stays fully TH/EN — only the localization *mechanism* moved from vault to app.
 
 - [ ] **Step 2: Run it**
 
@@ -780,15 +781,12 @@ Expected: FAIL (`seedVault` not found).
 import { fileURLToPath } from 'node:url'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { dictKey } from '@noy-db/hub/i18n'
 import { ref, type Vault } from '@noy-db/hub'
 import { toBytes } from '@noy-db/as-noydb'
 import { buildVault } from '../src/data/vault'
 import { makeCover } from '../src/data/cover'
 import { artists, labels, records } from '../src/data/dataset'
-import {
-  GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS, FIELD_LABELS,
-} from '../src/data/dicts'
+import { FIELD_LABELS } from '../src/data/dicts'
 import { ArtistSchema, LabelSchema, RecordSchema } from '../src/data/types'
 
 const PASS = 'spin-the-black-circle'
@@ -805,19 +803,14 @@ function fieldMeta(collection: string, overrides: Record<string, Record<string, 
 export async function seedVault(): Promise<Vault> {
   const { vault } = await buildVault(PASS)
 
-  // --- dictionaries (TH/EN) ---
-  const putDict = async (name: string, table: Record<string, { en: string; th: string }>) => {
-    const dict = vault.dictionary(name)
-    for (const [k, v] of Object.entries(table)) await dict.put(k, { en: v.en, th: v.th })
-  }
-  await putDict('genre', GENRE_LABELS)
-  await putDict('format', FORMAT_LABELS)
-  await putDict('condition', CONDITION_LABELS)
+  // Note: enum-value dictionaries are NOT seeded — they do not survive the .noydb
+  // bundle (internal _* collections, same as blobs). The bundle carries the raw enum
+  // keys (e.g. `genre: 'rock'`); enum values are localized at the app level from
+  // dicts.ts (Plan B).
 
   // --- collections ---
   const artistsCol = vault.collection('artists', {
     schema: ArtistSchema,
-    dictKeyFields: { genre: dictKey('genre') },
     fieldMeta: fieldMeta('artists', { country: { semanticType: 'country' } }),
     meta: { label: 'Artists' },
   })
@@ -829,7 +822,6 @@ export async function seedVault(): Promise<Vault> {
   const recordsCol = vault.collection('records', {
     schema: RecordSchema,
     refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
-    dictKeyFields: { genre: dictKey('genre'), format: dictKey('format'), condition: dictKey('condition') },
     blobFields: { cover: { retainDays: 36500 } },
     fieldMeta: fieldMeta('records', {
       artistId: { semanticType: 'entity' },
@@ -913,7 +905,7 @@ Expected: all tests pass (imports, spikes, cover, dataset, seed).
 
 ## Self-Review
 
-**Spec coverage:** vinyl 3-collection model w/ joins (Tasks 6–7) ✓; 24 records + counts (Task 6) ✓; cover blobs — proven NOT to survive the bundle (Task 3), pivoted to **live in-vault round-trip** (Task 3 capability) + **static cover PNG assets** shipped from the seed (Tasks 5, 7) ✓; TH/EN labels (Tasks 4, 6, 7) ✓; passphrase gate (Task 2) ✓; `.noydb` bundle artifact (Task 7) ✓; browser-safe runtime (confirmed via exploration; `toBytes`/hub are Web-Crypto-only, exercised in Node tests here, validated in-browser in Plan B) ✓; package isolation from root workspace (Task 1) ✓. **Plan B owns:** Nuxt app, unlock UI, pages, i18n switcher, TourBalloon, and the in-browser blob write-then-read that renders covers from the vault.
+**Spec coverage:** vinyl 3-collection model w/ joins (Tasks 6–7) ✓; 24 records + counts (Task 6) ✓; cover blobs — proven NOT to survive the bundle (Task 3), pivoted to **live in-vault round-trip** (Task 3 capability) + **static cover PNG assets** shipped from the seed (Tasks 5, 7) ✓; TH/EN labels — enum-value dicts don't survive the bundle (Task 7), so localized app-side from `dicts.ts` (en+th retained in Task 6); Task 4 proved the vault-side mechanism (live-vault only) ✓; passphrase gate (Task 2) ✓; `.noydb` bundle artifact (Task 7) ✓; browser-safe runtime (confirmed via exploration; `toBytes`/hub are Web-Crypto-only, exercised in Node tests here, validated in-browser in Plan B) ✓; package isolation from root workspace (Task 1) ✓. **Plan B owns:** Nuxt app, unlock UI, pages, i18n switcher, TourBalloon, and the in-browser blob write-then-read that renders covers from the vault.
 
 **Placeholder scan:** No TBD/TODO. The two "if the spike proves a different shape, mirror it" notes are deliberate TDD guidance tied to a green test, not placeholders — the provided code is the best-known-correct starting point and the test is the contract.
 
