@@ -1,6 +1,6 @@
 {
   "name": "@noy-db/ui-nuxt",
-  "version": "0.0.0",
+  "version": "0.2.0-pre.0",
   "description": "Nuxt binding for @noy-db/ui: schema-driven list + detail components + the Nuxt module. Domain-free; consumes collection.describe().",
   "type": "module",
   "license": "MIT",
