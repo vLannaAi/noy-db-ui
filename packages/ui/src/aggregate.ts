@@ -9,6 +9,7 @@ export interface AggregateColumn {
   aggregate?: 'count' | 'sum' | 'distinct' | 'dateRange'
   aggregateNoun?: string
   amountOf?: (r: Record<string, any>) => number
+  formatSum?: (n: number) => string
   enumOf?: (r: Record<string, any>) => string | null | undefined
   dateOf?: (r: Record<string, any>) => string | null | undefined
 }
@@ -38,7 +39,7 @@ export function columnAggregate(rows: readonly Record<string, any>[], col: Aggre
       const get = col.amountOf ?? ((r) => Number(r[col.key]) || 0)
       let sum = 0
       for (const r of rows) sum += get(r)
-      return { text: formatAmount(sum), numeric: true }
+      return { text: col.formatSum ? col.formatSum(sum) : formatAmount(sum), numeric: true }
     }
     case 'distinct': {
       const get = col.enumOf ?? ((r) => r[col.key])

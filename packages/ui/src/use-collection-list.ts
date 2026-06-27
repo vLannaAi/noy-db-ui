@@ -94,7 +94,7 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   // Collapsed group ids — persisted per entity in localStorage (G4a) so the expand/collapse state
   // survives a reload. Group ids embed field=value, so stale ids from a different group config are
   // simply never matched (harmless). Kept out of the URL (it would be verbose and noisy to share).
-  const collapsedKey = `i3.collapsed.${o.entity}`
+  const collapsedKey = `nui.collapsed.${o.entity}`
   const loadCollapsed = (): Set<string> => {
     try { const raw = globalThis.localStorage?.getItem(collapsedKey); return raw ? new Set(JSON.parse(raw) as string[]) : new Set() } catch { return new Set() }
   }
@@ -240,7 +240,8 @@ export function useCollectionList<T extends Record<string, any>>(o: {
         const id = parentId ? `${parentId}|${n.field}=${n.value}` : `${n.field}=${n.value}`
         const isCollapsed = collapsed.value.has(id)
         const label = resolveField(schema, n.field)?.label ?? n.field
-        lines.push({ kind: 'group', id, level, field: n.field, value: n.value, label: `${label}: ${n.value}`, count: n.rows.length, cells: rollupCells(n), collapsed: isCollapsed, serial })
+        const displayValue = n.value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        lines.push({ kind: 'group', id, level, field: n.field, value: n.value, label: `${label}: ${displayValue}`, count: n.rows.length, cells: rollupCells(n), collapsed: isCollapsed, serial })
         if (isCollapsed) continue
         if (n.children.length) walk(n.children, level + 1, id)
         else n.rows.forEach((row, i) => lines.push({ kind: 'row', level: level + 1, row, serial: i + 1 }))

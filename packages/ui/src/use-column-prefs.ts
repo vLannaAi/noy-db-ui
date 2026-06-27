@@ -9,7 +9,7 @@ export type ColPrefState = 'auto' | 'show' | 'hide'
 interface Prefs { show: string[]; hide: string[] }
 
 export function useColumnPrefs(entity: string) {
-  const key = `i3.colprefs.${entity}`
+  const key = `nui.colprefs.${entity}`
   const load = (): Prefs => {
     try {
       const raw = globalThis.localStorage?.getItem(key)
