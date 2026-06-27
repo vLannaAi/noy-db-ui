@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCollectionList, enumBreakdown } from '@noy-db/ui'
+import { useCollectionList, enumBreakdown, findByQuery } from '@noy-db/ui'
 import type { FilterChip } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
 import { COVER_FIELD } from '../../../src/data/vault'
 import { useTour } from '../../composables/useTour'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
+import { useSavedSearches } from '../../composables/useSavedSearches'
+import { useRecentSearches } from '../../composables/useRecentSearches'
 
 const { vault } = useVault()
 const { t, enumLabel, fieldLabel } = useShowcaseI18n()
@@ -28,6 +30,20 @@ const list = useCollectionList({
   defaultSort: [{ field: 'title', dir: 'asc' }],
   schema: view.value.schema,
 })
+
+// Saved & recent searches
+const { saved, add: addSaved, rename: renameSaved, remove: removeSaved, toggleFavorite, setDefault } = useSavedSearches('records')
+const { recents, remove: removeRecent, clear: clearRecent } = useRecentSearches(query)
+
+// currentSaved: true when the current query matches an already-saved search
+const currentSaved = computed(() => !!findByQuery(saved.value, 'records', query.value.trim()))
+
+// Column chooser: columns mapped to {key, label} (skip the empty cover label column)
+const columnList = computed(() =>
+  view.value.columns
+    .filter((c) => c.label)
+    .map((c) => ({ key: c.key, label: c.label as string })),
+)
 
 // Filter chips: one chip per active column filter with a human-readable summary.
 const CHIP_DICT_KEYS: Record<string, string> = {
@@ -79,6 +95,45 @@ onMounted(() => {
 
 <template>
   <section class="p-4 space-y-4">
+    <!-- Control bar: column chooser, group-by, saved searches, recent searches -->
+    <!-- Placeholder: <NlSearchButton> goes here (added next chunk) -->
+    <div class="flex flex-wrap items-center gap-2" data-tour="toolbar">
+      <GroupByControl
+        :fields="list.groupableFields.value"
+        :active="list.groupFields.value"
+        @toggle="list.toggleGroupField"
+        @clear="list.clearGroups"
+        @expand-all="list.expandAll"
+        @collapse-level="list.collapseToLevel"
+      />
+      <ColumnChooser
+        :columns="columnList"
+        :show="list.columnPrefShow.value"
+        :hide="list.columnPrefHide.value"
+        @cycle="list.cycleColumnPref"
+        @reset="list.resetColumnPrefs"
+      />
+      <SavedSearchMenu
+        :schema="view.schema"
+        :saved="saved"
+        :current-query="query"
+        :current-saved="currentSaved"
+        @run="query = $event"
+        @save="(name) => addSaved(query, name)"
+        @rename="({ id, name }) => renameSaved(id, name)"
+        @remove="removeSaved"
+        @toggle-favorite="toggleFavorite"
+        @set-default="setDefault"
+      />
+      <RecentSearchMenu
+        :schema="view.schema"
+        :recents="recents"
+        @apply="query = $event"
+        @remove="removeRecent"
+        @clear="clearRecent"
+      />
+    </div>
+
     <div data-tour="search">
       <SearchBox
         v-model="query"
