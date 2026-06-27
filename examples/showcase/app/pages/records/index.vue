@@ -75,8 +75,8 @@ const chips = computed((): FilterChip[] =>
         .join(', ')
     } else if (filter.kind === 'date') {
       const parts: string[] = []
-      if (filter.from) parts.push(`from ${filter.from}`)
-      if (filter.to) parts.push(`to ${filter.to}`)
+      if (filter.from) parts.push(`${t('chip.from', 'from')} ${filter.from}`)
+      if (filter.to) parts.push(`${t('chip.to', 'to')} ${filter.to}`)
       text = parts.join(' ')
     }
     return { key, label: fieldLabel('records', key), text }
@@ -87,7 +87,7 @@ const chips = computed((): FilterChip[] =>
 const subtotalEnums = computed(() => ({
   genre: {
     items: enumBreakdown(list.visibleRows.value, view.value.schema, 'genre'),
-    distinctNoun: 'genres',
+    distinctNoun: t('subtotal.genres', 'genres'),
   },
 }))
 
@@ -110,10 +110,10 @@ async function runNlSearch(payload: { nl: string; refine: boolean }) {
     const raw = await llm.complete({ system, user })
     const rawDsl = extractDsl(raw)
     const { dsl, unknownFields } = validateDsl(rawDsl, view.value.schema)
-    if (unknownFields.length) nlNote.value = `Ignored unknown fields: ${unknownFields.join(', ')}`
+    if (unknownFields.length) nlNote.value = `${t('nl.note', 'Ignored unknown fields:')} ${unknownFields.join(', ')}`
     query.value = dsl
   } catch (e: unknown) {
-    nlError.value = e instanceof Error ? e.message : 'Search failed'
+    nlError.value = e instanceof Error ? e.message : t('nl.error', 'Search failed')
   } finally {
     nlLoading.value = false
   }
