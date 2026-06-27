@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { useVault } from '../composables/useVault'
 import { useShowcaseI18n } from '../composables/useShowcaseI18n'
 
+definePageMeta({ layout: false })
+
 const { unlock } = useVault()
 const { t } = useShowcaseI18n()
 const pass = ref('')
