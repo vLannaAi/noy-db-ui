@@ -21,3 +21,6 @@ pnpm-debug.log*
 .idea/
 .vscode/
 *.swp
+
+# ─── Local-only AI configs (not published) ─────────────────────────
+CLAUDE.md
