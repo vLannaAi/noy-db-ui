@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useShowcaseI18n } from '../composables/useShowcaseI18n'
+import { useTour } from '../composables/useTour'
 const { t, locale, setLocale } = useShowcaseI18n()
 const theme = useTheme() // { mode, resolved, set } — auto-imported by the module
 const nav = [['/records', 'nav.records'], ['/artists', 'nav.artists'], ['/labels', 'nav.labels']] as const
+const { steps, start } = useTour()
+const restartTour = () => start(steps.value, { force: true })
 </script>
 
 <template>
@@ -21,11 +24,11 @@ const nav = [['/records', 'nav.records'], ['/artists', 'nav.artists'], ['/labels
           <option value="en">EN</option>
           <option value="th">TH</option>
         </select>
-        <!-- TODO(Task 9): start tour -->
-        <button class="nui-icon-btn" data-tour="help">?</button>
+        <button class="nui-icon-btn" data-tour="help" @click="restartTour">?</button>
       </header>
       <slot />
     </div>
+    <TourBalloon />
   </div>
 </template>
 
