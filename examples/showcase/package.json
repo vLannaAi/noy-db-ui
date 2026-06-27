@@ -10,6 +10,7 @@
     "postinstall": "nuxi prepare"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@noy-db/hub": "file:../../../noy-db/packages/hub",
     "@noy-db/to-memory": "file:../../../noy-db/packages/to-memory",
     "@noy-db/as-noydb": "file:../../../noy-db/packages/as-noydb",

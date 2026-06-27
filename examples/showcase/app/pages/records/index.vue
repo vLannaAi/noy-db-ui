@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCollectionList, enumBreakdown, findByQuery } from '@noy-db/ui'
+import { useCollectionList, enumBreakdown, findByQuery, buildNlPrompt, extractDsl, validateDsl } from '@noy-db/ui'
 import type { FilterChip } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
@@ -9,6 +9,7 @@ import { useTour } from '../../composables/useTour'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useSavedSearches } from '../../composables/useSavedSearches'
 import { useRecentSearches } from '../../composables/useRecentSearches'
+import { useApiKey } from '../../composables/useApiKey'
 
 const { vault } = useVault()
 const { t, enumLabel, fieldLabel } = useShowcaseI18n()
@@ -78,6 +79,34 @@ const subtotalEnums = computed(() => ({
   },
 }))
 
+// NL search — useLlm() must be called during setup (uses inject internally).
+const { hasKey, saveKey, forgetKey } = useApiKey()
+const llm = useLlm()
+const nlLoading = ref(false)
+const nlError = ref('')
+const nlNote = ref('')
+
+async function runNlSearch(payload: { nl: string; refine: boolean }) {
+  if (!llm) return
+  nlLoading.value = true
+  nlError.value = ''
+  nlNote.value = ''
+  try {
+    const { system, user } = buildNlPrompt(view.value.schema, payload.nl, {
+      currentDsl: payload.refine ? query.value : undefined,
+    })
+    const raw = await llm.complete({ system, user })
+    const rawDsl = extractDsl(raw)
+    const { dsl, unknownFields } = validateDsl(rawDsl, view.value.schema)
+    if (unknownFields.length) nlNote.value = `Ignored unknown fields: ${unknownFields.join(', ')}`
+    query.value = dsl
+  } catch (e: unknown) {
+    nlError.value = e instanceof Error ? e.message : 'Search failed'
+  } finally {
+    nlLoading.value = false
+  }
+}
+
 function recordsTourSteps() {
   return [
     { target: '[data-tour="search"]', title: t('tour.search.title', 'Search & Filter'), body: t('tour.search.body', 'Type to filter records or use the column filters for more precision.') },
@@ -95,8 +124,7 @@ onMounted(() => {
 
 <template>
   <section class="p-4 space-y-4">
-    <!-- Control bar: column chooser, group-by, saved searches, recent searches -->
-    <!-- Placeholder: <NlSearchButton> goes here (added next chunk) -->
+    <!-- Control bar: column chooser, group-by, saved searches, recent searches, AI search -->
     <div class="flex flex-wrap items-center gap-2" data-tour="toolbar">
       <GroupByControl
         :fields="list.groupableFields.value"
@@ -131,6 +159,16 @@ onMounted(() => {
         @apply="query = $event"
         @remove="removeRecent"
         @clear="clearRecent"
+      />
+      <NlSearchButton
+        :has-key="hasKey"
+        :loading="nlLoading"
+        :error="nlError"
+        :note="nlNote"
+        :has-current-query="!!query"
+        @save-key="saveKey"
+        @forget-key="forgetKey"
+        @search="runNlSearch"
       />
     </div>
 
