@@ -49,8 +49,7 @@ const list = useCollectionList({
       @row-click="(r) => navigateTo(`/records/${r.id}`)"
     >
       <template #[coverCell]="{ row }">
-        <!-- TODO(Task 6): CoverImage -->
-        <span />
+        <CoverImage :id="row.id" :thumb="true" />
       </template>
     </CollectionList>
   </section>
