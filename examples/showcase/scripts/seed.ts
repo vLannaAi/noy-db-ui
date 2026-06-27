@@ -1,24 +1,14 @@
 import { fileURLToPath } from 'node:url'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { ref, type Vault } from '@noy-db/hub'
+import { type Vault } from '@noy-db/hub'
 import { toBytes } from '@noy-db/as-noydb'
-import { buildVault, COVER_FIELD } from '../src/data/vault'
+import { buildVault } from '../src/data/vault'
 import { makeCover } from '../src/data/cover'
 import { artists, labels, records } from '../src/data/dataset'
-import { FIELD_LABELS } from '../src/data/dicts'
-import { ArtistSchema, LabelSchema, RecordSchema } from '../src/data/types'
+import { declareCollections } from '../src/data/collections'
 
 const PASS = 'spin-the-black-circle'
-
-// fieldMeta builder: English label + semanticType from FIELD_LABELS + a small overrides map.
-function fieldMeta(collection: string, overrides: Record<string, Record<string, unknown>> = {}) {
-  const out: Record<string, Record<string, unknown>> = {}
-  for (const [key, l] of Object.entries(FIELD_LABELS[collection]!)) {
-    out[key] = { label: l.en, ...(overrides[key] ?? {}) }
-  }
-  return out
-}
 
 export async function seedVault(): Promise<Vault> {
   const { vault } = await buildVault(PASS)
@@ -29,31 +19,7 @@ export async function seedVault(): Promise<Vault> {
   // dicts.ts (Plan B).
 
   // --- collections ---
-  const artistsCol = vault.collection('artists', {
-    schema: ArtistSchema,
-    fieldMeta: fieldMeta('artists', { country: { semanticType: 'country' } }),
-    meta: { label: 'Artists' },
-  })
-  const labelsCol = vault.collection('labels', {
-    schema: LabelSchema,
-    fieldMeta: fieldMeta('labels', { country: { semanticType: 'country' } }),
-    meta: { label: 'Labels' },
-  })
-  const recordsCol = vault.collection('records', {
-    schema: RecordSchema,
-    refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
-    blobFields: { [COVER_FIELD]: { retainDays: 36500 } }, // slot declared for Plan B's browser-side cover write (no blob written at seed)
-    fieldMeta: fieldMeta('records', {
-      artistId: { semanticType: 'entity' },
-      labelId: { semanticType: 'entity' },
-      priceUsd: { semanticType: 'money', unit: 'USD' },
-      durationMin: { semanticType: 'number', unit: 'min' },
-      purchasedOn: { semanticType: 'date' },
-      notes: { widget: 'textarea' },
-      favorite: { widget: 'checkbox' },
-    }),
-    meta: { label: 'Records' },
-  })
+  const { artists: artistsCol, labels: labelsCol, records: recordsCol } = declareCollections(vault)
 
   // --- seed rows (records only; blobs are NOT written here — they don't
   //     survive the bundle export, so covers ship as static assets and the
