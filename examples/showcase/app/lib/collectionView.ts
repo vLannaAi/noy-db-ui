@@ -44,7 +44,7 @@ export function buildRecordsView(vault: Vault) {
   const rows = joinedRows(records.query().toArray() as Record<string, unknown>[], legs)
 
   const columns: AppColumn[] = [
-    { key: COVER_FIELD, label: '' },
+    { key: COVER_FIELD, label: '', class: 'nui-col-cover' },
     { key: 'title', label: fieldLabel('records', 'title'), sortable: true },
     { key: 'artist_name', label: fieldLabel('records', 'artistId'), sortable: true, filter: 'enum' },
     { key: 'label_name', label: fieldLabel('records', 'labelId'), sortable: true, filter: 'enum', relevance: 60 },

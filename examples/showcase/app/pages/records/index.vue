@@ -132,3 +132,13 @@ onMounted(() => {
     </div>
   </section>
 </template>
+
+<style>
+/* Cover column needs a fixed width so the 38px thumbnail isn't clamped by the
+   empty-label cell. Global (unscoped) because the <td> is rendered by CollectionList. */
+.nui-col-cover {
+  width: 56px;
+  min-width: 56px;
+  text-align: center;
+}
+</style>
