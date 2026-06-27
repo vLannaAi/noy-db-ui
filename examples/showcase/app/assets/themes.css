@@ -1,0 +1,216 @@
+/*
+  themes.css — 6-theme CSS variable system
+  3 palettes × 2 modes = 6 combos
+  Selector: [data-palette="..."][data-theme="..."]
+  The 8 @noy-db/ui tokens (--nui-*) are overridden per combo.
+  Extended app tokens are set per combo as well.
+*/
+
+/* ─── BASE / DEFAULTS ─────────────────────────────────────────────────────── */
+/* Applied to :root so everything works before JS sets data-* attributes.     */
+/* Defaults = bluenote light.                                                  */
+
+:root {
+  /* nui tokens */
+  --nui-bg: #f3ead6;
+  --nui-bg-accent: #e9dcc0;
+  --nui-fg: #14171c;
+  --nui-muted: #5c5a52;
+  --nui-subtle: #8a8678;
+  --nui-border: #d8c9a8;
+  --nui-accent: #1c39bb;
+  --nui-accent-fg: #f3ead6;
+
+  /* extended app tokens */
+  --accent-2: #d96e2a;
+  --hairline: #c9b896;
+  --font-display: 'Anton', sans-serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-mono: 'Public Sans', monospace;
+  --display-transform: uppercase;
+  --display-spacing: 0.02em;
+  --display-weight: 400;
+  --radius: 2px;
+  --radius-control: 2px;
+  --border-w: 1px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --space-row: 0.5rem;
+  --shell-gap: 0;
+}
+
+/* ─── BLUENOTE ─────────────────────────────────────────────────────────────── */
+
+:root[data-palette="bluenote"][data-theme="light"],
+:root[data-palette="bluenote"]:not([data-theme="dark"]) {
+  --nui-bg: #f3ead6;
+  --nui-bg-accent: #e9dcc0;
+  --nui-fg: #14171c;
+  --nui-muted: #5c5a52;
+  --nui-subtle: #8a8678;
+  --nui-border: #d8c9a8;
+  --nui-accent: #1c39bb;
+  --nui-accent-fg: #f3ead6;
+  --accent-2: #d96e2a;
+  --hairline: #c9b896;
+
+  --font-display: 'Anton', sans-serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-mono: 'Public Sans', monospace;
+  --display-transform: uppercase;
+  --display-spacing: 0.02em;
+  --display-weight: 400;
+  --radius: 2px;
+  --radius-control: 2px;
+  --border-w: 1px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-palette="bluenote"][data-theme="dark"] {
+  --nui-bg: #0f1a3a;
+  --nui-bg-accent: #16244a;
+  --nui-fg: #f3ead6;
+  --nui-muted: #a9b2cf;
+  --nui-subtle: #6f7aa0;
+  --nui-border: #2a3a66;
+  --nui-accent: #6f86ff;
+  --nui-accent-fg: #0f1a3a;
+  --accent-2: #ff8c42;
+  --hairline: #2a3a66;
+
+  --font-display: 'Anton', sans-serif;
+  --font-body: 'Public Sans', sans-serif;
+  --font-mono: 'Public Sans', monospace;
+  --display-transform: uppercase;
+  --display-spacing: 0.02em;
+  --display-weight: 400;
+  --radius: 2px;
+  --radius-control: 2px;
+  --border-w: 1px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── HIFI ─────────────────────────────────────────────────────────────────── */
+
+:root[data-palette="hifi"][data-theme="light"],
+:root[data-palette="hifi"]:not([data-theme="dark"]) {
+  --nui-bg: #ece8e1;
+  --nui-bg-accent: #e0dbd1;
+  --nui-fg: #1a1c1e;
+  --nui-muted: #5e6066;
+  --nui-subtle: #8b8d92;
+  --nui-border: #cfcabf;
+  --nui-accent: #c07f00;
+  --nui-accent-fg: #ffffff;
+  --accent-2: #1f9e98;
+  --hairline: #d3cdc1;
+
+  --font-display: 'Saira', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --display-transform: none;
+  --display-spacing: 0.01em;
+  --display-weight: 600;
+  --radius: 8px;
+  --radius-control: 6px;
+  --border-w: 1px;
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-palette="hifi"][data-theme="dark"] {
+  --nui-bg: #16181b;
+  --nui-bg-accent: #1f2226;
+  --nui-fg: #e8e6e1;
+  --nui-muted: #9a9ca2;
+  --nui-subtle: #6b6d72;
+  --nui-border: #2c3036;
+  --nui-accent: #ffb000;
+  --nui-accent-fg: #16181b;
+  --accent-2: #2bd0c6;
+  --hairline: #2c3036;
+
+  --font-display: 'Saira', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --display-transform: none;
+  --display-spacing: 0.01em;
+  --display-weight: 600;
+  --radius: 8px;
+  --radius-control: 6px;
+  --border-w: 1px;
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── WHITELABEL ───────────────────────────────────────────────────────────── */
+
+:root[data-palette="whitelabel"][data-theme="light"],
+:root[data-palette="whitelabel"]:not([data-theme="dark"]) {
+  --nui-bg: #fafafa;
+  --nui-bg-accent: #f0f0f0;
+  --nui-fg: #0a0a0a;
+  --nui-muted: #555555;
+  --nui-subtle: #999999;
+  --nui-border: #111111;
+  --nui-accent: #ff2d78;
+  --nui-accent-fg: #fafafa;
+  --accent-2: #b8e600;
+  --hairline: #111111;
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --display-transform: uppercase;
+  --display-spacing: -0.01em;
+  --display-weight: 800;
+  --radius: 0px;
+  --radius-control: 0px;
+  --border-w: 2px;
+  --shadow-card: 4px 4px 0 var(--nui-fg);
+}
+
+:root[data-palette="whitelabel"][data-theme="dark"] {
+  --nui-bg: #0a0a0a;
+  --nui-bg-accent: #161616;
+  --nui-fg: #fafafa;
+  --nui-muted: #aaaaaa;
+  --nui-subtle: #777777;
+  --nui-border: #fafafa;
+  --nui-accent: #ff2d78;
+  --nui-accent-fg: #0a0a0a;
+  --accent-2: #c6ff00;
+  --hairline: #2e2e2e;
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --display-transform: uppercase;
+  --display-spacing: -0.01em;
+  --display-weight: 800;
+  --radius: 0px;
+  --radius-control: 0px;
+  --border-w: 2px;
+  --shadow-card: 4px 4px 0 var(--nui-fg);
+}
+
+/* ─── GLOBAL SHELL STYLES ─────────────────────────────────────────────────── */
+/* All values come from CSS variables — no hardcoded colors/fonts/radius.      */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--nui-bg);
+  color: var(--nui-fg);
+  font-family: var(--font-body);
+}
+
+/* Headings use the display font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  text-transform: var(--display-transform);
+  letter-spacing: var(--display-spacing);
+  font-weight: var(--display-weight);
+}
+
+code, pre, kbd {
+  font-family: var(--font-mono);
+}
