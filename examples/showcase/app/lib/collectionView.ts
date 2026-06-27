@@ -19,7 +19,9 @@ export function buildRecordsView(vault: Vault) {
   const artists = vault.collection('artists')
   const labels = vault.collection('labels')
 
-  const base = schemaFromDescribe('records', records.describe().fields)
+  const base = schemaFromDescribe('records', records.describe().fields, {
+    enumFields: ['genre', 'format', 'condition'],
+  })
   const artistsSchema = schemaFromDescribe('artists', artists.describe().fields)
   const labelsSchema = schemaFromDescribe('labels', labels.describe().fields)
 
