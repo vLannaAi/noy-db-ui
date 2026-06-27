@@ -1,0 +1,28 @@
+export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
+  en: {
+    'nav.records': 'Records',
+    'nav.artists': 'Artists',
+    'nav.labels': 'Labels',
+    'unlock.title': 'noy-db · Vinyl',
+    'unlock.hint': 'Passphrase hint',
+    'unlock.button': 'Unlock',
+    'unlock.error': "That didn't unlock the vault.",
+    'cover.caption': 'decrypted from a vault blob',
+    'tour.next': 'Next',
+    'tour.prev': 'Back',
+    'tour.skip': 'Skip',
+  },
+  th: {
+    'nav.records': 'แผ่นเสียง',
+    'nav.artists': 'ศิลปิน',
+    'nav.labels': 'ค่ายเพลง',
+    'unlock.title': 'noy-db · ไวนิล',
+    'unlock.hint': 'คำใบ้รหัสผ่าน',
+    'unlock.button': 'ปลดล็อก',
+    'unlock.error': 'รหัสผ่านไม่ถูกต้อง',
+    'cover.caption': 'ถอดรหัสจากบล็อบในวอลต์',
+    'tour.next': 'ถัดไป',
+    'tour.prev': 'ย้อนกลับ',
+    'tour.skip': 'ข้าม',
+  },
+}

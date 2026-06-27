@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCollectionList } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildSimpleView } from '../../lib/simpleView'
 
 const { vault } = useVault()
-
-const view = buildSimpleView(vault.value!, 'labels')
-const baseRows = ref(view.rows)
 const query = ref('')
+
+const view = computed(() => buildSimpleView(vault.value!, 'labels'))
+const baseRows = computed(() => view.value.rows as Record<string, any>[])
 
 const list = useCollectionList({
   baseRows,
   query,
   entity: 'labels',
-  columns: view.columns,
+  columns: view.value.columns,
   defaultSort: [{ field: 'name', dir: 'asc' }],
-  schema: view.schema,
+  schema: view.value.schema,
 })
 </script>
 

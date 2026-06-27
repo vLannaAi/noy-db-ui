@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCollectionList } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
@@ -7,19 +7,21 @@ import { COVER_FIELD } from '../../../src/data/vault'
 
 const { vault } = useVault()
 
-const view = buildRecordsView(vault.value!)
-const baseRows = ref(view.rows)
-const query = ref('')
-
 const coverCell = `cell-${COVER_FIELD}`
+
+// Reactive to locale: buildRecordsView reads locale.value inside, so this computed
+// re-runs when locale changes, updating column labels and localized enum cell values.
+const view = computed(() => buildRecordsView(vault.value!))
+const baseRows = computed(() => view.value.rows as Record<string, any>[])
+const query = ref('')
 
 const list = useCollectionList({
   baseRows,
   query,
   entity: 'records',
-  columns: view.columns,
+  columns: view.value.columns,
   defaultSort: [{ field: 'title', dir: 'asc' }],
-  schema: view.schema,
+  schema: view.value.schema,
 })
 </script>
 
