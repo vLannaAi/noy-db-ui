@@ -47,7 +47,7 @@ export function buildRecordsView(vault: Vault) {
 
   const columns: AppColumn[] = [
     { key: COVER_FIELD, label: '', class: 'nui-col-cover' },
-    { key: 'title', label: fieldLabel('records', 'title'), sortable: true },
+    { key: 'title', label: fieldLabel('records', 'title'), sortable: true, class: 'nui-col-ellipsis' },
     { key: 'artist_name', label: fieldLabel('records', 'artistId'), sortable: true, filter: 'enum' },
     { key: 'label_name', label: fieldLabel('records', 'labelId'), sortable: true, filter: 'enum', relevance: 60 },
     { key: 'year', label: fieldLabel('records', 'year'), sortable: true, align: 'right', relevance: 70 },

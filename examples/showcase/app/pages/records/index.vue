@@ -32,6 +32,18 @@ const list = useCollectionList({
   schema: view.value.schema,
 })
 
+// StatCards: computed from visible rows so they react to search/filter.
+const stats = computed(() => {
+  const rows = list.visibleRows.value
+  const count = rows.length
+  const totalValue = rows.reduce((s, r) => s + (Number(r.priceUsd) || 0), 0)
+  const distinctArtists = new Set(rows.map((r) => r.artist_name)).size
+  const rated = rows.filter((r) => r.rating != null && r.rating !== '')
+  const avgRating = rated.length ? rated.reduce((s, r) => s + Number(r.rating), 0) / rated.length : 0
+  const favorites = rows.filter((r) => r.favorite === true).length
+  return { count, totalValue, distinctArtists, avgRating, favorites }
+})
+
 // Saved & recent searches
 const { saved, add: addSaved, rename: renameSaved, remove: removeSaved, toggleFavorite, setDefault } = useSavedSearches('records')
 const { recents, remove: removeRecent, clear: clearRecent } = useRecentSearches(query)
@@ -124,6 +136,45 @@ onMounted(() => {
 
 <template>
   <section class="p-4 space-y-4">
+    <!-- StatCard strip: reacts to active filters/search -->
+    <div style="display:flex; flex-wrap:wrap; gap:var(--nui-space-3, 0.75rem)">
+      <StatCard
+        :label="t('stat.records', 'Records')"
+        :value="stats.count"
+        icon="i-lucide-disc-3"
+        color="primary"
+        style="flex:1; min-width:140px"
+      />
+      <StatCard
+        :label="t('stat.value', 'Collection value')"
+        :value="'$' + stats.totalValue.toFixed(0)"
+        icon="i-lucide-dollar-sign"
+        color="success"
+        style="flex:1; min-width:140px"
+      />
+      <StatCard
+        :label="t('stat.artists', 'Artists')"
+        :value="stats.distinctArtists"
+        icon="i-lucide-mic-2"
+        color="info"
+        style="flex:1; min-width:140px"
+      />
+      <StatCard
+        :label="t('stat.avgRating', 'Avg rating')"
+        :value="stats.avgRating.toFixed(1) + ' ★'"
+        icon="i-lucide-star"
+        color="warning"
+        style="flex:1; min-width:140px"
+      />
+      <StatCard
+        :label="t('stat.favorites', 'Favorites')"
+        :value="stats.favorites"
+        icon="i-lucide-heart"
+        color="error"
+        style="flex:1; min-width:140px"
+      />
+    </div>
+
     <!-- Control bar: column chooser, group-by, saved searches, recent searches, AI search -->
     <div class="flex flex-wrap items-center gap-2" data-tour="toolbar">
       <GroupByControl
@@ -221,6 +272,13 @@ onMounted(() => {
         <template #cell-rating="{ row }">{{ '★'.repeat(Number(row.rating)) }}</template>
         <template #cell-favorite="{ row }">{{ row.favorite ? '★' : '–' }}</template>
         <template #cell-purchasedOn="{ row }">{{ row.purchasedOn }}</template>
+        <template #empty>
+          <EmptyState
+            icon="i-lucide-search-x"
+            :title="t('empty.title', 'No records match')"
+            :description="t('empty.body', 'Try clearing a filter or the search.')"
+          />
+        </template>
       </CollectionList>
     </div>
   </section>
@@ -234,4 +292,8 @@ onMounted(() => {
   min-width: 56px;
   text-align: center;
 }
+
+/* Ellipsis on long text columns. Caps the cell width and truncates overflow. */
+.nui-col-ellipsis { max-width: 220px; }
+.nui-col-ellipsis > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 </style>
