@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useCollectionList } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
+import { COVER_FIELD } from '../../../src/data/vault'
 
 const { vault } = useVault()
 if (!vault.value) await navigateTo('/')
@@ -10,6 +11,8 @@ if (!vault.value) await navigateTo('/')
 const view = buildRecordsView(vault.value!)
 const baseRows = ref(view.rows)
 const query = ref('')
+
+const coverCell = `cell-${COVER_FIELD}`
 
 const list = useCollectionList({
   baseRows,
@@ -45,7 +48,7 @@ const list = useCollectionList({
       @filter-change="(p) => list.setColumnFilter(p.key, p.value)"
       @row-click="(r) => navigateTo(`/records/${r.id}`)"
     >
-      <template #cell-cover>
+      <template #[coverCell]="{ row }">
         <!-- TODO(Task 6): CoverImage -->
         <span />
       </template>

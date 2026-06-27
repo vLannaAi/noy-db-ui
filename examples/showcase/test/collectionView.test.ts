@@ -13,6 +13,7 @@ describe('buildRecordsView', () => {
     expect(columns.some((c) => c.key === 'title')).toBe(true)
     // joinedKey('artist', 'name') === 'artist_name'
     expect((rows[0] as any).artist_name).toBeTruthy()
+    expect((rows[0] as any).label_name).toBeTruthy()
     expect(schema.entity).toBe('records')
   }, 30_000)
 })

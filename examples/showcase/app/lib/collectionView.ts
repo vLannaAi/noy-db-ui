@@ -1,6 +1,7 @@
 import { schemaFromDescribe, joinedSchema, joinedRows } from '@noy-db/ui'
 import type { AppColumn, JoinLeg } from '@noy-db/ui'
 import type { Vault } from '@noy-db/hub'
+import { COVER_FIELD } from '../../src/data/vault'
 
 /**
  * Build the joined schema, column definitions, and joined rows for the records list.
@@ -37,7 +38,7 @@ export function buildRecordsView(vault: Vault) {
   const rows = joinedRows(records.query().toArray() as Record<string, unknown>[], legs)
 
   const columns: AppColumn[] = [
-    { key: 'cover', label: '' },
+    { key: COVER_FIELD, label: '' },
     { key: 'title', label: 'Title', sortable: true },
     { key: 'artist_name', label: 'Artist', sortable: true, filter: 'enum' },
     { key: 'label_name', label: 'Label', filter: 'enum' },
