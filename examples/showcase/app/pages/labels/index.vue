@@ -5,7 +5,6 @@ import { useVault } from '../../composables/useVault'
 import { buildSimpleView } from '../../lib/simpleView'
 
 const { vault } = useVault()
-if (!vault.value) await navigateTo('/')
 
 const view = buildSimpleView(vault.value!, 'labels')
 const baseRows = ref(view.rows)

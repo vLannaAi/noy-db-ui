@@ -6,7 +6,6 @@ import { buildRecordsView } from '../../lib/collectionView'
 import { COVER_FIELD } from '../../../src/data/vault'
 
 const { vault } = useVault()
-if (!vault.value) await navigateTo('/')
 
 const view = buildRecordsView(vault.value!)
 const baseRows = ref(view.rows)

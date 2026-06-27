@@ -3,7 +3,6 @@ import { useVault } from '../../composables/useVault'
 
 const route = useRoute()
 const { vault } = useVault()
-if (!vault.value) await navigateTo('/')
 
 const id = route.params.id as string
 const record = await vault.value!.collection('records').get(id)
