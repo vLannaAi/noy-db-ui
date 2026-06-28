@@ -40,12 +40,77 @@ const { recents, remove: removeRecent, clear: clearRecent } = useRecentSearches(
 // currentSaved: true when the current query matches an already-saved search
 const currentSaved = computed(() => !!findByQuery(saved.value, 'records', query.value.trim()))
 
-// Column chooser: columns mapped to {key, label} (skip the empty cover label column)
+// Column chooser — type icons and default visibility per column
+type ColViz = 'essential' | 'show-sm' | 'show-lg' | 'hidden'
+
+const COL_ICONS: Record<string, string> = {
+  title:       'i-lucide-type',
+  artist_name: 'i-lucide-link-2',
+  label_name:  'i-lucide-link-2',
+  year:        'i-lucide-calendar',
+  genre:       'i-lucide-layers',
+  format:      'i-lucide-disc',
+  condition:   'i-lucide-layers',
+  rating:      'i-lucide-star',
+  durationMin: 'i-lucide-clock-4',
+  trackCount:  'i-lucide-hash',
+  priceUsd:    'i-lucide-dollar-sign',
+  purchasedOn: 'i-lucide-calendar-days',
+  favorite:    'i-lucide-heart',
+}
+const COL_DEFAULTS: Record<string, ColViz> = {
+  title:       'essential',
+  artist_name: 'essential',
+  label_name:  'show-lg',
+  year:        'show-sm',
+  genre:       'show-sm',
+  format:      'show-lg',
+  condition:   'show-lg',
+  rating:      'show-sm',
+  durationMin: 'show-lg',
+  trackCount:  'hidden',
+  priceUsd:    'show-lg',
+  purchasedOn: 'hidden',
+  favorite:    'show-sm',
+}
+
+const columnStates = ref<Record<string, ColViz>>({})
+const columnOrder  = ref<string[]>([])
+
 const columnList = computed(() =>
   view.value.columns
     .filter((c) => c.label)
-    .map((c) => ({ key: c.key, label: c.label as string })),
+    .map((c) => ({
+      key:     c.key,
+      label:   c.label as string,
+      icon:    COL_ICONS[c.key],
+      default: COL_DEFAULTS[c.key] as ColViz | undefined,
+    })),
 )
+
+// Map new 4-state system → focus-keys / hide-keys for CollectionList
+const colFocusKeys = computed(() =>
+  Object.entries(columnStates.value)
+    .filter(([, v]) => v === 'essential' || v === 'show-sm')
+    .map(([k]) => k),
+)
+const colHideKeys = computed(() =>
+  Object.entries(columnStates.value)
+    .filter(([, v]) => v === 'hidden')
+    .map(([k]) => k),
+)
+
+function onColSetState(key: string, state: ColViz | null): void {
+  if (state === null) {
+    const next = { ...columnStates.value }
+    delete next[key]
+    columnStates.value = next
+  } else {
+    columnStates.value = { ...columnStates.value, [key]: state }
+  }
+}
+function onColReset(): void { columnStates.value = {}; columnOrder.value = [] }
+function onColReorder(keys: string[]): void { columnOrder.value = keys }
 
 // Filter chips: one chip per active column filter with a human-readable summary.
 const CHIP_DICT_KEYS: Record<string, string> = {
@@ -208,8 +273,8 @@ onMounted(() => {
         :grouped-keys="list.groupedColumnKeys.value"
         :subtotal-enums="subtotalEnums"
         :all-collapsed="list.allTopCollapsed.value"
-        :focus-keys="list.forceShowColumnKeys.value"
-        :hide-keys="list.hideColumnKeys.value"
+        :focus-keys="colFocusKeys"
+        :hide-keys="colHideKeys"
         :serial-index="true"
         row-noun="records"
         @sort="list.onSort"
@@ -224,10 +289,11 @@ onMounted(() => {
         <template #serial-header>
           <ColumnChooser
             :columns="columnList"
-            :show="list.columnPrefShow.value"
-            :hide="list.columnPrefHide.value"
-            @cycle="list.cycleColumnPref"
-            @reset="list.resetColumnPrefs"
+            :states="columnStates"
+            :order="columnOrder"
+            @set-state="onColSetState"
+            @reset="onColReset"
+            @reorder="onColReorder"
           />
         </template>
         <template #[coverCell]="{ row }">

@@ -11,6 +11,8 @@ const props = withDefaults(defineProps<{
   label?: string
   /** Classes for the trigger button (the host styles the funnel/affordance). */
   triggerClass?: string
+  /** Extra classes applied to the trigger when the panel is open. */
+  activeClass?: string
 }>(), { align: 'start' })
 
 const emit = defineEmits<{ close: [] }>()
@@ -55,7 +57,7 @@ onBeforeUnmount(() => listen(false))
     <button
       ref="triggerEl"
       type="button"
-      :class="triggerClass"
+      :class="[triggerClass, open && activeClass]"
       :aria-expanded="open"
       aria-haspopup="dialog"
       :aria-label="label"
