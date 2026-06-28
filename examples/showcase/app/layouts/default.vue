@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useShowcaseI18n } from '../composables/useShowcaseI18n'
 import { useTour } from '../composables/useTour'
 import { usePalette } from '../composables/usePalette'
 
 const { t, locale, setLocale } = useShowcaseI18n()
-const theme = useTheme() // { mode, resolved, set } — auto-imported by the module
+const theme = useTheme()
 const { palette, setPalette, initPalette } = usePalette()
 const nav = [['/collection', 'nav.collection'], ['/records', 'nav.records'], ['/artists', 'nav.artists'], ['/labels', 'nav.labels']] as const
 const { steps, start } = useTour()
 const restartTour = () => start(steps.value, { force: true })
+
+const sidebarOpen = ref(true)
 
 onMounted(() => {
   initPalette()
@@ -25,20 +27,31 @@ const palettes = [
 
 <template>
   <div class="nui-shell">
-    <aside class="nui-sidebar" data-tour="nav">
-      <div class="nui-brand">
-        <span class="nui-brand-text">Vinyl</span>
-      </div>
-      <nav>
-        <NuxtLink v-for="[to, key] in nav" :key="to" :to="to" class="nui-nav-link" active-class="nui-nav-link--active">
-          {{ t(key) }}
-        </NuxtLink>
-      </nav>
-    </aside>
-    <div class="nui-content">
-      <header class="nui-header">
+    <aside class="nui-sidebar" :class="{ 'nui-sidebar--collapsed': !sidebarOpen }" data-tour="nav">
+      <div class="nui-sidebar-inner">
+        <!-- Brand + collapse toggle -->
+        <div class="nui-brand">
+          <span class="nui-brand-text">Vinyl</span>
+          <button class="nui-collapse-btn" title="Collapse sidebar" @click="sidebarOpen = false">‹</button>
+        </div>
+
+        <!-- Nav links -->
+        <nav>
+          <NuxtLink
+            v-for="[to, key] in nav"
+            :key="to"
+            :to="to"
+            class="nui-nav-link"
+            active-class="nui-nav-link--active"
+          >
+            {{ t(key) }}
+          </NuxtLink>
+        </nav>
+
+        <div class="nui-sep" />
+
         <!-- Palette picker -->
-        <div class="nui-palette-picker" data-tour="palette">
+        <div class="nui-palette-list" data-tour="palette">
           <button
             v-for="p in palettes"
             :key="p.id"
@@ -54,33 +67,54 @@ const palettes = [
             <span class="nui-palette-label">{{ p.label }}</span>
           </button>
         </div>
-        <!-- Divider -->
-        <div class="nui-header-sep" />
-        <!-- Light / dark toggle -->
-        <button
-          class="nui-icon-btn"
-          data-tour="theme"
-          :title="theme.resolved.value === 'dark' ? 'Light mode' : 'Dark mode'"
-          @click="theme.set(theme.resolved.value === 'dark' ? 'light' : 'dark')"
-        >◐</button>
-        <!-- Language -->
-        <select class="nui-lang-select" data-tour="lang" :value="locale" @change="(e: any) => setLocale(e.target.value)">
-          <option value="en">EN</option>
-          <option value="th">TH</option>
-        </select>
-        <!-- Tour help -->
-        <button class="nui-icon-btn" data-tour="help" @click="restartTour">?</button>
-      </header>
+
+        <!-- Spacer pushes controls to the bottom -->
+        <div style="flex: 1" />
+
+        <div class="nui-sep" />
+
+        <!-- Controls: dark/light, language, help -->
+        <div class="nui-sidebar-controls">
+          <button
+            class="nui-icon-btn"
+            data-tour="theme"
+            :title="theme.resolved.value === 'dark' ? 'Light mode' : 'Dark mode'"
+            @click="theme.set(theme.resolved.value === 'dark' ? 'light' : 'dark')"
+          >◐</button>
+          <select
+            class="nui-lang-select"
+            data-tour="lang"
+            :value="locale"
+            @change="(e: any) => setLocale(e.target.value)"
+          >
+            <option value="en">EN</option>
+            <option value="th">TH</option>
+          </select>
+          <button class="nui-icon-btn" data-tour="help" @click="restartTour">?</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="nui-content">
+      <!-- Expand tab — only when sidebar is collapsed -->
+      <button
+        v-if="!sidebarOpen"
+        class="nui-expand-btn"
+        title="Expand sidebar"
+        @click="sidebarOpen = true"
+      >›</button>
+
       <div class="nui-scroll-area">
         <slot />
       </div>
     </div>
+
     <TourBalloon />
   </div>
 </template>
 
 <style scoped>
-/* ── Shell layout ─────────────────────────────────────────────────────────── */
+/* ── Shell ─────────────────────────────────────────────────────────────────── */
 
 .nui-shell {
   display: flex;
@@ -89,26 +123,46 @@ const palettes = [
   background: var(--nui-bg);
   color: var(--nui-fg);
   font-family: var(--font-body);
-  gap: var(--shell-gap, 0);
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
 
 .nui-sidebar {
-  width: 11rem;
+  width: 13rem;
   flex-shrink: 0;
+  overflow: hidden;
   background: var(--nui-bg-accent);
   border-right: var(--border-w) solid var(--hairline);
+  transition: width 0.2s ease, border-color 0.2s ease;
+}
+
+.nui-sidebar--collapsed {
+  width: 0;
+  border-right-color: transparent;
+}
+
+/* Inner container — fixed width so the transition clips rather than reflows */
+.nui-sidebar-inner {
+  width: 13rem;
+  height: 100%;
+  flex-shrink: 0;
   padding: 1.25rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
+/* ── Brand ────────────────────────────────────────────────────────────────── */
+
 .nui-brand {
-  padding: 0 0.6rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.75rem;
   border-bottom: var(--border-w) solid var(--hairline);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.1rem;
 }
 
 .nui-brand-text {
@@ -118,12 +172,32 @@ const palettes = [
   font-weight: var(--display-weight);
   font-size: 1.1rem;
   color: var(--nui-accent);
+  line-height: 1;
 }
+
+.nui-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--nui-subtle);
+  font-size: 1.1rem;
+  padding: 0.1rem 0.25rem;
+  border-radius: var(--radius-control);
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+  flex-shrink: 0;
+}
+.nui-collapse-btn:hover {
+  color: var(--nui-fg);
+  background: var(--nui-bg);
+}
+
+/* ── Nav links ────────────────────────────────────────────────────────────── */
 
 .nui-sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .nui-nav-link {
@@ -134,80 +208,55 @@ const palettes = [
   text-decoration: none;
   font-size: 0.875rem;
   transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
 }
-
 .nui-nav-link:hover {
   background: var(--nui-bg);
   color: var(--nui-fg);
 }
-
 .nui-nav-link--active {
   background: var(--nui-accent);
   color: var(--nui-accent-fg);
   font-weight: 600;
 }
 
-/* ── Content area ─────────────────────────────────────────────────────────── */
+/* ── Separator ────────────────────────────────────────────────────────────── */
 
-.nui-content {
-  flex: 1;
+.nui-sep {
+  height: var(--border-w, 1px);
+  background: var(--hairline);
+  flex-shrink: 0;
+  margin: 0.15rem 0;
+}
+
+/* ── Palette list (vertical) ──────────────────────────────────────────────── */
+
+.nui-palette-list {
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.nui-scroll-area {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-/* ── Header ───────────────────────────────────────────────────────────────── */
-
-.nui-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  padding: 0.4rem 0.75rem;
-  border-bottom: var(--border-w) solid var(--hairline);
-  background: var(--nui-bg-accent);
-}
-
-.nui-header-sep {
-  flex: 1;
-}
-
-/* ── Palette picker ───────────────────────────────────────────────────────── */
-
-.nui-palette-picker {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  gap: 0.1rem;
 }
 
 .nui-palette-btn {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.3rem 0.6rem;
   border: var(--border-w) solid transparent;
   border-radius: var(--radius-control);
   background: none;
   color: var(--nui-muted);
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   cursor: pointer;
+  text-align: left;
   transition: border-color 0.1s, color 0.1s, background 0.1s;
-  white-space: nowrap;
 }
-
 .nui-palette-btn:hover {
   border-color: var(--nui-border);
   color: var(--nui-fg);
 }
-
 .nui-palette-btn--active {
   border-color: var(--nui-accent);
   color: var(--nui-fg);
@@ -216,8 +265,8 @@ const palettes = [
 
 .nui-palette-swatch {
   display: inline-block;
-  width: 0.7rem;
-  height: 0.7rem;
+  width: 0.65rem;
+  height: 0.65rem;
   border-radius: 50%;
   flex-shrink: 0;
   border: 1px solid var(--hairline);
@@ -228,10 +277,18 @@ const palettes = [
   text-transform: var(--display-transform);
   letter-spacing: var(--display-spacing);
   font-weight: var(--display-weight);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
-/* ── Shared controls ──────────────────────────────────────────────────────── */
+/* ── Sidebar controls (bottom) ────────────────────────────────────────────── */
+
+.nui-sidebar-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
 
 .nui-icon-btn {
   background: none;
@@ -243,8 +300,8 @@ const palettes = [
   font-size: 0.875rem;
   line-height: 1.4;
   transition: background 0.1s;
+  white-space: nowrap;
 }
-
 .nui-icon-btn:hover {
   background: var(--nui-bg);
 }
@@ -258,5 +315,45 @@ const palettes = [
   color: var(--nui-fg);
   font-family: var(--font-body);
   cursor: pointer;
+}
+
+/* ── Content area ─────────────────────────────────────────────────────────── */
+
+.nui-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.nui-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ── Expand tab (when sidebar is collapsed) ───────────────────────────────── */
+
+.nui-expand-btn {
+  position: absolute;
+  top: 0.75rem;
+  left: 0;
+  z-index: 20;
+  background: var(--nui-bg-accent);
+  border: var(--border-w) solid var(--hairline);
+  border-left: none;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  cursor: pointer;
+  color: var(--nui-muted);
+  font-size: 1rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.25rem;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+.nui-expand-btn:hover {
+  color: var(--nui-fg);
+  background: var(--nui-bg);
 }
 </style>
