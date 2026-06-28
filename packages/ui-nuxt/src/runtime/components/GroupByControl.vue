@@ -30,7 +30,6 @@ const isActive = (id: string) => props.active.includes(id)
     :trigger-class="`nui-btn ${active.length ? 'bg-nui-bg-accent text-nui-accent' : 'text-nui-muted hover:bg-nui-bg-accent'}`"
   >
     <span class="i-lucide-group size-3.5" aria-hidden="true" />
-    <span class="hidden sm:inline">{{ active.length ? summary : t('nui.group.short', 'Group') }}</span>
 
     <template #content="{ close }">
       <div class="w-56 py-1">

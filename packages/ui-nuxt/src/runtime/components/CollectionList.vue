@@ -122,7 +122,9 @@ const groupCellAlign = (col: AppColumn, groupField: string): string =>
         style="top: 0; background: var(--nui-thead-bg, var(--nui-accent)); backdrop-filter: blur(var(--nui-thead-blur, 0px)); -webkit-backdrop-filter: blur(var(--nui-thead-blur, 0px));"
       >
         <tr>
-          <th v-if="showSerial()" class="px-3 py-2.5 font-normal text-right w-px" :aria-label="t('nui.list.rowNumber', 'Row number')">#</th>
+          <th v-if="showSerial()" class="px-1.5 py-1.5 font-normal text-center w-px" :aria-label="t('nui.list.rowNumber', 'Row number')">
+            <slot name="serial-header">#</slot>
+          </th>
           <th
             v-for="col in visibleColumns()"
             :key="col.key"

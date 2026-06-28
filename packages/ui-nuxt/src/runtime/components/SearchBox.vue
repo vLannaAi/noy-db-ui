@@ -4,14 +4,13 @@
 // fallback; Tab/Enter commits the highlighted suggestion. Backspace on an empty input removes the
 // last pill. v-model is the query STRING (round-trips via the AST). Nuxt-UI-free; takes the engine
 // `schema` as a prop (domain-agnostic).
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { astToPills, type Pill, removePill } from '@noy-db/ui'
 import { buildSuggestions, type Suggestion } from '@noy-db/ui'
 import { parse } from '@noy-db/ui'
 import { resolve } from '@noy-db/ui'
 import { serialize } from '@noy-db/ui'
 import type { EntitySchema } from '@noy-db/ui'
-import { useVoiceInput } from '../core/voice'
 import { useNuiI18n } from '../core/i18n'
 
 const props = withDefaults(defineProps<{
@@ -67,11 +66,6 @@ function commitDraft(): void {
 function remove(pill: Pill): void { setQuery(serialize(removePill(ast.value, pill))) }
 function clearAll(): void { setQuery(''); draft.value = '' }
 
-const { listening: micOn, transcript: micText, supported: micSupported, toggle: micToggle } = useVoiceInput({
-  onFinal: (t) => { const s = t.trim(); if (s) setQuery(`${props.modelValue} ${s}`); draft.value = '' },
-})
-watch(micText, (t) => { if (micOn.value) draft.value = t })
-
 function onKeydown(e: KeyboardEvent): void {
   if (e.key === 'ArrowDown') { open.value = true; active.value = Math.min(active.value + 1, suggestions.value.length - 1); e.preventDefault() }
   else if (e.key === 'ArrowUp') { active.value = Math.max(active.value - 1, 0); e.preventDefault() }
@@ -96,7 +90,6 @@ function onContainerFocusOut(e: FocusEvent): void {
 
 const pillClass = (k: Pill['kind']): string =>
   (k === 'filter' || k === 'view') ? 'bg-nui-accent/15 text-nui-accent' : 'bg-nui-bg-accent text-nui-muted'
-const hasContent = computed(() => pills.value.length > 0 || draft.value.length > 0)
 </script>
 
 <template>
@@ -152,20 +145,9 @@ const hasContent = computed(() => pills.value.length > 0 || draft.value.length >
         class="text-nui-subtle text-sm px-1 select-none"
       >{{ effPlaceholder }}</span>
 
-      <!-- Mic + clear: only visible while editing -->
+      <!-- Clear: only visible while editing -->
       <button
-        v-if="focused && micSupported"
-        type="button"
-        class="nui-icon-btn size-6"
-        :class="micOn ? 'text-red-500' : 'text-nui-muted'"
-        :aria-label="micOn ? t('nui.voice.stop', 'Stop voice input') : t('nui.voice.search', 'Search by voice')"
-        :aria-pressed="micOn"
-        @click.stop="micToggle"
-      >
-        <span class="i-lucide-mic size-3.5" :class="micOn ? 'animate-pulse' : ''" aria-hidden="true" />
-      </button>
-      <button
-        v-if="focused && hasContent"
+        v-if="focused && (pills.length || draft.length)"
         type="button"
         class="nui-icon-btn text-nui-muted size-6"
         :aria-label="t('nui.search.clearFilters', 'Clear all filters')"

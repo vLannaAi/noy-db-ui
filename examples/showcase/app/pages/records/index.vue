@@ -81,6 +81,11 @@ const subtotalEnums = computed(() => ({
   },
 }))
 
+// Voice dictation — appends the final transcript to the query.
+const { listening: micOn, supported: micSupported, toggle: micToggle } = useVoiceInput({
+  onFinal: (text) => { const s = text.trim(); if (s) query.value = `${query.value} ${s}`.trim() },
+})
+
 // NL search — useLlm() must be called during setup (uses inject internally).
 const { hasKey, saveKey, forgetKey } = useApiKey()
 const llm = useLlm()
@@ -137,6 +142,17 @@ onMounted(() => {
         />
       </div>
       <div class="flex items-center gap-1 shrink-0">
+        <button
+          v-if="micSupported"
+          type="button"
+          class="nui-btn"
+          :class="micOn ? 'text-red-500' : 'text-nui-muted hover:bg-nui-bg-accent'"
+          :aria-label="micOn ? 'Stop voice input' : 'Search by voice'"
+          :aria-pressed="micOn"
+          @click="micToggle"
+        >
+          <span class="i-lucide-mic size-3.5" :class="micOn ? 'animate-pulse' : ''" aria-hidden="true" />
+        </button>
         <GroupByControl
           :fields="list.groupableFields.value"
           :active="list.groupFields.value"
@@ -144,13 +160,6 @@ onMounted(() => {
           @clear="list.clearGroups"
           @expand-all="list.expandAll"
           @collapse-level="list.collapseToLevel"
-        />
-        <ColumnChooser
-          :columns="columnList"
-          :show="list.columnPrefShow.value"
-          :hide="list.columnPrefHide.value"
-          @cycle="list.cycleColumnPref"
-          @reset="list.resetColumnPrefs"
         />
         <SavedSearchMenu
           :schema="view.schema"
@@ -212,6 +221,15 @@ onMounted(() => {
         @toggle-collapse-all="list.toggleCollapseAll"
         @row-click="(r) => navigateTo(`/records/${r.id}`)"
       >
+        <template #serial-header>
+          <ColumnChooser
+            :columns="columnList"
+            :show="list.columnPrefShow.value"
+            :hide="list.columnPrefHide.value"
+            @cycle="list.cycleColumnPref"
+            @reset="list.resetColumnPrefs"
+          />
+        </template>
         <template #[coverCell]="{ row }">
           <span data-tour="cover">
             <CoverImage :id="row.id" :thumb="true" />
