@@ -22,14 +22,14 @@ const iconFor = (s: string) => (s === 'show' ? 'i-lucide-eye' : s === 'hide' ? '
 
 <template>
   <Popover
-    align="end"
+    align="start"
     :label="hasPrefs ? t('nui.columns.titleCustom', 'Columns (custom)') : t('nui.columns.title', 'Columns')"
-    :trigger-class="`nui-btn ${hasPrefs ? 'bg-nui-bg-accent text-nui-accent' : 'text-nui-muted hover:bg-nui-bg-accent'}`"
+    :trigger-class="`nui-btn text-nui-accent-fg ${hasPrefs ? 'bg-nui-bg-accent' : 'hover:bg-nui-bg-accent'}`"
   >
     <span class="i-lucide-columns-3 size-3.5" aria-hidden="true" />
 
     <template #content>
-      <div class="w-60 py-1">
+      <div class="w-72 max-w-[calc(100vw-2rem)] py-1">
         <div class="flex items-center justify-between px-3 py-1.5 border-b border-nui-border">
           <span class="text-xs font-medium uppercase tracking-wide text-nui-muted">{{ t('nui.columns.title', 'Columns') }}</span>
           <button v-if="hasPrefs" type="button" class="nui-btn-ghost" @click="emit('reset')">{{ t('nui.reset', 'Reset') }}</button>
