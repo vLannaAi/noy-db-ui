@@ -26,13 +26,13 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const { t } = useNuiI18n()
-// host-supplied placeholder wins; otherwise the translated default
 const effPlaceholder = computed(() => props.placeholder ?? t('nui.search.placeholder', 'Filter — type to search, Tab to add a pill…'))
 
 const draft = ref('')
 const open = ref(false)
 const active = ref(0)
 const inputEl = ref<HTMLInputElement | null>(null)
+const focused = ref(false)
 
 const ast = computed(() => resolve(parse(props.modelValue).ast, props.schema))
 const pills = computed(() => astToPills(ast.value, props.schema))
@@ -67,9 +67,6 @@ function commitDraft(): void {
 function remove(pill: Pill): void { setQuery(serialize(removePill(ast.value, pill))) }
 function clearAll(): void { setQuery(''); draft.value = '' }
 
-// Voice dictation → query term. The composable falls back to the browser Web Speech API unless the
-// host injects a VoiceSource; the mic only shows when something is available. Interim transcript
-// mirrors into the draft for live feedback; the final phrase is committed as a search term.
 const { listening: micOn, transcript: micText, supported: micSupported, toggle: micToggle } = useVoiceInput({
   onFinal: (t) => { const s = t.trim(); if (s) setQuery(`${props.modelValue} ${s}`); draft.value = '' },
 })
@@ -80,43 +77,84 @@ function onKeydown(e: KeyboardEvent): void {
   else if (e.key === 'ArrowUp') { active.value = Math.max(active.value - 1, 0); e.preventDefault() }
   else if (e.key === 'Enter' || e.key === 'Tab') { if (draft.value.trim()) { commitDraft(); e.preventDefault() } }
   else if (e.key === 'Backspace' && !draft.value && pills.value.length) { remove(pills.value[pills.value.length - 1]!); e.preventDefault() }
-  else if (e.key === 'Escape') { open.value = false }
+  else if (e.key === 'Escape') { open.value = false; inputEl.value?.blur() }
 }
 function focusInput(): void { inputEl.value?.focus(); open.value = true }
 function onInput(): void { open.value = true; active.value = 0 }
 
-// pill tint by kind: filter predicates use the accent; sort/group/text use neutral surfaces.
+// Track focus state on the container, not just the input. This lets clicks on pill remove
+// buttons not cause a false blur (relatedTarget stays inside the container).
+function onContainerFocusIn(): void {
+  focused.value = true
+}
+function onContainerFocusOut(e: FocusEvent): void {
+  if (!(e.currentTarget as Element).contains(e.relatedTarget as Node | null)) {
+    focused.value = false
+    open.value = false
+  }
+}
+
 const pillClass = (k: Pill['kind']): string =>
   (k === 'filter' || k === 'view') ? 'bg-nui-accent/15 text-nui-accent' : 'bg-nui-bg-accent text-nui-muted'
 const hasContent = computed(() => pills.value.length > 0 || draft.value.length > 0)
 </script>
 
 <template>
-  <div class="relative w-full max-w-3xl">
+  <div
+    class="nui-search-root relative w-full max-w-3xl"
+    @focusin="onContainerFocusIn"
+    @focusout="onContainerFocusOut"
+  >
     <div
-      class="flex flex-wrap items-center gap-1 px-2 py-1.5 rounded-md ring ring-nui-border bg-nui-bg focus-within:(ring-2 ring-nui-accent) cursor-text"
+      class="nui-search-inner flex flex-wrap items-center gap-1 px-2 py-1.5 cursor-text"
+      :class="{ 'nui-search-inner--on': focused }"
       @click="focusInput"
     >
-      <span class="i-lucide-filter size-4 text-nui-muted shrink-0 ms-1" aria-hidden="true" />
-      <span v-for="pill in pills" :key="pill.id" class="nui-chip max-w-full" :class="pillClass(pill.kind)">
-        <span class="truncate">{{ pill.label }}</span>
-        <button type="button" class="ms-0.5 hover:opacity-70 shrink-0" :aria-label="`${t('nui.search.removePill', 'Remove')} ${pill.label}`" @click.stop="remove(pill)">
-          <span class="i-lucide-x size-3" aria-hidden="true" />
-        </button>
-      </span>
+      <!-- Pills: inline text at rest, capsules while editing.
+           The × button uses visibility (not v-if) so the chip never changes size — text stays
+           pixel-stable when toggling between rest and edit modes. -->
+      <template v-for="(pill, i) in pills" :key="pill.id">
+        <span class="nui-chip max-w-full" :class="pillClass(pill.kind)">
+          <span class="truncate">{{ pill.label }}</span>
+          <button
+            type="button"
+            class="ms-0.5 hover:opacity-70 shrink-0"
+            :style="{ visibility: focused ? 'visible' : 'hidden', pointerEvents: focused ? 'auto' : 'none' }"
+            :aria-label="`${t('nui.search.removePill', 'Remove')} ${pill.label}`"
+            @click.stop="remove(pill)"
+          >
+            <span class="i-lucide-x size-3" aria-hidden="true" />
+          </button>
+        </span>
+        <!-- Comma between pills — only shown at rest (hidden by CSS when focused) -->
+        <span v-if="i < pills.length - 1" class="nui-pill-sep" aria-hidden="true">,</span>
+      </template>
+
+      <!-- Text input: fills space in edit mode, zero-width invisible at rest -->
       <input
         ref="inputEl"
         v-model="draft"
         type="text"
-        class="flex-1 min-w-32 bg-transparent outline-none text-sm px-1 py-0.5"
-        :placeholder="pills.length ? '' : effPlaceholder"
+        :class="[
+          'bg-transparent outline-none text-sm px-1 py-0.5',
+          focused ? 'flex-1 min-w-32 nui-search-input--on' : 'w-0 opacity-0 pointer-events-none overflow-hidden'
+        ]"
+        :placeholder="focused ? (pills.length ? '' : effPlaceholder) : ''"
         @keydown="onKeydown"
         @input="onInput"
         @focus="open = true"
         @blur="open = false"
       >
+
+      <!-- Placeholder shown at rest when nothing is typed or committed -->
+      <span
+        v-if="!focused && !pills.length"
+        class="text-nui-subtle text-sm px-1 select-none"
+      >{{ effPlaceholder }}</span>
+
+      <!-- Mic + clear: only visible while editing -->
       <button
-        v-if="micSupported"
+        v-if="focused && micSupported"
         type="button"
         class="nui-icon-btn size-6"
         :class="micOn ? 'text-red-500' : 'text-nui-muted'"
@@ -127,7 +165,7 @@ const hasContent = computed(() => pills.value.length > 0 || draft.value.length >
         <span class="i-lucide-mic size-3.5" :class="micOn ? 'animate-pulse' : ''" aria-hidden="true" />
       </button>
       <button
-        v-if="hasContent"
+        v-if="focused && hasContent"
         type="button"
         class="nui-icon-btn text-nui-muted size-6"
         :aria-label="t('nui.search.clearFilters', 'Clear all filters')"
@@ -157,3 +195,44 @@ const hasContent = computed(() => pills.value.length > 0 || draft.value.length >
     </ul>
   </div>
 </template>
+
+<style scoped>
+/* ── Container: borderless at rest, outlined ring when editing ───────────── */
+
+.nui-search-inner {
+  border-radius: var(--radius-control);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.nui-search-inner--on {
+  background: var(--nui-bg);
+  box-shadow: 0 0 0 2px var(--nui-accent);
+}
+
+/* ── Pills: transparent at rest, coloured when editing ───────────────────── */
+/* Specificity beats the bg-nui-* utility class (2 classes + 1 attr vs 1 class). */
+
+.nui-search-inner:not(.nui-search-inner--on) .nui-chip {
+  background: transparent !important;
+}
+
+/* ── Comma separators: visible at rest, hidden when editing ──────────────── */
+
+.nui-pill-sep {
+  color: var(--nui-muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  align-self: center;
+  transition: opacity 0.1s;
+}
+
+.nui-search-inner--on .nui-pill-sep {
+  display: none;
+}
+
+/* ── Dotted baseline on the text input area while editing ────────────────── */
+
+.nui-search-input--on {
+  border-bottom: 1.5px dashed color-mix(in srgb, var(--nui-accent) 45%, transparent);
+}
+</style>
