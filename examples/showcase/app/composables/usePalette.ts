@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-type Palette = 'bluenote' | 'hifi' | 'whitelabel'
+type Palette = 'bluenote' | 'hifi' | 'whitelabel' | 'speed'
 
 const STORAGE_KEY = 'showcase.palette'
 
@@ -21,7 +21,7 @@ function setPalette(p: Palette) {
 function initPalette() {
   if (typeof localStorage === 'undefined') return
   const stored = localStorage.getItem(STORAGE_KEY) as Palette | null
-  if (stored === 'bluenote' || stored === 'hifi' || stored === 'whitelabel') {
+  if (stored === 'bluenote' || stored === 'hifi' || stored === 'whitelabel' || stored === 'speed') {
     setPalette(stored)
   } else {
     // Apply default so data-palette attribute is set even without a stored value

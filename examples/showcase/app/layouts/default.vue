@@ -19,6 +19,7 @@ const palettes = [
   { id: 'bluenote' as const, label: 'Blue Note', accent: '#1c39bb', accentDark: '#6f86ff' },
   { id: 'hifi' as const, label: 'Hi-Fi', accent: '#c07f00', accentDark: '#ffb000' },
   { id: 'whitelabel' as const, label: 'White Label', accent: '#ff2d78', accentDark: '#ff2d78' },
+  { id: 'speed' as const, label: 'Speed', accent: '#bb0231', accentDark: '#e0173f' },
 ] as const
 </script>
 

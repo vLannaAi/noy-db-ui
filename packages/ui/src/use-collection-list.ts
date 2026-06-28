@@ -41,6 +41,9 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   /** The engine schema for this collection — typically `schemaFromDescribe(collection.describe())`,
    *  or a hand-authored `EntitySchema`. Required: the package is domain-agnostic and ships no registry. */
   schema: EntitySchema
+  /** Optional: translate a canonical enum value to a display label for group banners.
+   *  Return `undefined` to fall back to the default capitalization. */
+  formatGroupLabel?: (field: string, value: string) => string | undefined
 }) {
   const schema = o.schema
   const ast = computed<Ast>(() => resolve(parse(o.query.value).ast, schema))
@@ -240,7 +243,7 @@ export function useCollectionList<T extends Record<string, any>>(o: {
         const id = parentId ? `${parentId}|${n.field}=${n.value}` : `${n.field}=${n.value}`
         const isCollapsed = collapsed.value.has(id)
         const label = resolveField(schema, n.field)?.label ?? n.field
-        const displayValue = n.value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        const displayValue = o.formatGroupLabel?.(n.field, n.value) ?? n.value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
         lines.push({ kind: 'group', id, level, field: n.field, value: n.value, label: `${label}: ${displayValue}`, count: n.rows.length, cells: rollupCells(n), collapsed: isCollapsed, serial })
         if (isCollapsed) continue
         if (n.children.length) walk(n.children, level + 1, id)

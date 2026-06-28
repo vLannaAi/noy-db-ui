@@ -30,6 +30,7 @@ const list = useCollectionList({
   columns: view.value.columns,
   defaultSort: [{ field: 'title', dir: 'asc' }],
   schema: view.value.schema,
+  formatGroupLabel: (field, value) => enumLabel(field, value) || undefined,
 })
 
 // StatCards: computed from visible rows so they react to search/filter.
@@ -86,7 +87,8 @@ const chips = computed((): FilterChip[] =>
 // Second-header enum breakdown for genre (uses visible rows so it reflects active filters).
 const subtotalEnums = computed(() => ({
   genre: {
-    items: enumBreakdown(list.visibleRows.value, view.value.schema, 'genre'),
+    items: enumBreakdown(list.visibleRows.value, view.value.schema, 'genre')
+      .map(item => ({ ...item, label: enumLabel('genre', item.value) })),
     distinctNoun: t('subtotal.genres', 'genres'),
   },
 }))

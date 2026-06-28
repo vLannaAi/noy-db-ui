@@ -168,7 +168,7 @@ const groupCellAlign = (col: AppColumn, groupField: string): string =>
                 @filter-change="emit('filterChange', $event)"
               />
               <span v-if="subtotalEnums?.[col.key]" class="text-xs text-nui-muted leading-snug">
-                <template v-for="(it, i) in subtotalEnums[col.key]!.items" :key="it.value"><span v-if="i" class="opacity-50"> · </span><span class="whitespace-nowrap"><span class="font-semibold text-nui-fg">{{ it.count }}</span> {{ it.value.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) }}</span></template>
+                <template v-for="(it, i) in subtotalEnums[col.key]!.items" :key="it.value"><span v-if="i" class="opacity-50"> · </span><span class="whitespace-nowrap"><span class="font-semibold text-nui-fg">{{ it.count }}</span> {{ it.label ?? it.value.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) }}</span></template>
               </span>
               <span
                 v-else-if="agg(col)"

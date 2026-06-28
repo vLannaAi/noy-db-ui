@@ -4,7 +4,7 @@
 // second-header cell (e.g. Status → "109 draft · 108 to verify"); this just produces the tally.
 import { resolveField, ordinalRank, type EntitySchema } from './schema'
 
-export interface EnumCount { value: string; count: number }
+export interface EnumCount { value: string; count: number; label?: string }
 
 /** Ordered value→count tally for an enum field over `rows` (blank values skipped). */
 export function enumBreakdown(
