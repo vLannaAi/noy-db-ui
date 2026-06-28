@@ -117,7 +117,10 @@ const groupCellAlign = (col: AppColumn, groupField: string): string =>
   />
   <div ref="wrapperEl" class="@container sm:rounded-lg sm:ring sm:ring-nui-border bg-nui-bg">
     <table class="w-full text-sm border-collapse">
-      <thead class="sticky top-16 z-10 bg-nui-accent text-nui-accent-fg text-sm sm:rounded-t-lg">
+      <thead
+        class="sticky z-10 text-nui-accent-fg text-sm sm:rounded-t-lg"
+        style="top: 0; background: var(--nui-thead-bg, var(--nui-accent)); backdrop-filter: blur(var(--nui-thead-blur, 0px)); -webkit-backdrop-filter: blur(var(--nui-thead-blur, 0px));"
+      >
         <tr>
           <th v-if="showSerial()" class="px-3 py-2.5 font-normal text-right w-px" :aria-label="t('nui.list.rowNumber', 'Row number')">#</th>
           <th

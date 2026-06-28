@@ -7,7 +7,7 @@ import { usePalette } from '../composables/usePalette'
 const { t, locale, setLocale } = useShowcaseI18n()
 const theme = useTheme() // { mode, resolved, set } — auto-imported by the module
 const { palette, setPalette, initPalette } = usePalette()
-const nav = [['/records', 'nav.records'], ['/artists', 'nav.artists'], ['/labels', 'nav.labels']] as const
+const nav = [['/collection', 'nav.collection'], ['/records', 'nav.records'], ['/artists', 'nav.artists'], ['/labels', 'nav.labels']] as const
 const { steps, start } = useTour()
 const restartTour = () => start(steps.value, { force: true })
 
@@ -71,7 +71,9 @@ const palettes = [
         <!-- Tour help -->
         <button class="nui-icon-btn" data-tour="help" @click="restartTour">?</button>
       </header>
-      <slot />
+      <div class="nui-scroll-area">
+        <slot />
+      </div>
     </div>
     <TourBalloon />
   </div>
@@ -82,7 +84,8 @@ const palettes = [
 
 .nui-shell {
   display: flex;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--nui-bg);
   color: var(--nui-fg);
   font-family: var(--font-body);
@@ -109,7 +112,7 @@ const palettes = [
 }
 
 .nui-brand-text {
-  font-family: var(--font-display);
+  font-family: var(--font-brand, var(--font-display));
   text-transform: var(--display-transform);
   letter-spacing: var(--display-spacing);
   font-weight: var(--display-weight);
@@ -151,6 +154,13 @@ const palettes = [
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+}
+
+.nui-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* ── Header ───────────────────────────────────────────────────────────────── */

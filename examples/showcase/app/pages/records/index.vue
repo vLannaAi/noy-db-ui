@@ -33,18 +33,6 @@ const list = useCollectionList({
   formatGroupLabel: (field, value) => enumLabel(field, value) || undefined,
 })
 
-// StatCards: computed from visible rows so they react to search/filter.
-const stats = computed(() => {
-  const rows = list.visibleRows.value
-  const count = rows.length
-  const totalValue = rows.reduce((s, r) => s + (Number(r.priceUsd) || 0), 0)
-  const distinctArtists = new Set(rows.map((r) => r.artist_name)).size
-  const rated = rows.filter((r) => r.rating != null && r.rating !== '')
-  const avgRating = rated.length ? rated.reduce((s, r) => s + Number(r.rating), 0) / rated.length : 0
-  const favorites = rows.filter((r) => r.favorite === true).length
-  return { count, totalValue, distinctArtists, avgRating, favorites }
-})
-
 // Saved & recent searches
 const { saved, add: addSaved, rename: renameSaved, remove: removeSaved, toggleFavorite, setDefault } = useSavedSearches('records')
 const { recents, remove: removeRecent, clear: clearRecent } = useRecentSearches(query)
@@ -138,100 +126,62 @@ onMounted(() => {
 
 <template>
   <section class="p-4 space-y-4">
-    <!-- StatCard strip: reacts to active filters/search -->
-    <div style="display:flex; flex-wrap:wrap; gap:var(--nui-space-3, 0.75rem)">
-      <StatCard
-        :label="t('stat.records', 'Records')"
-        :value="stats.count"
-        icon="i-lucide-disc-3"
-        color="primary"
-        style="flex:1; min-width:140px"
-      />
-      <StatCard
-        :label="t('stat.value', 'Collection value')"
-        :value="'$' + stats.totalValue.toFixed(0)"
-        icon="i-lucide-dollar-sign"
-        color="success"
-        style="flex:1; min-width:140px"
-      />
-      <StatCard
-        :label="t('stat.artists', 'Artists')"
-        :value="stats.distinctArtists"
-        icon="i-lucide-mic-2"
-        color="info"
-        style="flex:1; min-width:140px"
-      />
-      <StatCard
-        :label="t('stat.avgRating', 'Avg rating')"
-        :value="stats.avgRating.toFixed(1) + ' ★'"
-        icon="i-lucide-star"
-        color="warning"
-        style="flex:1; min-width:140px"
-      />
-      <StatCard
-        :label="t('stat.favorites', 'Favorites')"
-        :value="stats.favorites"
-        icon="i-lucide-heart"
-        color="error"
-        style="flex:1; min-width:140px"
-      />
-    </div>
-
-    <!-- Control bar: column chooser, group-by, saved searches, recent searches, AI search -->
-    <div class="flex flex-wrap items-center gap-2" data-tour="toolbar">
-      <GroupByControl
-        :fields="list.groupableFields.value"
-        :active="list.groupFields.value"
-        @toggle="list.toggleGroupField"
-        @clear="list.clearGroups"
-        @expand-all="list.expandAll"
-        @collapse-level="list.collapseToLevel"
-      />
-      <ColumnChooser
-        :columns="columnList"
-        :show="list.columnPrefShow.value"
-        :hide="list.columnPrefHide.value"
-        @cycle="list.cycleColumnPref"
-        @reset="list.resetColumnPrefs"
-      />
-      <SavedSearchMenu
-        :schema="view.schema"
-        :saved="saved"
-        :current-query="query"
-        :current-saved="currentSaved"
-        @run="query = $event"
-        @save="(name) => addSaved(query, name)"
-        @rename="({ id, name }) => renameSaved(id, name)"
-        @remove="removeSaved"
-        @toggle-favorite="toggleFavorite"
-        @set-default="setDefault"
-      />
-      <RecentSearchMenu
-        :schema="view.schema"
-        :recents="recents"
-        @apply="query = $event"
-        @remove="removeRecent"
-        @clear="clearRecent"
-      />
-      <NlSearchButton
-        :has-key="hasKey"
-        :loading="nlLoading"
-        :error="nlError"
-        :note="nlNote"
-        :has-current-query="!!query"
-        @save-key="saveKey"
-        @forget-key="forgetKey"
-        @search="runNlSearch"
-      />
-    </div>
-
-    <div data-tour="search">
-      <SearchBox
-        v-model="query"
-        :schema="view.schema"
-        :rows="list.visibleRows.value"
-        :columns="view.columns"
-      />
+    <!-- Unified toolbar: search fills remaining width, controls anchored right -->
+    <div class="flex items-center gap-2" data-tour="toolbar">
+      <div class="flex-1 min-w-0" data-tour="search">
+        <SearchBox
+          v-model="query"
+          :schema="view.schema"
+          :rows="list.visibleRows.value"
+          :columns="view.columns"
+        />
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <GroupByControl
+          :fields="list.groupableFields.value"
+          :active="list.groupFields.value"
+          @toggle="list.toggleGroupField"
+          @clear="list.clearGroups"
+          @expand-all="list.expandAll"
+          @collapse-level="list.collapseToLevel"
+        />
+        <ColumnChooser
+          :columns="columnList"
+          :show="list.columnPrefShow.value"
+          :hide="list.columnPrefHide.value"
+          @cycle="list.cycleColumnPref"
+          @reset="list.resetColumnPrefs"
+        />
+        <SavedSearchMenu
+          :schema="view.schema"
+          :saved="saved"
+          :current-query="query"
+          :current-saved="currentSaved"
+          @run="query = $event"
+          @save="(name) => addSaved(query, name)"
+          @rename="({ id, name }) => renameSaved(id, name)"
+          @remove="removeSaved"
+          @toggle-favorite="toggleFavorite"
+          @set-default="setDefault"
+        />
+        <RecentSearchMenu
+          :schema="view.schema"
+          :recents="recents"
+          @apply="query = $event"
+          @remove="removeRecent"
+          @clear="clearRecent"
+        />
+        <NlSearchButton
+          :has-key="hasKey"
+          :loading="nlLoading"
+          :error="nlError"
+          :note="nlNote"
+          :has-current-query="!!query"
+          @save-key="saveKey"
+          @forget-key="forgetKey"
+          @search="runNlSearch"
+        />
+      </div>
     </div>
     <div data-tour="list">
       <CollectionList

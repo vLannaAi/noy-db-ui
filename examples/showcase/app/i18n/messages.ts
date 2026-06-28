@@ -1,5 +1,6 @@
 export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
   en: {
+    'nav.collection': 'Collection',
     'nav.records': 'Records',
     'nav.artists': 'Artists',
     'nav.labels': 'Labels',
@@ -36,6 +37,7 @@ export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
     'subtotal.genres': 'genres',
   },
   th: {
+    'nav.collection': 'คอลเลคชัน',
     'nav.records': 'แผ่นเสียง',
     'nav.artists': 'ศิลปิน',
     'nav.labels': 'ค่ายเพลง',
