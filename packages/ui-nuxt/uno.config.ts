@@ -17,6 +17,7 @@ export default defineConfig({
   transformers: [transformerVariantGroup(), transformerDirectives()],
   theme: {
     colors: {
+      'nui-fg': 'var(--nui-fg)',
       'nui-accent': 'var(--nui-accent)',
       'nui-accent-fg': 'var(--nui-accent-fg)',
       'nui-muted': 'var(--nui-muted)',
@@ -34,6 +35,6 @@ export default defineConfig({
     'nui-btn-soft': 'nui-btn bg-nui-bg-accent text-nui-muted hover:opacity-80',
     'nui-icon-btn': 'inline-flex items-center justify-center rounded hover:bg-nui-bg-accent',
     'nui-field': 'border border-nui-border rounded px-2 py-1 text-sm bg-nui-bg w-full',
-    'nui-panel': 'rounded-lg border border-nui-border bg-nui-bg shadow-lg',
+    'nui-panel': 'rounded-lg border border-nui-border bg-nui-bg text-nui-fg shadow-lg',
   },
 })
