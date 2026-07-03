@@ -16,6 +16,7 @@ export const LabelSchema = z.object({
   name: z.record(z.string()),
   country: z.string(),
   founded: z.number().int(),
+  notes: z.record(z.string()).optional(),
 })
 export const RecordSchema = z.object({
   id: z.string(),

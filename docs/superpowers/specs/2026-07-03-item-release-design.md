@@ -39,6 +39,7 @@ philosophy).
 | D6 | Revert-to-version is **out of scope** | Destructive; needs its own confirmation/permission design. Backlog. |
 | D7 | P6 uses the **hub-side** join (`query().where()` + `aggregate()`), while lists keep the engine-side `joinedRows` | The release then demonstrates both join mechanisms of the family. |
 | D8 | UI 0.4.0-pre.x tracks hub 0.4.0-pre.x | Honors the "versioning follows the noy-db line" changelog promise. |
+| D8b | **Amended 2026-07-04:** hub ships the phase-1 changes as **0.3.0-pre.2** (staying on the 0.3 line per user direction); the UI release aligns as 0.3.0-pre.2. Every "0.4.0-pre.0" in this spec reads as "the next aligned pre-release". | User decision during execution. |
 
 ## 2. Upstream noy-db asks (hub 0.4.0-pre.0)
 

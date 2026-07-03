@@ -59,6 +59,7 @@ export { useCollectionList, type DisplayLine, type GroupLine, type RowLine } fro
 
 // Item family: detail-view value formatting + schema-driven form input resolution
 export { formatDetailCell, detailFields, type DetailCell } from './detail'
+export { groupFields, type FieldGroup } from './groups'
 export { fieldInput, formFields, fieldErrors, type FieldInput, type InputKind } from './form'
 
 // search-box + saved/recent/NL search logic (domain-free; storage data supplied by the host)

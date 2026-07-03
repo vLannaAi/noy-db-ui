@@ -4,11 +4,15 @@ import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 
 const route = useRoute()
 const { vault } = useVault()
-const { locale } = useShowcaseI18n()
 
 const id = route.params.id as string
-const record = await vault.value!.collection('artists').get(id, { locale: locale.value })
-const fields = vault.value!.collection('artists').describe().fields
+const record = await vault.value!.collection('artists').get(id, { locale: 'raw' })
+const { fieldLabel } = useShowcaseI18n()
+// re-label per active locale (fieldLabel reads the locale ref -> computed re-tracks)
+const fields = computed(() => vault.value!.collection('artists').describe().fields.map((f) => {
+  const l = fieldLabel('artists', f.key)
+  return l === f.key ? f : { ...f, label: l }
+}))
 </script>
 
 <template>

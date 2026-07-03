@@ -80,6 +80,17 @@ export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
     'chip.from': 'จาก',
     'chip.to': 'ถึง',
     'subtotal.genres': 'แนวเพลง',
+    // toolbar icon-button labels (aria/title)
+    'toolbar.print': 'พิมพ์มุมมองนี้',
+    'toolbar.clearSearch': 'ล้างการค้นหา',
+    'toolbar.discardDraft': 'ยกเลิกฉบับร่าง',
+    // detail card group titles (group ids come from fieldMeta.group)
+    'nui.detail.group.Identity': 'ข้อมูลหลัก',
+    'nui.detail.group.Release': 'การออกจำหน่าย',
+    'nui.detail.group.Condition & Value': 'สภาพและมูลค่า',
+    'nui.detail.group.Listening': 'การฟัง',
+    'nui.detail.group.Career': 'เส้นทางอาชีพ',
+    'nui.detail.group.History': 'ประวัติ',
     // print header meta line
     'print.records': 'รายการ',
     'print.artists': 'รายการ',
