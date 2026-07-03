@@ -13,11 +13,11 @@ export const artists: Artist[] = [
 ]
 
 export const labels: Label[] = [
-  { id: 'lb1', name: { en: 'Groove Hill', th: 'กรูฟ ฮิลล์' }, country: 'US', founded: 1958 },
-  { id: 'lb2', name: { en: 'Northern Wax', th: 'นอร์เทิร์น แว็กซ์' }, country: 'GB', founded: 1969 },
-  { id: 'lb3', name: { en: 'Kosmos Audio', th: 'คอสมอส ออดิโอ' }, country: 'DE', founded: 1975 },
-  { id: 'lb4', name: { en: 'Deep Crate', th: 'ดีพ เคร็ต' }, country: 'US', founded: 1990 },
-  { id: 'lb5', name: { en: 'Sakura Sound', th: 'ซากุระ ซาวด์' }, country: 'JP', founded: 1981 },
+  { id: 'lb1', name: { en: 'Groove Hill', th: 'กรูฟ ฮิลล์' }, country: 'US', founded: 1958, notes: { en: 'Independent jazz and soul imprint; deep-groove pressings through 1972.', th: 'ค่ายแจ๊สและโซลอิสระ งานปั๊มแบบดีพกรูฟจนถึงปี 1972' } },
+  { id: 'lb2', name: { en: 'Northern Wax', th: 'นอร์เทิร์น แว็กซ์' }, country: 'GB', founded: 1969, notes: { en: 'British rock house — famous for gatefold sleeves and heavyweight vinyl.', th: 'ค่ายร็อกอังกฤษ ขึ้นชื่อเรื่องปกแบบเกตโฟลด์และแผ่นไวนิลหนา' } },
+  { id: 'lb3', name: { en: 'Kosmos Audio', th: 'คอสมอส ออดิโอ' }, country: 'DE', founded: 1975, notes: { en: 'German audiophile label; classical and electronic catalogues.', th: 'ค่ายออดิโอไฟล์เยอรมัน แคตตาล็อกคลาสสิกและอิเล็กทรอนิกส์' } },
+  { id: 'lb4', name: { en: 'Deep Crate', th: 'ดีพ เคร็ต' }, country: 'US', founded: 1990, notes: { en: 'Crate-digger favourite — limited hip-hop and soul runs.', th: 'ขวัญใจนักขุดแผ่น งานฮิปฮอปและโซลจำนวนจำกัด' } },
+  { id: 'lb5', name: { en: 'Sakura Sound', th: 'ซากุระ ซาวด์' }, country: 'JP', founded: 1981, notes: { en: 'City pop and ambient catalogue.' } },
 ]
 
 // 24 records — vary every enum, ref, and numeric field.

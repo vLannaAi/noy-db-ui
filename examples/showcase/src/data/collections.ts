@@ -6,6 +6,7 @@ import { FIELD_LABELS, GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS } from './d
 
 export const NAME_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
 export const TITLE_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
+export const NOTES_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
 
 // fieldMeta builder: English label + per-field overrides.
 function fieldMeta(collection: string, overrides: Record<string, Record<string, unknown>> = {}) {
@@ -25,17 +26,21 @@ export function declareCollections(vault: Vault): {
     schema: ArtistSchema,
     i18nFields: { name: NAME_I18N },
     fieldMeta: fieldMeta('artists', {
-      country: { semanticType: 'country' },
-      formedYear: { semanticType: 'number' },
+      name:       { group: 'Identity', order: 1 },
+      country:    { semanticType: 'country', group: 'Identity', order: 2 },
+      genre:      { group: 'Career', order: 10 },
+      formedYear: { semanticType: 'number', group: 'Career', order: 11 },
     }),
     meta: { label: 'Artists' },
   })
   const labels = vault.collection('labels', {
     schema: LabelSchema,
-    i18nFields: { name: NAME_I18N },
+    i18nFields: { name: NAME_I18N, notes: NOTES_I18N },
     fieldMeta: fieldMeta('labels', {
-      country: { semanticType: 'country' },
-      founded: { semanticType: 'number' },
+      name:    { group: 'Identity', order: 1 },
+      country: { semanticType: 'country', group: 'Identity', order: 2 },
+      founded: { semanticType: 'number', group: 'History', order: 10 },
+      notes:   { widget: 'textarea', group: 'History', order: 11 },
     }),
     meta: { label: 'Labels' },
   })
@@ -50,16 +55,20 @@ export function declareCollections(vault: Vault): {
       condition: staticDict('condition', CONDITION_LABELS as Record<string, Record<string, string>>),
     },
     fieldMeta: fieldMeta('records', {
-      artistId:    { semanticType: 'entity' },
-      labelId:     { semanticType: 'entity' },
-      year:        { semanticType: 'number' },
-      durationMin: { semanticType: 'number', unit: 'min' },
-      trackCount:  { semanticType: 'number' },
-      rating:      { semanticType: 'number' },
-      priceUsd:    { semanticType: 'currency', unit: 'USD' },
-      purchasedOn: { semanticType: 'date' },
-      notes:       { widget: 'textarea' },
-      favorite:    { widget: 'checkbox' },
+      title:       { group: 'Identity', order: 1 },
+      artistId:    { semanticType: 'entity', group: 'Identity', order: 2 },
+      labelId:     { semanticType: 'entity', group: 'Identity', order: 3 },
+      year:        { semanticType: 'number', group: 'Release', order: 10 },
+      genre:       { group: 'Release', order: 11 },
+      format:      { group: 'Release', order: 12 },
+      condition:   { group: 'Condition & Value', order: 20 },
+      rating:      { semanticType: 'number', group: 'Condition & Value', order: 21 },
+      priceUsd:    { semanticType: 'currency', unit: 'USD', group: 'Condition & Value', order: 22 },
+      purchasedOn: { semanticType: 'date', group: 'Condition & Value', order: 23 },
+      durationMin: { semanticType: 'number', unit: 'min', group: 'Listening', order: 30 },
+      trackCount:  { semanticType: 'number', group: 'Listening', order: 31 },
+      favorite:    { widget: 'checkbox', group: 'Listening', order: 32 },
+      notes:       { widget: 'textarea', group: 'Listening', order: 33 },
     }),
     meta: { label: 'Records' },
   })

@@ -47,5 +47,6 @@ export const FIELD_LABELS: Record<string, Record<string, { en: string; th: strin
     name: { en: 'Name', th: 'ชื่อ' },
     country: { en: 'Country', th: 'ประเทศ' },
     founded: { en: 'Founded', th: 'ก่อตั้ง' },
+    notes: { en: 'Notes', th: 'บันทึก' },
   },
 }

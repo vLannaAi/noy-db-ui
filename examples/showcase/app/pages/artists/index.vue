@@ -135,6 +135,7 @@ const printedAt = () => new Date().toLocaleString(locale.value === 'th' ? 'th-TH
       :grouped-keys="list.groupedColumnKeys.value"
       :all-collapsed="list.allTopCollapsed.value"
       row-noun="artists"
+      @row-click="(r) => navigateTo(`/artists/${r.id}`)"
       @sort="list.onSort"
       @filter-change="(p) => list.setColumnFilter(p.key, p.value)"
       @toggle-group="list.toggleGroup"

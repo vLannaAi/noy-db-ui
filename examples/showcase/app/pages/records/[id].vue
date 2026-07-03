@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { useVault } from '../../composables/useVault'
-import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 
 const route = useRoute()
 const { vault } = useVault()
-const { locale } = useShowcaseI18n()
 
 const id = route.params.id as string
-const record = await vault.value!.collection('records').get(id, { locale: locale.value })
+const record = await vault.value!.collection('records').get(id, { locale: 'raw' })
 const fields = vault.value!.collection('records').describe().fields
 </script>
 
