@@ -11,10 +11,19 @@ const nav = [['/collection', 'nav.collection'], ['/records', 'nav.records'], ['/
 const { steps, start } = useTour()
 const restartTour = () => start(steps.value, { force: true })
 
+// Two responsive modes. Wide (≥1024px): a persistent rail that PUSHES content; `sidebarOpen`
+// collapses it. Narrow: an OVERLAY drawer (off-canvas) that `drawerOpen` slides in over the content
+// (full-screen at ≤480px). `isWide` flips between them; leaving narrow auto-closes the drawer.
 const sidebarOpen = ref(true)
+const drawerOpen = ref(false)
+const isWide = ref(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true)
+const onNavClick = () => { if (!isWide.value) drawerOpen.value = false }
 
 onMounted(() => {
   initPalette()
+  const mq = window.matchMedia('(min-width: 1024px)')
+  isWide.value = mq.matches
+  mq.addEventListener('change', (e) => { isWide.value = e.matches; if (e.matches) drawerOpen.value = false })
 })
 
 const palettes = [
@@ -27,12 +36,23 @@ const palettes = [
 
 <template>
   <div class="nui-shell">
-    <aside class="nui-sidebar" :class="{ 'nui-sidebar--collapsed': !sidebarOpen }" data-tour="nav">
+    <!-- Scrim behind the drawer (narrow mode only) -->
+    <div v-if="!isWide && drawerOpen" class="nui-scrim" @click="drawerOpen = false" />
+
+    <aside
+      class="nui-sidebar"
+      :class="isWide ? { 'nui-sidebar--collapsed': !sidebarOpen } : ['nui-sidebar--drawer', { 'nui-sidebar--open': drawerOpen }]"
+      data-tour="nav"
+    >
       <div class="nui-sidebar-inner">
-        <!-- Brand + collapse toggle -->
+        <!-- Brand + collapse/close toggle -->
         <div class="nui-brand">
           <span class="nui-brand-text">Vinyl</span>
-          <button class="nui-collapse-btn" title="Collapse sidebar" @click="sidebarOpen = false">‹</button>
+          <button
+            class="nui-collapse-btn"
+            :title="isWide ? 'Collapse sidebar' : 'Close menu'"
+            @click="isWide ? (sidebarOpen = false) : (drawerOpen = false)"
+          >{{ isWide ? '‹' : '✕' }}</button>
         </div>
 
         <!-- Nav links -->
@@ -43,6 +63,7 @@ const palettes = [
             :to="to"
             class="nui-nav-link"
             active-class="nui-nav-link--active"
+            @click="onNavClick"
           >
             {{ t(key) }}
           </NuxtLink>
@@ -96,15 +117,22 @@ const palettes = [
     </aside>
 
     <div class="nui-content">
-      <!-- Expand tab — only when sidebar is collapsed -->
+      <!-- Wide: expand tab when the rail is collapsed. Narrow: a hamburger to open the drawer. -->
       <button
-        v-if="!sidebarOpen"
+        v-if="isWide && !sidebarOpen"
         class="nui-expand-btn"
         title="Expand sidebar"
         @click="sidebarOpen = true"
       >›</button>
+      <button
+        v-if="!isWide"
+        class="nui-menu-btn"
+        title="Open menu"
+        aria-label="Open menu"
+        @click="drawerOpen = true"
+      >☰</button>
 
-      <div class="nui-scroll-area">
+      <div class="nui-scroll-area" :class="{ 'nui-scroll-area--drawer': !isWide }">
         <slot />
       </div>
     </div>
@@ -139,6 +167,39 @@ const palettes = [
 .nui-sidebar--collapsed {
   width: 0;
   border-right-color: transparent;
+}
+
+/* ── Drawer mode (narrow): off-canvas overlay that slides in over the content ── */
+.nui-sidebar--drawer {
+  position: fixed;
+  inset: 0 auto 0 0;            /* pinned to the left, full height */
+  width: 14rem;
+  max-width: 85vw;
+  z-index: 50;
+  flex-shrink: 0;
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  border-right: var(--border-w) solid var(--hairline);
+}
+.nui-sidebar--drawer.nui-sidebar--open {
+  transform: translateX(0);
+  box-shadow: 0 0 2.5rem rgba(0, 0, 0, 0.35);
+}
+.nui-sidebar--drawer .nui-sidebar-inner { width: 100%; }
+
+/* Very small screens: the drawer becomes a full-width menu. */
+@media (max-width: 480px) {
+  .nui-sidebar--drawer { width: 100vw; max-width: 100vw; }
+}
+
+/* Scrim behind the open drawer. */
+.nui-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
 }
 
 /* Inner container — fixed width so the transition clips rather than reflows */
@@ -356,4 +417,25 @@ const palettes = [
   color: var(--nui-fg);
   background: var(--nui-bg);
 }
+
+/* ── Hamburger (narrow mode) ──────────────────────────────────────────────── */
+.nui-menu-btn {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.6rem;
+  z-index: 20;
+  background: var(--nui-bg-accent);
+  border: var(--border-w) solid var(--hairline);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  color: var(--nui-fg);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  transition: color 0.1s, background 0.1s;
+}
+.nui-menu-btn:hover { background: var(--nui-bg); }
+
+/* Reserve a top gutter for the hamburger so it never overlaps the page toolbar. */
+.nui-scroll-area--drawer { padding-top: 2.6rem; }
 </style>

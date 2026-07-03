@@ -9,7 +9,9 @@ const { locale, t } = useShowcaseI18n()
 provideNoydbUi({
   theme: 'system',
   locale: locale.value,
-  t: (k, f) => t(`nui.${k}`, f),
+  // Components pass their FULL key ('nui.search.placeholder') — forward it verbatim. (A previous
+  // version prepended 'nui.' here, double-prefixing every lookup so no catalog entry ever matched.)
+  t: (k, f) => t(k, f),
   llm: makeAnthropicLlm(() => useApiKey().key.value),
 })
 </script>

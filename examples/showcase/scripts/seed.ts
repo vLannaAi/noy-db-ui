@@ -33,7 +33,7 @@ export async function seedVault(): Promise<Vault> {
 
 /** Cover PNG bytes per record id — written as static assets by `main()`. */
 export function coverFiles(): { id: string; bytes: Uint8Array }[] {
-  return records.map((r) => ({ id: r.id, bytes: makeCover(r.title) }))
+  return records.map((r) => ({ id: r.id, bytes: makeCover(r.title['en'] ?? r.id) }))
 }
 
 // Executed by `pnpm seed`.

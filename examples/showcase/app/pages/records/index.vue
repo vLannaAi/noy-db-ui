@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useCollectionList, enumBreakdown, findByQuery, buildNlPrompt, extractDsl, validateDsl } from '@noy-db/ui'
-import type { FilterChip } from '@noy-db/ui'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useCollectionList, findByQuery, narrate } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
 import { COVER_FIELD } from '../../../src/data/vault'
@@ -9,10 +8,19 @@ import { useTour } from '../../composables/useTour'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useSavedSearches } from '../../composables/useSavedSearches'
 import { useRecentSearches } from '../../composables/useRecentSearches'
-import { useApiKey } from '../../composables/useApiKey'
 
 const { vault } = useVault()
-const { t, enumLabel, fieldLabel } = useShowcaseI18n()
+const { t, enumLabel, locale } = useShowcaseI18n()
+
+// Short, language-neutral format abbreviations for the compressed cell (12-inch → 12″, Single → 1T).
+const FORMAT_ABBR: Record<string, string> = { LP: 'LP', EP: 'EP', Single: '1T', '12"': '12″' }
+const formatAbbr = (v: string): string => FORMAT_ABBR[v] ?? v
+
+// Duration: decimal minutes → M′SS″ (prime = minutes, double-prime = seconds), e.g. 47.3 → 47′18″.
+function fmtDuration(min: unknown): string {
+  const total = Math.round(Number(min) * 60)
+  return `${Math.floor(total / 60)}′${String(total % 60).padStart(2, '0')}″`
+}
 const { start } = useTour()
 
 const coverCell = `cell-${COVER_FIELD}`
@@ -23,15 +31,33 @@ const view = computed(() => buildRecordsView(vault.value!))
 const baseRows = computed(() => view.value.rows as Record<string, any>[])
 const query = ref('')
 
+// Canonical value → display name (entity FK name, localized enum label, or currency symbol).
+// Shared by group banners, pills and the fluent search title so "jazz" reads "Jazz", an FK id
+// reads its record name, and a price value reads "$50".
+const labelForValue = (field: string, value: string): string | undefined => {
+  if (field === 'priceUsd') return `$${value}`
+  return view.value.entityName(field, value) ?? (enumLabel(field, value) || undefined)
+}
+
 const list = useCollectionList({
   baseRows,
   query,
   entity: 'records',
   columns: view.value.columns,
   defaultSort: [{ field: 'title', dir: 'asc' }],
-  schema: view.value.schema,
-  formatGroupLabel: (field, value) => enumLabel(field, value) || undefined,
+  schema: () => view.value.schema, // getter: field labels are locale-reactive
+  formatGroupLabel: labelForValue,
 })
+
+// Fluent search description (narrate): the compact title drives the window title (history
+// navigation, printed report header); the subtitle is the full sentence for the page subhead.
+const searchText = computed(() => narrate(list.ast.value, view.value.schema, { t, formatValue: labelForValue }))
+useHead({ title: () => (searchText.value.title ? `${searchText.value.title} · noy-db` : 'noy-db · Vinyl') })
+
+// Print: the report header below is hidden on screen and materializes in print (see themes.css
+// @media print) — the fluent title IS the report title (contract I1 extends to paper).
+const printPage = (): void => window.print()
+const printedAt = () => new Date().toLocaleString(locale.value === 'th' ? 'th-TH' : 'en-US')
 
 // Saved & recent searches
 const { saved, add: addSaved, rename: renameSaved, remove: removeSaved, toggleFavorite, setDefault } = useSavedSearches('records')
@@ -43,50 +69,55 @@ const currentSaved = computed(() => !!findByQuery(saved.value, 'records', query.
 // Column chooser — type icons and default visibility per column
 type ColViz = 'essential' | 'show-sm' | 'show-lg' | 'hidden'
 
-const COL_ICONS: Record<string, string> = {
-  title:       'i-lucide-type',
-  artist_name: 'i-lucide-link-2',
-  label_name:  'i-lucide-link-2',
-  year:        'i-lucide-calendar',
-  genre:       'i-lucide-layers',
-  format:      'i-lucide-disc',
-  condition:   'i-lucide-layers',
-  rating:      'i-lucide-star',
-  durationMin: 'i-lucide-clock-4',
-  trackCount:  'i-lucide-hash',
-  priceUsd:    'i-lucide-dollar-sign',
-  purchasedOn: 'i-lucide-calendar-days',
-  favorite:    'i-lucide-heart',
-}
 const COL_DEFAULTS: Record<string, ColViz> = {
-  title:       'essential',
-  artist_name: 'essential',
-  label_name:  'show-lg',
-  year:        'show-sm',
-  genre:       'show-sm',
-  format:      'show-lg',
-  condition:   'show-lg',
-  rating:      'show-sm',
-  durationMin: 'show-lg',
-  trackCount:  'hidden',
-  priceUsd:    'show-lg',
-  purchasedOn: 'hidden',
-  favorite:    'show-sm',
+  [COVER_FIELD]: 'show-sm',
+  title:         'essential',
+  artist_name:   'essential',
+  label_name:    'show-lg',
+  year:          'show-sm',
+  genre:         'show-sm',
+  format:        'show-lg',
+  condition:     'show-lg',
+  rating:        'show-sm',
+  durationMin:   'show-lg',
+  trackCount:    'hidden',
+  priceUsd:      'show-lg',
+  purchasedOn:   'hidden',
+  favorite:      'show-sm',
 }
 
 const columnStates = ref<Record<string, ColViz>>({})
 const columnOrder  = ref<string[]>([])
+const resizing     = ref(false) // "Adjust widths" mode, entered from the column chooser
+
+// Persisted column-width overrides from the "Adjust widths" mode (per column: pct or fixed px).
+const WIDTHS_KEY = 'nui.widths.records'
+const columnWidths = ref<Record<string, { mode: 'pct' | 'fixed'; value: number }>>(
+  typeof localStorage !== 'undefined'
+    ? (() => { try { return JSON.parse(localStorage.getItem(WIDTHS_KEY) || '{}') } catch { return {} } })()
+    : {},
+)
+watch(columnWidths, (w) => {
+  if (typeof localStorage !== 'undefined') try { localStorage.setItem(WIDTHS_KEY, JSON.stringify(w)) } catch { /* quota */ }
+}, { deep: true })
 
 const columnList = computed(() =>
-  view.value.columns
-    .filter((c) => c.label)
-    .map((c) => ({
-      key:     c.key,
-      label:   c.label as string,
-      icon:    COL_ICONS[c.key],
-      default: COL_DEFAULTS[c.key] as ColViz | undefined,
-    })),
+  view.value.columns.map((c) => ({
+    key:     c.key,
+    label:   (c.label as string) || 'Cover',
+    icon:    c.icon,
+    default: COL_DEFAULTS[c.key] as ColViz | undefined,
+  })),
 )
+
+// Apply user-defined column order to the table
+const orderedViewColumns = computed(() => {
+  if (!columnOrder.value.length) return view.value.columns
+  const idx = new Map(columnOrder.value.map((k, i) => [k, i]))
+  return [...view.value.columns].sort(
+    (a, b) => (idx.get(a.key) ?? 999) - (idx.get(b.key) ?? 999),
+  )
+})
 
 // Map new 4-state system → focus-keys / hide-keys for CollectionList
 const colFocusKeys = computed(() =>
@@ -112,72 +143,14 @@ function onColSetState(key: string, state: ColViz | null): void {
 function onColReset(): void { columnStates.value = {}; columnOrder.value = [] }
 function onColReorder(keys: string[]): void { columnOrder.value = keys }
 
-// Filter chips: one chip per active column filter with a human-readable summary.
-const CHIP_DICT_KEYS: Record<string, string> = {
-  genre: 'genre',
-  format: 'format',
-  condition: 'condition',
-}
-
-const chips = computed((): FilterChip[] =>
-  Object.entries(list.columnFilters.value).map(([key, filter]) => {
-    let text = ''
-    if (filter.kind === 'enum' || filter.kind === 'entity') {
-      const dictKey = CHIP_DICT_KEYS[key]
-      text = filter.selected
-        .map((v) => (dictKey ? enumLabel(dictKey, v) : v))
-        .join(', ')
-    } else if (filter.kind === 'date') {
-      const parts: string[] = []
-      if (filter.from) parts.push(`${t('chip.from', 'from')} ${filter.from}`)
-      if (filter.to) parts.push(`${t('chip.to', 'to')} ${filter.to}`)
-      text = parts.join(' ')
-    }
-    return { key, label: fieldLabel('records', key), text }
-  })
-)
-
-// Second-header enum breakdown for genre (uses visible rows so it reflects active filters).
-const subtotalEnums = computed(() => ({
-  genre: {
-    items: enumBreakdown(list.visibleRows.value, view.value.schema, 'genre')
-      .map(item => ({ ...item, label: enumLabel('genre', item.value) })),
-    distinctNoun: t('subtotal.genres', 'genres'),
-  },
-}))
-
-// Voice dictation — appends the final transcript to the query.
-const { listening: micOn, supported: micSupported, toggle: micToggle } = useVoiceInput({
-  onFinal: (text) => { const s = text.trim(); if (s) query.value = `${query.value} ${s}`.trim() },
-})
-
-// NL search — useLlm() must be called during setup (uses inject internally).
-const { hasKey, saveKey, forgetKey } = useApiKey()
-const llm = useLlm()
-const nlLoading = ref(false)
-const nlError = ref('')
-const nlNote = ref('')
-
-async function runNlSearch(payload: { nl: string; refine: boolean }) {
-  if (!llm) return
-  nlLoading.value = true
-  nlError.value = ''
-  nlNote.value = ''
-  try {
-    const { system, user } = buildNlPrompt(view.value.schema, payload.nl, {
-      currentDsl: payload.refine ? query.value : undefined,
-    })
-    const raw = await llm.complete({ system, user })
-    const rawDsl = extractDsl(raw)
-    const { dsl, unknownFields } = validateDsl(rawDsl, view.value.schema)
-    if (unknownFields.length) nlNote.value = `${t('nl.note', 'Ignored unknown fields:')} ${unknownFields.join(', ')}`
-    query.value = dsl
-  } catch (e: unknown) {
-    nlError.value = e instanceof Error ? e.message : t('nl.error', 'Search failed')
-  } finally {
-    nlLoading.value = false
-  }
-}
+// Search voices + morphing reset + key sheet + `/` focus — shared across list pages (spec:
+// docs/superpowers/specs/2026-07-02-search-toolbar-interaction-design.md).
+const {
+  searchBox, searchMode, nlLoading, nlError, nlNote, needKey, keyDraft, keyEl, hasKey,
+  onModeChange, onAsk, onAbortAsk, saveKeyDraft,
+  micOn, micSupported, onSpeakStart, onSpeakStop,
+  resetFace, onReset,
+} = useSearchVoices(query, () => view.value.schema)
 
 function recordsTourSteps() {
   return [
@@ -196,28 +169,43 @@ onMounted(() => {
 
 <template>
   <section class="p-4 space-y-4">
-    <!-- Unified toolbar: search fills remaining width, controls anchored right -->
-    <div class="flex items-center gap-2" data-tour="toolbar">
+    <!-- Print-only report header: the same fluent language, on paper. -->
+    <header class="print-header">
+      <h1>{{ searchText.title || 'All records' }}</h1>
+      <p>{{ searchText.subtitle }}</p>
+      <p class="print-meta">{{ list.visibleRows.value.length }} {{ t('print.records', 'records') }} · {{ printedAt() }}</p>
+    </header>
+    <!-- Unified toolbar (spec §1): the title/search field fills the width; the rail reads as a
+         sentence — EXPRESS (mode capsule) │ SHAPE (group) │ MEMORY (saved, recent) │ RESET. -->
+    <div class="relative flex items-center gap-2 print-hide" data-tour="toolbar">
       <div class="flex-1 min-w-0" data-tour="search">
         <SearchBox
+          ref="searchBox"
           v-model="query"
           :schema="view.schema"
           :rows="list.visibleRows.value"
           :columns="view.columns"
+          :format-value="labelForValue"
+          :inline-clear="false"
+          :mode="searchMode"
+          :busy="nlLoading"
+          @ask="onAsk"
+          @abort-ask="onAbortAsk"
         />
       </div>
-      <div class="flex items-center gap-1 shrink-0">
-        <button
-          v-if="micSupported"
-          type="button"
-          class="nui-btn"
-          :class="micOn ? 'text-red-500' : 'text-nui-muted hover:bg-nui-bg-accent'"
-          :aria-label="micOn ? 'Stop voice input' : 'Search by voice'"
-          :aria-pressed="micOn"
-          @click="micToggle"
-        >
-          <span class="i-lucide-mic size-3.5" :class="micOn ? 'animate-pulse' : ''" aria-hidden="true" />
-        </button>
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- EXPRESS: the three voices, one capsule -->
+        <SearchModeGroup
+          :mode="searchMode"
+          :listening="micOn"
+          :busy="nlLoading"
+          :mic-supported="micSupported"
+          @update:mode="onModeChange"
+          @speak-start="onSpeakStart"
+          @speak-stop="onSpeakStop"
+        />
+        <span class="w-px h-5 shrink-0" :style="{ background: 'var(--hairline)' }" aria-hidden="true" />
+        <!-- SHAPE -->
         <GroupByControl
           :fields="list.groupableFields.value"
           :active="list.groupFields.value"
@@ -226,11 +214,14 @@ onMounted(() => {
           @expand-all="list.expandAll"
           @collapse-level="list.collapseToLevel"
         />
+        <span class="w-px h-5 shrink-0" :style="{ background: 'var(--hairline)' }" aria-hidden="true" />
+        <!-- MEMORY -->
         <SavedSearchMenu
           :schema="view.schema"
           :saved="saved"
           :current-query="query"
           :current-saved="currentSaved"
+          :format-value="labelForValue"
           @run="query = $event"
           @save="(name) => addSaved(query, name)"
           @rename="({ id, name }) => renameSaved(id, name)"
@@ -241,26 +232,61 @@ onMounted(() => {
         <RecentSearchMenu
           :schema="view.schema"
           :recents="recents"
+          :format-value="labelForValue"
           @apply="query = $event"
           @remove="removeRecent"
           @clear="clearRecent"
         />
-        <NlSearchButton
-          :has-key="hasKey"
-          :loading="nlLoading"
-          :error="nlError"
-          :note="nlNote"
-          :has-current-query="!!query"
-          @save-key="saveKey"
-          @forget-key="forgetKey"
-          @search="runNlSearch"
-        />
+        <button
+          type="button"
+          class="nui-btn text-nui-muted hover:bg-nui-bg-accent"
+          :aria-label="t('toolbar.print', 'Print this view')"
+          :title="t('toolbar.print', 'Print this view')"
+          @click="printPage"
+        >
+          <span class="i-lucide-printer size-[1.3125rem]" aria-hidden="true" />
+        </button>
+        <span class="w-px h-5 shrink-0" :style="{ background: 'var(--hairline)' }" aria-hidden="true" />
+        <!-- RESET: morphing icon — ✕ discards the draft (or aborts AI), 🗑 erases the search. -->
+        <button
+          type="button"
+          class="nui-btn"
+          :class="resetFace === 'none' ? 'text-nui-subtle opacity-40 pointer-events-none' : 'text-nui-muted hover:bg-nui-bg-accent'"
+          :aria-label="resetFace === 'draft' ? t('toolbar.discardDraft', 'Discard draft') : t('toolbar.clearSearch', 'Clear search')"
+          @mousedown.prevent
+          @click="onReset"
+        >
+          <span :class="resetFace === 'draft' ? 'i-lucide-x' : 'i-lucide-trash-2'" class="size-[1.3125rem]" aria-hidden="true" />
+        </button>
       </div>
     </div>
-    <div data-tour="list">
+
+    <!-- One-line notes under the toolbar: AI errors (auto-dismiss), validation notes, key entry. -->
+    <!-- Status notes float over the content (zero-height strip): appearing/disappearing must
+         never shift the table below — same no-shake rule as the title box itself. -->
+    <div class="relative h-0 !mt-0 print-hide" style="z-index: 40">
+      <p v-if="nlError" class="absolute top-1 left-0 nui-panel px-3 py-1.5 text-sm text-nui-accent">{{ nlError }}</p>
+      <p v-else-if="nlNote" class="absolute top-1 left-0 nui-panel px-3 py-1.5 text-sm text-nui-muted">{{ nlNote }}</p>
+      <div v-if="needKey && !hasKey" class="absolute top-1 left-0 nui-panel px-3 py-2 flex items-center gap-2">
+      <span class="text-sm text-nui-muted">{{ t('nl.needKey', 'AI needs an Anthropic API key (stored locally):') }}</span>
+      <input
+        ref="keyEl"
+        v-model="keyDraft"
+        type="password"
+        placeholder="sk-…"
+        class="text-sm w-64 px-2 py-1 rounded border border-nui-border bg-nui-bg outline-none focus:border-nui-accent"
+        @keydown.enter.prevent="saveKeyDraft"
+      >
+      <button type="button" class="nui-btn-ghost" @click="saveKeyDraft">{{ t('nui.save', 'Save') }}</button>
+      <button type="button" class="nui-btn-ghost text-nui-muted" @click="needKey = false">{{ t('nl.later', 'Later') }}</button>
+      </div>
+    </div>
+    <div data-tour="list" class="nui-records-list">
       <CollectionList
-        :columns="view.columns"
+        :columns="orderedViewColumns"
         :rows="list.visibleRows.value"
+        v-model:resizing="resizing"
+        v-model:widths="columnWidths"
         :sort-key="list.sortKey.value"
         :sort-dir="list.sortDir.value"
         :sort-keys="list.sortKeys.value"
@@ -268,10 +294,8 @@ onMounted(() => {
         :filters="list.columnFilters.value"
         :enum-facets="list.enumFacets.value"
         :entity-facets="list.entityFacets.value"
-        :chips="chips"
         :group-lines="list.groupLines.value"
         :grouped-keys="list.groupedColumnKeys.value"
-        :subtotal-enums="subtotalEnums"
         :all-collapsed="list.allTopCollapsed.value"
         :focus-keys="colFocusKeys"
         :hide-keys="colHideKeys"
@@ -294,6 +318,7 @@ onMounted(() => {
             @set-state="onColSetState"
             @reset="onColReset"
             @reorder="onColReorder"
+            @adjust-widths="resizing = true"
           />
         </template>
         <template #[coverCell]="{ row }">
@@ -301,13 +326,54 @@ onMounted(() => {
             <CoverImage :id="row.id" :thumb="true" />
           </span>
         </template>
+        <!-- Title: width-aware. The cover gives the row 2 lines of height, so the title WRAPS before it
+             condenses or ellipsizes (lines=2). -->
+        <template #cell-title="{ row }">
+          <NuiText :value="row.title" kind="text" :lines="2" class="font-medium" />
+        </template>
+        <!-- Year: abbreviates 2026 → ’26 when the column gets tight. -->
+        <template #cell-year="{ row }">
+          <NuiText :value="row.year" kind="year" align="right" />
+        </template>
+        <!-- Entity links: the name wraps to 2 lines (cover height) before ellipsis, like the title. -->
+        <template #cell-artist_name="{ row }">
+          <a
+            v-if="row.artist_name"
+            class="nui-link block cursor-pointer"
+            @click.stop="navigateTo(`/artists/${row.artistId}`)"
+          >
+            <NuiText :value="row.artist_name" kind="text" :lines="2" />
+          </a>
+          <span v-else class="text-nui-subtle">—</span>
+        </template>
+        <template #cell-label_name="{ row }">
+          <a
+            v-if="row.label_name"
+            class="nui-link block cursor-pointer"
+            @click.stop="navigateTo(`/labels/${row.labelId}`)"
+          >
+            <NuiText :value="row.label_name" kind="text" :lines="2" />
+          </a>
+          <span v-else class="text-nui-subtle">—</span>
+        </template>
         <template #cell-genre="{ row }">{{ enumLabel('genre', String(row.genre ?? '')) }}</template>
-        <template #cell-format="{ row }">{{ enumLabel('format', String(row.format ?? '')) }}</template>
+        <!-- Format: full label → short abbreviation (12-inch → 12″, Single → 1T) as it tightens. -->
+        <template #cell-format="{ row }">
+          <NuiText :reps="[enumLabel('format', String(row.format)), formatAbbr(String(row.format))]" />
+        </template>
         <template #cell-condition="{ row }">{{ enumLabel('condition', String(row.condition ?? '')) }}</template>
-        <template #cell-priceUsd="{ row }">{{ '$' + Number(row.priceUsd).toFixed(0) }}</template>
-        <template #cell-rating="{ row }">{{ '★'.repeat(Number(row.rating)) }}</template>
-        <template #cell-favorite="{ row }">{{ row.favorite ? '★' : '–' }}</template>
-        <template #cell-purchasedOn="{ row }">{{ row.purchasedOn }}</template>
+        <!-- Symbols ($, ★, min, ♥) live once in the header; cells carry bare values, uniformly. -->
+        <template #cell-priceUsd="{ row }"><span class="tabular-nums">{{ Number(row.priceUsd).toFixed(0) }}</span></template>
+        <!-- Rating: one representation per column by width — full stars when there's room (≥88px),
+             else the bare number. The header ★ labels the column either way. -->
+        <template #cell-rating="{ row, width }"><span class="tabular-nums">{{ (width ?? 0) >= 88 ? '★'.repeat(Number(row.rating)) : Number(row.rating) }}</span></template>
+        <template #cell-favorite="{ row }"><span class="text-data">{{ row.favorite ? '♥' : '' }}</span></template>
+        <!-- Duration in min′sec″ (prime/double-prime); header carries the "min" unit. -->
+        <template #cell-durationMin="{ row }"><span class="tabular-nums">{{ fmtDuration(row.durationMin) }}</span></template>
+        <!-- Date: abbreviates the long ISO → "Sep 14, 2023" → "Sep 14" → "9/14/23" as it tightens. -->
+        <template #cell-purchasedOn="{ row }">
+          <NuiText :value="row.purchasedOn" kind="date" />
+        </template>
         <template #empty>
           <EmptyState
             icon="i-lucide-search-x"
@@ -332,4 +398,10 @@ onMounted(() => {
 /* Ellipsis on long text columns. Caps the cell width and truncates overflow. */
 .nui-col-ellipsis { max-width: 220px; }
 .nui-col-ellipsis > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+
+/* Small screens (≤ 640px): the table goes full-bleed — cancel the section's 1rem side padding so it
+   reaches the screen edges. Pairs with the table dropping its ring/radius at small tiers. */
+@media (max-width: 640px) {
+  .nui-records-list { margin-inline: -1rem; }
+}
 </style>

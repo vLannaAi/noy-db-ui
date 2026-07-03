@@ -21,7 +21,17 @@ serialize}` are its four renderings. The signature: the machinery disappears int
 - **I1 · One language.** Every text surface renders a stored query through `narrate` with the
   host's `formatValue`: window/tab title, the rest-title in the box, its tooltip (the sentence),
   recent rows, saved rows, the save-name draft, "Opens on". No surface shows raw canonical values
-  (`jazz`), raw ids (`artist_name`), or chip-join strings.
+  (`jazz`), raw ids (`artist_name`), or chip-join strings. **This includes the ACTIVE LOCALE**:
+  noy-db's `describe()` labels are single-language by design, so the host injects a locale
+  dictionary via `schemaFromDescribe`'s `labelFor` (the original label survives as an alias — a
+  query typed in the data language still resolves), passes a schema GETTER to `useCollectionList`
+  (labels are locale-reactive), and supplies `t` — which `narrate`, `astToPills` and
+  `buildSuggestions` all accept for their structural words (not/and/or, Sort:/Group:, Search …).
+  The host's `t` bridge forwards the FULL `nui.*` key verbatim — never re-prefix it.
+  Catalog ownership: the LIBRARY ships translations for its own keys (`LOCALE_TH` in `@noy-db/ui`
+  for the engine words; `NUI_LOCALE_TH` in `@noy-db/ui-nuxt/core` = engine + component chrome,
+  the one hosts spread); the HOST owns only its domain words (entity nouns `nui.q.noun.<entity>`,
+  per-entity titles `nui.q.all.<entity>`, field labels, enum values) plus any flavor overrides.
 - **I2 · Nothing is silent.** Every gesture produces a visible reaction ON TOP of everything else:
   missing key → the key card appears above all layers AND receives the caret; AI/voice failure →
   a note; silence after mic release → a note; empty result → the table's empty state. "Pressed
@@ -159,5 +169,5 @@ Remove/× deletes. 6. Delete-focus stays in the row. 7. Duplicates collapse in `
 ## 11. Out of scope / backlog
 
 Concept nodes (AI virtual fields), virtual scroll + sticky group headers, wrap-growth strategy for
-very long queries, faceted-vs-full popup values, Thai `nui.q.*` catalog, artists/labels memory
-zone.
+very long queries, faceted-vs-full popup values, artists/labels memory zone, locale-aware
+relative ages in recents ("2h") and date-value labels (`dateLabel` presets are English-only).

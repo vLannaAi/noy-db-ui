@@ -1,3 +1,9 @@
+import { NUI_LOCALE_TH } from '@noy-db/ui-nuxt/core'
+
+// SHOWCASE strings only: navigation, unlock, tour, stats, print header, and the DOMAIN words the
+// library can't know (entity nouns, per-entity "all" titles, vinyl-flavored placeholders). The
+// generic `nui.*` chrome/query-language catalog ships with the library (NUI_LOCALE_TH, spread
+// below); app entries after the spread override it.
 export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
   en: {
     'nav.collection': 'Collection',
@@ -37,6 +43,9 @@ export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
     'subtotal.genres': 'genres',
   },
   th: {
+    // the library's own strings — generic across any noy-db host
+    ...NUI_LOCALE_TH,
+    // app chrome
     'nav.collection': 'คอลเลคชัน',
     'nav.records': 'แผ่นเสียง',
     'nav.artists': 'ศิลปิน',
@@ -66,11 +75,24 @@ export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
     'stat.favorites': 'รายการโปรด',
     'empty.title': 'ไม่พบแผ่นเสียงที่ตรงกัน',
     'empty.body': 'ลองลบตัวกรองหรือคำค้นหา',
-    'nui.ai.keyHint': 'วางคีย์ API ของ Anthropic คีย์จะอยู่ในเบราว์เซอร์นี้ (localStorage ไม่ได้เข้ารหัส) และเรียก Claude จากอุปกรณ์ของคุณโดยตรง — ไม่ถูกส่งไปยังเซิร์ฟเวอร์ของเราเลย',
     'nl.note': 'ละเว้นฟิลด์ที่ไม่รู้จัก:',
     'nl.error': 'ค้นหาไม่สำเร็จ',
     'chip.from': 'จาก',
     'chip.to': 'ถึง',
     'subtotal.genres': 'แนวเพลง',
+    // print header meta line
+    'print.records': 'รายการ',
+    'print.artists': 'รายการ',
+    'print.labels': 'รายการ',
+    // DOMAIN words for the query language: this vault's entity nouns + per-entity "all" titles
+    'nui.q.noun.records': 'แผ่นเสียง',
+    'nui.q.noun.artists': 'ศิลปิน',
+    'nui.q.noun.labels': 'ค่ายเพลง',
+    'nui.q.all.records': 'แผ่นเสียงทั้งหมด',
+    'nui.q.all.artists': 'ศิลปินทั้งหมด',
+    'nui.q.all.labels': 'ค่ายเพลงทั้งหมด',
+    // showcase overrides of generic library strings (vinyl flavor / BYO-key wording)
+    'nui.ai.keyHint': 'วางคีย์ API ของ Anthropic คีย์จะอยู่ในเบราว์เซอร์นี้ (localStorage ไม่ได้เข้ารหัส) และเรียก Claude จากอุปกรณ์ของคุณโดยตรง — ไม่ถูกส่งไปยังเซิร์ฟเวอร์ของเราเลย',
+    'nui.ai.placeholder': 'เช่น แผ่นแจ๊สราคาถูกจากยุค 70',
   },
 }

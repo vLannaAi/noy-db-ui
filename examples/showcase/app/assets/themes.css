@@ -25,7 +25,7 @@
   --accent-2: #d96e2a;
   --hairline: #c9b896;
   --font-display: 'Anton', sans-serif;
-  --font-body: 'Public Sans', sans-serif;
+  --font-body: 'Source Serif 4', Georgia, serif;
   --font-mono: 'Public Sans', monospace;
   --display-transform: uppercase;
   --display-spacing: 0.02em;
@@ -71,7 +71,7 @@
   --hairline: #c9b896;
 
   --font-display: 'Anton', sans-serif;
-  --font-body: 'Public Sans', sans-serif;
+  --font-body: 'Source Serif 4', Georgia, serif;
   --font-mono: 'Public Sans', monospace;
   --display-transform: uppercase;
   --display-spacing: 0.02em;
@@ -96,7 +96,7 @@
   --hairline: #2a3a66;
 
   --font-display: 'Anton', sans-serif;
-  --font-body: 'Public Sans', sans-serif;
+  --font-body: 'Source Serif 4', Georgia, serif;
   --font-mono: 'Public Sans', monospace;
   --display-transform: uppercase;
   --display-spacing: 0.02em;
@@ -195,7 +195,7 @@
   --hairline: #111111;
 
   --font-display: 'Syne', sans-serif;
-  --font-body: 'Space Grotesk', sans-serif;
+  --font-body: 'Bitter', Georgia, serif;
   --font-mono: 'Space Mono', monospace;
   --display-transform: uppercase;
   --display-spacing: -0.01em;
@@ -220,7 +220,7 @@
   --hairline: #2e2e2e;
 
   --font-display: 'Syne', sans-serif;
-  --font-body: 'Space Grotesk', sans-serif;
+  --font-body: 'Bitter', Georgia, serif;
   --font-mono: 'Space Mono', monospace;
   --display-transform: uppercase;
   --display-spacing: -0.01em;
@@ -245,16 +245,18 @@
 
 :root[data-palette="speed"][data-theme="light"],
 :root[data-palette="speed"]:not([data-theme="dark"]) {
+  /* Neutrals are crimson-tinted (not straight slate/black): text is a very dark red, grays warm
+     toward the accent hue, so the whole page sits in one temperature. */
   --nui-bg: #ffffff;
-  --nui-bg-accent: #f4f6f8;
-  --nui-fg: #0f172a;
-  --nui-muted: #64748b;
-  --nui-subtle: #94a3b8;
-  --nui-border: #e2e8f0;
+  --nui-bg-accent: #f8f3f5;
+  --nui-fg: #33101c;
+  --nui-muted: #8b6a75;
+  --nui-subtle: #b39aa4;
+  --nui-border: #eee0e4;
   --nui-accent: #bb0231;
   --nui-accent-fg: #ffffff;
-  --accent-2: #1d4ed8;
-  --hairline: #eef0f3;
+  --accent-2: #0891b2;
+  --hairline: #f4eaed;
 
   --font-display: 'DM Sans', ui-sans-serif, sans-serif;
   --font-body: 'DM Sans', ui-sans-serif, sans-serif;
@@ -272,16 +274,17 @@
 }
 
 :root[data-palette="speed"][data-theme="dark"] {
-  --nui-bg: #0f172a;
-  --nui-bg-accent: #1e293b;
-  --nui-fg: #f1f5f9;
-  --nui-muted: #94a3b8;
-  --nui-subtle: #64748b;
-  --nui-border: #334155;
+  /* Crimson-tinted darks: the near-black leans dark red, grays warm toward the accent hue. */
+  --nui-bg: #190e13;
+  --nui-bg-accent: #2a1a21;
+  --nui-fg: #f7eef1;
+  --nui-muted: #b499a3;
+  --nui-subtle: #8a6b77;
+  --nui-border: #4a2f3a;
   --nui-accent: #e0173f;
   --nui-accent-fg: #ffffff;
-  --accent-2: #60a5fa;
-  --hairline: #1e293b;
+  --accent-2: #22d3ee;
+  --hairline: #2a1a21;
 
   --font-display: 'DM Sans', ui-sans-serif, sans-serif;
   --font-body: 'DM Sans', ui-sans-serif, sans-serif;
@@ -319,6 +322,66 @@ body {
   font-family: var(--font-body);
 }
 
+/* Keyboard focus in the theme's own voice — the browser-default blue ring clashes with every
+   palette. :where keeps specificity at zero so component-level focus styles still win. */
+:where(button, a, [role='option'], [role='radio'], select, [tabindex]):focus-visible {
+  outline: 2px solid var(--nui-accent);
+  outline-offset: 1px;
+}
+
+/* ─── PRINT: the report layout ────────────────────────────────────────────── */
+/* The printer icon swaps to this via window.print(). The fluent narrate title becomes the report
+   header (contract I1 extends to paper); chrome disappears; the table goes ink-friendly. */
+
+.print-header { display: none; }
+
+@media print {
+  @page { margin: 12mm; }
+
+  /* chrome off — AND the viewport cage: the app shell is a 100dvh overflow-hidden flex layout
+     with an inner scroll area; left as-is, print clips to ONE page. Everything must flow. */
+  .nui-sidebar, .nui-scrim, .print-hide { display: none !important; }
+  .nui-shell { display: block !important; height: auto !important; overflow: visible !important; }
+  .nui-content { display: block !important; margin: 0; padding: 0; overflow: visible !important; }
+  .nui-scroll-area { overflow: visible !important; height: auto !important; }
+  html, body { background: #fff; color: #000; height: auto !important; overflow: visible !important; }
+
+  /* the report header */
+  .print-header { display: block; margin-bottom: 6mm; }
+  .print-header h1 { font-size: 18pt; font-weight: 700; margin: 0 0 2mm; color: #000; }
+  .print-header p { font-size: 10pt; margin: 0; color: #333; }
+  .print-header .print-meta { margin-top: 1mm; color: #666; }
+
+  /* leftover chrome inside the content column (hamburger / expand tab) */
+  .nui-content > button { display: none !important; }
+
+  /* ink-friendly table: no tinted surfaces, black text, hairline rules.
+     CRITICAL: the width engine sizes columns for the SCREEN — its inline pixel widths overflow A4
+     and Chromium CLIPS the right-hand columns. !important beats inline styles: let print re-flow. */
+  table { font-size: 8pt; width: 100% !important; table-layout: auto !important; }
+  col, th, td { width: auto !important; min-width: 0 !important; max-width: none !important; }
+  th, td { padding-top: 3px !important; padding-bottom: 3px !important; padding-left: 4px !important; padding-right: 4px !important; }
+  /* nowrap/truncate utilities block the auto layout from squeezing — paper wraps instead */
+  th, td, th *, td * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  /* interactive-only icons inside the table (chooser, carets, collapse-all) — never on paper */
+  thead [class*='i-lucide-'], tr[class*='group-row'] [class*='i-lucide-'], tr[class*='subtotal'] [class*='i-lucide-'] { display: none !important; }
+  thead, thead th, thead td {
+    position: static !important;
+    background: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  /* header labels carry their own accent-fg (white) class — force EVERY descendant to ink */
+  thead, thead * { color: #000 !important; }
+  thead tr:first-child { border-bottom: 1.5px solid #000; }
+  tbody tr { border-bottom: 0.5px solid #bbb; break-inside: avoid; }
+  tbody tr[class*='group-row'] td { background: none !important; border-top: 1px solid #000; font-weight: 600; }
+  tbody tr[class*='subtotal'] td { background: none !important; }
+  a, .nui-link, .text-data { color: #000 !important; text-decoration: none; }
+  /* interactive-only glyphs off (funnels, sort hints); covers stay — hiding a td would shift columns */
+  thead [class*='list-filter'], .nui-sort-hint { display: none !important; }
+}
+
 /* Headings use the display font */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
@@ -329,6 +392,27 @@ h1, h2, h3, h4, h5, h6 {
 
 code, pre, kbd {
   font-family: var(--font-mono);
+}
+
+/* Two-kingdoms colour split: --nui-accent = FUNCTION (chrome, structure, controls);
+   --accent-2 = DATA (record links, favourites — the collection speaking). */
+.text-data {
+  color: var(--accent-2);
+}
+
+/* Data link (artist/label): the row hover tints the whole row; hovering the link itself gives a
+   stronger, link-scoped highlight, and pressing it shows an :active state. */
+.nui-link {
+  color: var(--accent-2);
+  border-radius: 5px;
+  transition: background-color 0.12s ease, text-decoration-color 0.12s ease;
+}
+.nui-link:hover {
+  text-decoration: underline;
+  background: color-mix(in oklab, var(--accent-2) 15%, transparent);
+}
+.nui-link:active {
+  background: color-mix(in oklab, var(--accent-2) 30%, transparent);
 }
 
 /* Sticky table header — pins to top of the scroll area, not the viewport */

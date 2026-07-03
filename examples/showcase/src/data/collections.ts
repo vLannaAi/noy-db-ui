@@ -1,7 +1,11 @@
 import { ref, type Vault, type Collection } from '@noy-db/hub'
+import { i18nText, staticDict } from '@noy-db/hub/i18n'
 import { COVER_FIELD } from './vault'
-import { ArtistSchema, LabelSchema, RecordSchema } from './types'
-import { FIELD_LABELS } from './dicts'
+import { ArtistSchema, LabelSchema, RecordSchema, GENRES, FORMATS, CONDITIONS } from './types'
+import { FIELD_LABELS, GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS } from './dicts'
+
+export const NAME_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
+export const TITLE_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
 
 // fieldMeta builder: English label + per-field overrides.
 function fieldMeta(collection: string, overrides: Record<string, Record<string, unknown>> = {}) {
@@ -19,26 +23,43 @@ export function declareCollections(vault: Vault): {
 } {
   const artists = vault.collection('artists', {
     schema: ArtistSchema,
-    fieldMeta: fieldMeta('artists', { country: { semanticType: 'country' } }),
+    i18nFields: { name: NAME_I18N },
+    fieldMeta: fieldMeta('artists', {
+      country: { semanticType: 'country' },
+      formedYear: { semanticType: 'number' },
+    }),
     meta: { label: 'Artists' },
   })
   const labels = vault.collection('labels', {
     schema: LabelSchema,
-    fieldMeta: fieldMeta('labels', { country: { semanticType: 'country' } }),
+    i18nFields: { name: NAME_I18N },
+    fieldMeta: fieldMeta('labels', {
+      country: { semanticType: 'country' },
+      founded: { semanticType: 'number' },
+    }),
     meta: { label: 'Labels' },
   })
   const records = vault.collection('records', {
     schema: RecordSchema,
     refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
     blobFields: { [COVER_FIELD]: { retainDays: 36500 } },
+    i18nFields: { title: TITLE_I18N },
+    dictKeyFields: {
+      genre:     staticDict('genre',     GENRE_LABELS     as Record<string, Record<string, string>>),
+      format:    staticDict('format',    FORMAT_LABELS    as Record<string, Record<string, string>>),
+      condition: staticDict('condition', CONDITION_LABELS as Record<string, Record<string, string>>),
+    },
     fieldMeta: fieldMeta('records', {
-      artistId: { semanticType: 'entity' },
-      labelId: { semanticType: 'entity' },
-      priceUsd: { semanticType: 'money', unit: 'USD' },
+      artistId:    { semanticType: 'entity' },
+      labelId:     { semanticType: 'entity' },
+      year:        { semanticType: 'number' },
       durationMin: { semanticType: 'number', unit: 'min' },
+      trackCount:  { semanticType: 'number' },
+      rating:      { semanticType: 'number' },
+      priceUsd:    { semanticType: 'currency', unit: 'USD' },
       purchasedOn: { semanticType: 'date' },
-      notes: { widget: 'textarea' },
-      favorite: { widget: 'checkbox' },
+      notes:       { widget: 'textarea' },
+      favorite:    { widget: 'checkbox' },
     }),
     meta: { label: 'Records' },
   })
