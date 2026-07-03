@@ -1,5 +1,6 @@
 import { createNoydb, readNoydbBundle, type Noydb, type Vault } from '@noy-db/hub'
 import { withBlobs } from '@noy-db/hub/blobs'
+import { withHistory } from '@noy-db/hub/history'
 import { withI18n } from '@noy-db/hub/i18n'
 import { memory } from '@noy-db/to-memory'
 
@@ -22,6 +23,7 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
     user: 'viewer',
     secret,
     blobStrategy: withBlobs(),
+    historyStrategy: withHistory(),
     i18nStrategy: withI18n(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
@@ -45,6 +47,7 @@ export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Pr
     user: 'viewer',
     secret,
     blobStrategy: withBlobs(),
+    historyStrategy: withHistory(),
     i18nStrategy: withI18n(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
