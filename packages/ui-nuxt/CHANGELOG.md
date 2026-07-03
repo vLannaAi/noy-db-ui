@@ -5,6 +5,36 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.2.0-pre.1] — 2026-07-03
+
+The fluent-search release: the search box becomes the view's editable title, with three input
+voices and full localizability.
+
+### Added
+- **Search-as-title** — at rest the `SearchBox` renders the fluent narrate title (with the full
+  sentence as tooltip); focusing swaps to the two-tone pill editor continuing the title.
+- **Pill editing** — click edits a pill as a labelled token with the value pre-selected; every
+  pill has a × and a popup Remove row; Esc restores the original (cancel is never a delete);
+  drag ≥6px reorders within its own segment with an insertion marker.
+- **Keyboard roving** — arrows/Home/End roam the pill row, Enter/Space edits, Delete removes
+  (focus stays in the row), Alt+arrows reorder, `/` focuses the field from anywhere.
+- **Three-voice mode group** — exact ⌕ / ask ✨ (sticky AI, refine automatic) / speak 🎤
+  (push-to-record via pointer capture; release finalizes into the ask pipeline). Morphing reset
+  (✕ discard draft / abort flight → 🗑 erase search), Esc ladder, floating key card + status notes.
+- **`GroupByControl`**, saved/recent search menus with narrate-based fluent rows, and a print
+  contract (report header = narrate title + sentence).
+- **`NUI_LOCALE_TH`** (`@noy-db/ui-nuxt/core`) — Thai catalog for the whole family: the engine's
+  `LOCALE_TH` merged with this binding's component chrome. Hosts spread it into their translator
+  and override freely; domain words (entity nouns, field labels, enum values) stay host-side.
+- Suggestion hint chips render through `t('nui.hint.<hint>')`.
+
+### Changed
+- Components pass the host `t` into `astToPills`/`buildSuggestions`, so pill heads and suggestion
+  labels follow the active locale. The host's `t` bridge receives the FULL `nui.*` key — never
+  re-prefix it.
+
+## [0.2.0-pre.0] — 2026-06-26
+
 Initial extraction from an internal pilot app — the Nuxt binding for `@noy-db/ui`.
 
 ### Added
