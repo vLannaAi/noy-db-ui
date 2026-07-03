@@ -1,127 +1,151 @@
-# Search Toolbar Interaction — Design Spec
+# Search Toolbar Interaction — Design Spec & Contract (v2)
 
-Scope: the records-list toolbar in the showcase (and the `@noy-db/ui-nuxt` pieces behind it):
-the search field ("editable title"), the three-mode search command group, result modifiers,
-memory, and reset. Defines states, transitions, focus, keyboard, motion, and accessibility.
+Scope: the list-page toolbar in the showcase and the `@noy-db/ui-nuxt` pieces behind it: the
+search field ("editable title"), the three-voice mode group, result modifiers, memory, reset,
+notes/key sheet. **v2 is the regression contract**: every numbered invariant below is testable and
+MUST keep holding when anything else changes. When a fix would violate one, the spec gets amended
+first, deliberately — never silently.
 
 ## 0. The model
 
 The search field is the **only input surface**. The toolbar reads left→right as a sentence:
 
-> **express** the search (how: exact / ask / speak) → **shape** the result (group) →
-> **recall** (saved, recent) → **reset**.
+> **express** the search (exact / ask / speak) → **shape** (group) → **recall** (saved, recent) →
+> **reset**.
 
-The three search commands are three *voices* for the same utterance — one segmented radio
-control, exactly one armed. The signature of the design: the machinery disappears into the
-title. You never "go somewhere" to search, ask, or speak — you choose a voice and the title
-listens.
+One query string is the single source of truth; `parse → resolve → {evaluate, pills, narrate,
+serialize}` are its four renderings. The signature: the machinery disappears into the title.
 
-## 1. Anatomy & grid
+## 1. Global invariants (the "never break" list)
 
-```
-┌─ TITLE / SEARCH FIELD (flex-1) ─────────┐  ┌ EXPRESS ┐ │ SHAPE │ MEMORY  │ RESET
-│  Records: Jazz, by Label▎               │  │ ⌕  ✨ 🎤 │ │  ▦    │  ⧉  🕒  │ ✕/🗑
-└─────────────────────────────────────────┘  └─▔▔──────┘ │       │         │
-                                              sliding thumb   hairline dividers
-```
+- **I1 · One language.** Every text surface renders a stored query through `narrate` with the
+  host's `formatValue`: window/tab title, the rest-title in the box, its tooltip (the sentence),
+  recent rows, saved rows, the save-name draft, "Opens on". No surface shows raw canonical values
+  (`jazz`), raw ids (`artist_name`), or chip-join strings.
+- **I2 · Nothing is silent.** Every gesture produces a visible reaction ON TOP of everything else:
+  missing key → the key card appears above all layers AND receives the caret; AI/voice failure →
+  a note; silence after mic release → a note; empty result → the table's empty state. "Pressed
+  and nothing happened" is always a bug.
+- **I3 · Typed work is never lost.** The draft survives: blur commits it (exact) or keeps it
+  visible (ask); AI failure/abort keeps it; the pill being edited is restored by Esc. The only
+  destroyers are the user's explicit Esc-discard, ✕, 🗑, or Remove.
+- **I4 · No layout shift.** The box is a constant 46px min-height in rest and edit; status notes
+  and the key sheet float in zero-height strips (inline `z-index` — utility classes for z are not
+  trusted); popovers overlay. The table below never moves when transient UI appears.
+- **I5 · Honest icons.** A control's icon names exactly what a press will do right now: reset is
+  ✕ (discard draft / abort flight) or 🗑 (erase search) or inert; the thumb sits under the armed
+  voice; the mic is red only while capturing.
+- **I6 · Deterministic vs AI never bleed.** Exact input, pill edits (any mode), and Alt+Enter's
+  surrounding state make ZERO AI calls; ask/speak commits make exactly one. A pill-edit session
+  forces deterministic commit even while ✨ is armed.
+- **I7 · Aborted work never lands.** ✕ or Esc during an AI flight discards the in-flight result
+  even if the response arrives later (sequence guard); busy state fully clears.
+- **I8 · Canonical state is deduped.** `resolve` collapses duplicate sort/group/show/hide keys
+  (first occurrence keeps the slot) and merges same-field eq/in predicates (OR semantics).
+- **I9 · Focus stays coherent.** Focus never falls to `<body>` from any search interaction. Rules:
+  pill unmount parks focus on the input first; pill-focus after a query change defers a tick;
+  every focusable shows the themed accent ring.
 
-- Buttons: 36×36 px hit target, 21 px (1.3125rem) icon, 8 px gap **within** a zone.
-- Zones separated by 12 px + a 1 px hairline divider (`--hairline`).
-- All button centers align to the search field's centerline (46 px field → center 23 px).
-- **Mode group** is a capsule (`--radius-control`, `bg-nui-bg-accent`) with a 2 px-inset
-  **sliding thumb** under the armed icon. Armed icon = accent; others = muted. The capsule is
-  the only "surface" on the rail; every other control is a ghost icon button.
-- Reset sits isolated at the far end (destructive-adjacent controls live alone) and **never
-  moves**.
+## 2. The mode group (radio; arming focuses the field)
 
-## 2. The mode group (radio; arming also focuses the field)
+| Voice | Icon | Commit | Suggestions |
+|---|---|---|---|
+| **Exact** (default) | ⌕ | Enter/Tab → deterministic parse | full panel |
+| **Ask** (sticky) | ✨ | Enter → AI (refine automatic when a query exists) | hidden; ONE actionable hint row "↵ interpret with AI" (a real button = same as Enter) |
+| **Speak** (momentary) | 🎤 | hold = capture (continuous), release = finalize → Ask pipeline | n/a |
 
-### ⌕ Exact — deterministic search (default)
-- Placeholder: “Type to filter — Tab completes…”.
-- Keystrokes → tokenizer → suggestion panel → pills. Tab/Enter commit; Backspace on empty
-  removes the last pill; blur smart-quotes and commits the draft. (Current behavior, named.)
+- Arming ✨/🎤 without a key → the key card (see §6). Ask stays armed after results.
+- Alt+Enter in Exact = one-shot ask; the thumb never moves.
+- Mic: quick tap (<250 ms) shows the "Hold to speak" teaching hint; pointer capture makes release
+  reliable off-button; unsupported browser hides the segment.
+- Busy (AI in flight): draft shimmers, input readonly, ✨ pulses, reset face = ✕, Esc aborts.
 
-### ✨ Ask — AI search
-- Arm: field focuses; placeholder “Describe it — cheap jazz from the 70s…”; a small ✨ ghost
-  at the line start (the field wears its mode).
-- Typing: **suggestion panel hidden** — natural-language register; one quiet hint row instead:
-  “↵ interpret with AI”.
-- Enter → in flight: draft text shimmers (opacity pulse), ✨ segment pulses, field read-only,
-  Esc aborts. Existing query is always sent as refine context (no checkbox).
-- Success: draft dissolves; pills materialize left→right (120 ms, 60 ms stagger); title
-  crossfades. **Mode stays armed** — conversational iteration (“now only favorites” refines).
-- Failure: draft kept untouched; one-line note under the toolbar (specific: key? network?),
-  auto-dismisses ~6 s.
-- Blur in Ask **keeps the draft in the field** (never committed as free-text pills, never
-  discarded). The box shows the draft instead of the rest-title until sent or Escaped.
-- No stored key → arming ✨ opens a compact key sheet anchored to the segment (key
-  save/change/forget only; the old NL textarea and refine checkbox are removed — the field IS
-  the NL input, refine is automatic).
+## 3. The field: rest vs edit
 
-### 🎤 Speak — voice, spring-loaded, routes to AI
-- Rationale: speech is natural language by nature; dictating into the deterministic parser
-  yields free-text noise. **Voice = hands-free Ask.**
-- Tap: segment latches *pressed* with the red pulse; placeholder “Listening…”; interim
-  transcript streams into the field as muted ghost text, solidifying as segments finalize.
-- End (≈1.5 s silence, or tap again): transcript → the Ask pipeline (shimmer → pills).
-- Esc while listening: stop + discard transcript.
-- After completion or cancel, the thumb slides back to the previously armed mode
-  (spring-loaded: mic is momentary, not sticky).
-- Unsupported browser: segment hidden entirely, never permanently disabled.
+- **Rest** = the fluent title (24px/700), tooltip = full sentence; pending ask-draft (muted, ✨
+  ghost) replaces the title while it exists; placeholder when empty.
+- **Edit** (focus) = two-tone pills + the draft continuing the title (same 24px/700/baseline).
+  Pills: accent fill = filters/text (what to match), neutral fill = sort/group/view (how it's
+  shaped); head (field/kind) quiet — 75% on accent pills, 60% neutral — value bold.
+- Blur: exact-mode draft commits (spaced values smart-quoted; a tail containing another `field:`
+  is DSL, not one value); ask-mode draft is kept visible; an edit session commits.
 
-## 3. Shape & memory zones
+## 4. Pills — the criterion object
 
-- **▦ Group-by**: existing popover (toggle fields, expand/collapse levels). Unchanged.
-- **⧉ Saved / 🕒 Recent**: existing popovers; rows render the fluent `narrate` title with the
-  sentence as tooltip. Unchanged.
+Every pill supports, in ANY mode:
 
-## 4. Reset — morphing icon, honest meaning
+| Gesture | Result |
+|---|---|
+| click (mousedown never blurs the editor) | EDIT: token into the draft (labelled form, e.g. `Genre:jazz`), **value part pre-selected so typing replaces it**, popup opens with **Remove** as the first option, then value choices |
+| its × (24px hit target) | remove that criterion |
+| popup "Remove …" | remove (the explicit delete) |
+| Esc during edit | RESTORE the original pill (rung ② — cancel is never a delete) |
+| drag ≥6px (pointer capture; accent insertion bar) | reorder within its own segment (sort = priority, group = nesting; cross-segment clamps); a completed drag's click is swallowed once and only once |
+| keyboard | see §7 |
 
-One slot, three faces; the icon always names exactly what the press will do:
+Boolean criteria read as the bare label ("Favorite" / "not Favorite") — never `true`/`false`.
 
-| State | Icon | Press does |
-|---|---|---|
-| Draft present (or AI in flight) | ✕ | Discard the draft (abort the AI request, restore draft on abort). Query untouched. Focus stays in the field. |
-| No draft, query present | 🗑 (trash) | Erase the whole search (query + pills). |
-| Nothing to clear | 🗑 at 40 %, inert | — |
+## 5. Reset & the Esc ladder
 
-Mode is never reset by this control — how you search is a preference, not content.
+- **Reset button** (fixed position, far right): ✕ when a draft exists or a flight is up (discard/
+  abort; query untouched) → 🗑 when only a query remains (erase all) → inert 🗑 otherwise. Mode is
+  never reset.
+- **Esc ladder** in the field, one rung per press: ① close the popup (in EVERY form — value
+  suggestions, the editing Remove row, or the ask hint) → ② cancel: restore an edited pill, else
+  discard the draft → ③ blur to the title. During a flight, Esc aborts (I7). On a focused pill,
+  Esc returns to the input.
 
-## 5. Keyboard map
+## 6. Key card & status notes (floating, I2 + I4)
+
+- The key card appears above ALL layers (inline z-index 40 — see I4) whenever ✨/🎤/ask/speak is
+  used without a key; the caret jumps into it **every time** (not only the first); Enter saves and
+  returns focus to the search field; Later dismisses. The pending draft survives the detour.
+- Error/info notes are floating one-liners under the toolbar: AI failures (auto-dismiss ~6s),
+  ignored-fields notes, mic errors by cause (permission / no mic / network / no speech).
+
+## 7. Keyboard map (complete)
 
 | Key | Where | Action |
 |---|---|---|
-| `/` | anywhere | focus the field in the current mode |
-| `Tab` / `Enter` | Exact | complete / commit token |
-| `Enter` | Ask | send to AI |
-| `Alt+Enter` | Exact | send this draft to AI once, without switching modes |
-| `Esc` | field | ladder: ① close suggestions → ② discard draft → ③ blur to title. Also: abort AI flight; stop listening. |
+| `/` | anywhere | focus the field in the current voice |
+| `Tab` / `Enter` | Exact draft | complete / commit |
+| `Enter` | Ask draft (no edit session) | send to AI |
+| `Alt+Enter` | Exact draft | one-shot ask |
+| `Esc` | field / flight / pill | the ladder (§5); abort; back to input |
 | `Backspace` on empty | field | remove last pill |
-| `←`/`→` | mode group focused | move the armed segment (radiogroup) |
+| `←` at input start | field | roving focus into the pill row (last pill) |
+| `←`/`→` | pill | roam; `→` past last returns to the input |
+| `Home` / `End` | pill | first / last pill |
+| `Enter`/`Space` | pill | edit (deterministic in any mode) |
+| `Delete`/`Backspace` | pill | remove; focus lands on the previous pill (input-park rule, I9) |
+| `Alt+←`/`Alt+→` | pill | reorder within segment; focus follows |
+| hold `Space`/`Enter` | mic focused | push-to-record |
+| `Enter` | key card / save-name / rename | confirm |
+| `←`/`→` | mode group | move the armed segment |
 
-## 6. Motion
+## 8. Menus (memory zone)
 
-- Thumb slide 150 ms ease-out. Mic pulse 1.2 s. Pill materialize 120 ms scale .95→1 + fade,
-  60 ms stagger. Title crossfade 150 ms. Draft shimmer: 1 s opacity 1→.55 loop.
-- `prefers-reduced-motion`: all become instant swaps; mic pulse becomes a static red dot.
+- **Recents**: fluent one-line titles + sentence tooltip + relative age; click applies; dedup by
+  canonical string; recents are inherently static snapshots.
+- **Saved**: rows = user name (+ fluent title as a muted second line when it differs) + sentence
+  tooltip + rolling chip; save-name input autofocuses pre-selected with the fluent title; Enter
+  saves; rename/delete/favorite/set-default per row; "Opens on" uses the same language.
 
-## 7. Accessibility
+## 9. Layering (top to bottom)
 
-- Mode group `role="radiogroup"`; segments `role="radio"` + `aria-checked`; arrow-key moves.
-- Mic `aria-pressed` while listening; transcript region `aria-live="polite"`.
-- Field `aria-busy` during AI flight. Reset `aria-label` matches its current face
-  (“Discard draft” / “Clear search”).
-- Every state change is expressed in two channels (icon + placeholder/ghost), never color
-  alone.
+key card (z:40, inline) → status notes (same strip) → suggestion/hint popup (z:20) → group/saved/
+recent popovers → sticky thead (z:10) → content. Anything that must beat the thead uses an INLINE
+z-index (see I4's utility-class caveat).
 
-## 8. Decisions log (owner-confirmed)
+## 10. Decisions log
 
-1. **Voice always routes to AI** (hands-free Ask).
-2. **Ask stays armed** after a result (conversational refine).
-3. **Suggestions hidden in Ask**; hint row only.
-4. **Reset is two-stage with morphing icons**: ✕ discards the draft, 🗑 erases all.
+1. Voice always routes to AI. 2. Ask stays armed. 3. Ask hides suggestions (hint row instead);
+pill edits override. 4. Reset = two-stage morphing icon. 5. Esc restores an edited pill; explicit
+Remove/× deletes. 6. Delete-focus stays in the row. 7. Duplicates collapse in `resolve`.
+8. Booleans read as bare labels. 9. Pill edit pre-selects the value.
 
-## 9. Out of scope (this spec)
+## 11. Out of scope / backlog
 
-Concept nodes (AI-defined virtual fields), virtual scroll + sticky group headers, the
-artists/labels pages' toolbars (should adopt this spec afterward), Thai `nui.q.*` catalog.
+Concept nodes (AI virtual fields), virtual scroll + sticky group headers, wrap-growth strategy for
+very long queries, faceted-vs-full popup values, Thai `nui.q.*` catalog, artists/labels memory
+zone.
