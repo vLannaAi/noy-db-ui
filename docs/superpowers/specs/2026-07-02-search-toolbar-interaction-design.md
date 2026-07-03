@@ -131,6 +131,18 @@ Boolean criteria read as the bare label ("Favorite" / "not Favorite") — never 
   tooltip + rolling chip; save-name input autofocuses pre-selected with the fluent title; Enter
   saves; rename/delete/favorite/set-default per row; "Opens on" uses the same language.
 
+## 8b. Print (the report layout)
+
+- A printer icon (memory zone, after recents) calls `window.print()`; `@media print` swaps to the
+  report layout. **I1 extends to paper**: the report header is the fluent narrate title (h1) +
+  the full sentence + `N rows · printed-at`.
+- Chrome disappears (`.nui-sidebar`, `.print-hide` on the toolbar and note strips); the table goes
+  ink-friendly: no tinted surfaces, black text — including forcing `thead *` to ink (header labels
+  carry their own accent-fg class), hairline row rules, group banners as bold rule-topped rows,
+  interactive-only glyphs (funnels, sort hints) hidden. Never `display:none` a `td` (covers stay)
+  — that would shift columns.
+- Print reflects the CURRENT view state: filters, sort, group, collapse state, column set.
+
 ## 9. Layering (top to bottom)
 
 key card (z:40, inline) → status notes (same strip) → suggestion/hint popup (z:20) → group/saved/
