@@ -33,4 +33,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Push release tags
-        run: git push origin --tags
+        # `changeset publish` logs "New tag" but the tags have twice not survived to this
+        # step (push saw "Everything up-to-date"). `changeset tag` is idempotent — it
+        # re-creates any missing tag for the versions currently in package.json.
+        run: |
+          pnpm exec changeset tag
+          git push origin --tags
