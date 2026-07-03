@@ -7,6 +7,7 @@ import { computed, onBeforeUnmount } from 'vue'
 import type { AppColumn } from '@noy-db/ui'
 import type { SortKey } from '@noy-db/ui'
 import { useNuiI18n } from '../core/i18n'
+import { vEllipsisTitle } from './ellipsis-title'
 
 const { t } = useNuiI18n()
 
@@ -53,16 +54,28 @@ onBeforeUnmount(() => { if (timer) clearTimeout(timer) })
     @click="onClick"
     @dblclick="onDblclick"
   >
-    <span class="inline-flex items-center gap-1 whitespace-nowrap" :class="column.align === 'right' ? 'flex-row-reverse' : ''">
-      {{ column.label }}
+    <span class="inline-flex items-center gap-1 whitespace-nowrap max-w-full min-w-0" :class="column.align === 'right' ? 'flex-row-reverse' : ''">
+      <span v-if="column.headerSymOnly" class="shrink-0">{{ column.headerSym }}</span>
+      <template v-else>
+        <span v-ellipsis-title class="min-w-0 truncate">{{ column.label }}</span>
+        <span v-if="column.headerSym" class="shrink-0 font-normal opacity-60" aria-hidden="true">{{ column.headerSym }}</span>
+      </template>
       <span v-if="isSorted" class="shrink-0 text-[0.8rem] leading-none font-bold" aria-hidden="true">{{ dir === 'asc' ? '▲' : '▼' }}</span>
-      <span v-else class="i-lucide-chevrons-up-down size-3 shrink-0 opacity-40" aria-hidden="true" />
+      <span v-else-if="!column.headerSymOnly" class="relative w-0 h-3 shrink-0" aria-hidden="true">
+        <span class="nui-sort-hint i-lucide-chevrons-up-down size-3 absolute top-0" :class="column.align === 'right' ? 'right-0' : 'left-0'" />
+      </span>
       <span v-if="sortPriority" class="inline-flex items-center justify-center rounded-full bg-nui-accent-fg/30 text-[10px] font-semibold leading-none size-3.5">{{ sortPriority }}</span>
     </span>
     <span v-if="subLabel" class="text-[10px] font-normal opacity-70 leading-tight whitespace-nowrap">{{ subLabel }}</span>
   </button>
-  <span v-else class="inline-flex flex-col" :class="column.align === 'right' ? 'items-end' : 'items-start'">
-    <span class="whitespace-nowrap">{{ column.label }}</span>
+  <span v-else class="inline-flex flex-col max-w-full" :class="column.align === 'right' ? 'items-end' : 'items-start'">
+    <span class="inline-flex items-center gap-1 whitespace-nowrap max-w-full min-w-0">
+      <span v-if="column.headerSymOnly" class="shrink-0">{{ column.headerSym }}</span>
+      <template v-else>
+        <span v-ellipsis-title class="min-w-0 truncate">{{ column.label }}</span>
+        <span v-if="column.headerSym" class="shrink-0 font-normal opacity-60" aria-hidden="true">{{ column.headerSym }}</span>
+      </template>
+    </span>
     <span v-if="subLabel" class="text-[10px] font-normal opacity-70 leading-tight whitespace-nowrap">{{ subLabel }}</span>
   </span>
 </template>

@@ -10,10 +10,11 @@ export interface ResponsiveColumn { key: string; relevance?: number; stackWith?:
 /** A width bucket: shown when containerWidth ≥ `min`; a column needs relevance ≥ `threshold`. */
 export interface Bucket { name: string; min: number; threshold: number }
 
-// rem→px at the default 16px root. xs/sm currently share a threshold (stacking, the xs-only
-// 2-line treatment, is a separate milestone); md adds outstanding+country, lg adds supplier.
+// rem→px at the default 16px root. xs has a HIGHER threshold than sm so the smallest screens can
+// shed "shown-but-not-essential" columns (e.g. a cover thumbnail): a relevance in [80, 85) shows
+// down to sm but drops at xs. md adds outstanding+country, lg adds supplier.
 export const BUCKETS: readonly Bucket[] = [
-  { name: 'xs', min: 0, threshold: 80 },
+  { name: 'xs', min: 0, threshold: 85 },
   { name: 'sm', min: 448, threshold: 80 },
   { name: 'md', min: 736, threshold: 55 },
   { name: 'lg', min: 992, threshold: 0 },

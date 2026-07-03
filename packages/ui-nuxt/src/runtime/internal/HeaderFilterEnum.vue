@@ -21,7 +21,7 @@ function selectAll(): void { emit('change', props.facets.map((f) => f.value)) }
 </script>
 
 <template>
-  <div class="p-1 min-w-56" role="dialog" :aria-label="t('nui.filter.title', 'Filter')">
+  <div class="p-1 min-w-56 text-left" role="dialog" :aria-label="t('nui.filter.title', 'Filter')">
     <ul class="max-h-72 overflow-y-auto py-1">
       <li v-for="f in facets" :key="f.value">
         <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-nui-bg-accent cursor-pointer">
@@ -31,7 +31,7 @@ function selectAll(): void { emit('change', props.facets.map((f) => f.value)) }
             :checked="selected.includes(f.value)"
             @change="toggle(f.value, ($event.target as HTMLInputElement).checked)"
           >
-          <span class="flex-1 truncate text-sm">{{ f.value }}</span>
+          <span class="flex-1 truncate text-sm">{{ f.label ?? f.value }}</span>
           <span class="text-xs text-nui-muted tabular-nums">{{ f.count }}</span>
         </label>
       </li>

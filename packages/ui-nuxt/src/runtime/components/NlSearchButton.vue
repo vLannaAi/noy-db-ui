@@ -46,7 +46,7 @@ watch(() => props.loading, (l, prev) => { if (prev && !l && !props.error && !pro
 
 <template>
   <Popover align="end" :label="t('nui.ai.title', 'AI search')" trigger-class="nui-icon-btn text-nui-accent size-6" @close="onClose">
-    <span class="i-lucide-sparkles size-3.5" aria-hidden="true" />
+    <span class="i-lucide-sparkles size-[1.3125rem]" aria-hidden="true" />
 
     <template #content>
       <div class="w-80 max-w-[92vw] p-3 space-y-2">

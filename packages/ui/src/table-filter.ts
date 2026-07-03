@@ -10,8 +10,9 @@ export type ColumnFilterValue =
   | { kind: 'entity'; selected: string[] }
   | { kind: 'date'; from?: string; to?: string }
 
-/** One faceted value option in a header filter popover. */
-export interface Facet { value: string; count: number; selected: boolean }
+/** One faceted value option in a header filter popover. `value` is the canonical key used for
+ *  filtering; `label` (optional) is the host-supplied display string (e.g. a dict/locale label). */
+export interface Facet { value: string; count: number; selected: boolean; label?: string }
 
 /** Entity-column facets split into those present in the current view and the rest. */
 export interface EntityFacets { inView: Facet[]; others: Facet[] }

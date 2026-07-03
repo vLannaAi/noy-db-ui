@@ -29,7 +29,7 @@ const isActive = (id: string) => props.active.includes(id)
     :label="active.length ? `${t('nui.group.by', 'Grouped by')} ${summary}` : t('nui.group.title', 'Group by')"
     :trigger-class="`nui-btn ${active.length ? 'bg-nui-bg-accent text-nui-accent' : 'text-nui-muted hover:bg-nui-bg-accent'}`"
   >
-    <span class="i-lucide-group size-3.5" aria-hidden="true" />
+    <span class="i-lucide-group size-[1.3125rem]" aria-hidden="true" />
 
     <template #content="{ close }">
       <div class="w-56 py-1">

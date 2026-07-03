@@ -12,12 +12,20 @@ export function resolve(ast: Ast, schema: EntitySchema, now: Date = new Date()):
   // Resolve sort/group field aliases to canonical ids (e.g. sort:buyer → buyerName) so the header
   // highlight, pills, and URL all agree with what evaluate sorts on.
   const fieldId = (f: string) => resolveField(schema, f)?.id ?? f
+  // Collapse duplicate sort/group/view keys (keep the FIRST occurrence — its position is the
+  // priority/nesting level). A duplicate sort field can never affect ordering (equal on the first
+  // key ⇒ equal on its duplicate) and a duplicate group field only nests singleton groups; typed
+  // duplicates otherwise linger as identical pills.
+  const dedupe = <T,>(arr: T[], key: (x: T) => string): T[] => {
+    const seen = new Set<string>()
+    return arr.filter((x) => (seen.has(key(x)) ? false : (seen.add(key(x)), true)))
+  }
   return {
     where: ast.where ? resolveNode(ast.where, schema, now) : null,
-    sort: ast.sort.map((s) => ({ ...s, field: fieldId(s.field) })),
-    groupBy: ast.groupBy.map((g) => ({ ...g, field: fieldId(g.field) })),
+    sort: dedupe(ast.sort.map((s) => ({ ...s, field: fieldId(s.field) })), (s) => s.field),
+    groupBy: dedupe(ast.groupBy.map((g) => ({ ...g, field: fieldId(g.field) })), (g) => g.field),
     view: ast.view
-      ? { show: ast.view.show.map(fieldId), hide: ast.view.hide.map(fieldId) }
+      ? { show: dedupe(ast.view.show.map(fieldId), (f) => f), hide: dedupe(ast.view.hide.map(fieldId), (f) => f) }
       : { show: [], hide: [] },
   }
 }

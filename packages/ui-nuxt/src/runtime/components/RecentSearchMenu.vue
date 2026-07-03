@@ -2,21 +2,27 @@
 // Recent-searches dropdown: a clock button opens a list of the freshest queries. Each row renders
 // the query as friendly pills (astToPills) + a relative timestamp; click applies, × removes, footer
 // clears. Recents come in via props (the host wires its history store). Nuxt-UI-free.
-import { computed, ref } from 'vue'
-import { astToPills } from '@noy-db/ui'
+import { computed } from 'vue'
 import { parse } from '@noy-db/ui'
 import { resolve } from '@noy-db/ui'
-import { relativeTime, type HistoryEntry } from '@noy-db/ui'
+import { narrate, relativeTime, type HistoryEntry } from '@noy-db/ui'
 import type { EntitySchema } from '@noy-db/ui'
 import Popover from '../internal/Popover.vue'
 import { useNuiI18n } from '../core/i18n'
 
-const props = defineProps<{ schema: EntitySchema; recents: readonly HistoryEntry[] }>()
+const props = defineProps<{
+  schema: EntitySchema
+  recents: readonly HistoryEntry[]
+  /** Optional canonical value → display name resolver (enum/entity labels), same as the list's. */
+  formatValue?: (field: string, value: string) => string | undefined
+}>()
 const emit = defineEmits<{ apply: [q: string]; remove: [q: string]; clear: [] }>()
 const { t } = useNuiI18n()
 
-function labelsFor(q: string): string[] {
-  try { return astToPills(resolve(parse(q).ast, props.schema), props.schema).map((p) => p.label) } catch { return [q] }
+// Fluent one-line description of a stored query (narrate): the compact title on the row, the full
+// sentence as the hover tooltip. Same renderer as the window title, so recents read identically.
+function descFor(q: string): { title: string; subtitle: string } {
+  try { return narrate(resolve(parse(q).ast, props.schema), props.schema, { t, formatValue: props.formatValue }) } catch { return { title: q, subtitle: q } }
 }
 // `new Date()` is fine here (browser runtime); recompute lazily per render.
 const now = computed(() => Date.now())
@@ -28,7 +34,7 @@ const now = computed(() => Date.now())
     :label="recents.length ? t('nui.recent.title', 'Recent searches') : t('nui.recent.none', 'No recent searches')"
     :trigger-class="`nui-icon-btn text-nui-muted size-6 ${recents.length ? '' : 'opacity-40 pointer-events-none'}`"
   >
-    <span class="i-lucide-clock size-3.5" aria-hidden="true" />
+    <span class="i-lucide-clock size-[1.3125rem]" aria-hidden="true" />
 
     <template #content="{ close }">
       <div class="w-80 max-w-[90vw] py-1">
@@ -45,10 +51,8 @@ const now = computed(() => Date.now())
             role="option"
             @click="emit('apply', entry.q); close()"
           >
-            <div class="flex flex-wrap items-center gap-1 flex-1 min-w-0">
-              <span v-for="(lbl, i) in labelsFor(entry.q)" :key="i" class="nui-chip bg-nui-bg-accent text-nui-muted max-w-full">
-                <span class="truncate">{{ lbl }}</span>
-              </span>
+            <div class="flex-1 min-w-0">
+              <span class="block truncate text-sm text-nui-fg" :title="descFor(entry.q).subtitle">{{ descFor(entry.q).title }}</span>
             </div>
             <span class="text-[11px] text-nui-muted shrink-0 tabular-nums">{{ relativeTime(entry.at, now) }}</span>
             <button

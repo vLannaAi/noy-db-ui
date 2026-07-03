@@ -1,10 +1,11 @@
 <script setup lang="ts">
 // Saved smart searches — a bookmark dropdown beside the search box. Lists saved searches (favorites
-// first) as friendly pills; click runs one. Footer saves the CURRENT query under a name. Per-row:
+// first) with their fluent narrate title (ONE language across title/recents/saved); click runs one.
+// Footer saves the CURRENT query under a name prefilled from the same fluent title. Per-row:
 // favorite toggle, rename, delete, set-default. All persistence is delegated up via emits; the host
 // supplies the `saved` list + `schema`. Nuxt-UI-free.
-import { computed, ref } from 'vue'
-import { astToPills } from '@noy-db/ui'
+import { computed, nextTick, ref } from 'vue'
+import { narrate } from '@noy-db/ui'
 import { parse } from '@noy-db/ui'
 import { resolve } from '@noy-db/ui'
 import { isRollingDate } from '@noy-db/ui'
@@ -21,6 +22,8 @@ const props = defineProps<{
   currentQuery: string
   currentSaved: boolean
   defaultQuery?: string
+  /** Optional canonical value → display name resolver (enum/entity labels), same as the list's. */
+  formatValue?: (field: string, value: string) => string | undefined
 }>()
 const emit = defineEmits<{
   run: [query: string]
@@ -31,8 +34,10 @@ const emit = defineEmits<{
   setDefault: [id: string]
 }>()
 
-function labelsFor(q: string): string[] {
-  try { return astToPills(resolve(parse(q).ast, props.schema), props.schema).map((p) => p.label) } catch { return [q] }
+// Fluent description of a stored query — same renderer as the window title and the recents menu,
+// so saved searches read in the system's one language ("Records: Jazz, by Label, …").
+function descFor(q: string): { title: string; subtitle: string } {
+  try { return narrate(resolve(parse(q).ast, props.schema), props.schema, { t, formatValue: props.formatValue }) } catch { return { title: q, subtitle: q } }
 }
 function isRolling(q: string): boolean {
   try {
@@ -54,15 +59,18 @@ const defaultLabel = computed(() => {
   const q = (props.defaultQuery ?? '').trim()
   if (!q) return t('nui.saved.allRecords', 'All records')
   if (q === 'recent') return t('nui.saved.recent3m', 'Recent (3 months)')
-  return labelsFor(q).join(' · ')
+  return descFor(q).title
 })
 
 const naming = ref(false)
 const draftName = ref('')
+const nameEl = ref<HTMLInputElement | null>(null)
 const hasQuery = computed(() => props.currentQuery.trim().length > 0)
 function startSave(): void {
-  draftName.value = labelsFor(props.currentQuery).join(' · ').slice(0, 60)
+  draftName.value = descFor(props.currentQuery).title.slice(0, 60)
   naming.value = true
+  // The input renders on the next tick — focus it (pre-selected) so Enter saves keyboard-only.
+  void nextTick(() => { nameEl.value?.focus(); nameEl.value?.select() })
 }
 function confirmSave(): void {
   if (!draftName.value.trim()) return
@@ -88,7 +96,7 @@ function resetForms(): void { naming.value = false; draftName.value = ''; editin
     trigger-class="nui-icon-btn text-nui-muted size-6"
     @close="resetForms"
   >
-    <span class="i-lucide-bookmark size-3.5" aria-hidden="true" />
+    <span class="i-lucide-bookmark size-[1.3125rem]" aria-hidden="true" />
 
     <template #content="{ close }">
       <div class="w-80 max-w-[90vw] py-1">
@@ -124,16 +132,15 @@ function resetForms(): void { naming.value = false; draftName.value = ''; editin
             </template>
 
             <template v-else>
-              <button type="button" class="flex flex-wrap items-center gap-1 flex-1 min-w-0 text-start cursor-pointer" @click="emit('run', s.query); close()">
-                <span class="text-sm font-medium truncate max-w-full">{{ s.name }}</span>
-                <span v-if="isRolling(s.query)" class="nui-chip bg-nui-bg-accent text-nui-muted" :title="t('nui.saved.rollingTitle', 'Rolling — the date period moves with today')">
-                  <span class="i-lucide-refresh-cw size-3" aria-hidden="true" /> {{ t('nui.saved.rolling', 'rolling') }}
-                </span>
-                <span class="flex flex-wrap items-center gap-1 w-full">
-                  <span v-for="(lbl, i) in labelsFor(s.query)" :key="i" class="nui-chip bg-nui-bg-accent text-nui-muted max-w-full">
-                    <span class="truncate">{{ lbl }}</span>
+              <button type="button" class="flex flex-col gap-0.5 flex-1 min-w-0 text-start cursor-pointer" :title="descFor(s.query).subtitle" @click="emit('run', s.query); close()">
+                <span class="flex items-center gap-1 max-w-full">
+                  <span class="text-sm font-medium truncate">{{ s.name }}</span>
+                  <span v-if="isRolling(s.query)" class="nui-chip bg-nui-bg-accent text-nui-muted shrink-0" :title="t('nui.saved.rollingTitle', 'Rolling — the date period moves with today')">
+                    <span class="i-lucide-refresh-cw size-3" aria-hidden="true" /> {{ t('nui.saved.rolling', 'rolling') }}
                   </span>
                 </span>
+                <!-- The query in the system's one fluent language; hidden when the name already IS it. -->
+                <span v-if="descFor(s.query).title !== s.name" class="block text-xs text-nui-muted truncate w-full">{{ descFor(s.query).title }}</span>
               </button>
               <button
                 type="button"
@@ -166,6 +173,7 @@ function resetForms(): void { naming.value = false; draftName.value = ''; editin
         <div class="border-t border-nui-border px-3 py-2">
           <div v-if="naming" class="flex items-center gap-1">
             <input
+              ref="nameEl"
               v-model="draftName"
               type="text"
               class="flex-1 min-w-0 bg-transparent outline-none text-sm ring ring-nui-border rounded px-1.5 py-1"

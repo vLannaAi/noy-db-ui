@@ -45,7 +45,7 @@ function clear(): void { emit('filterChange', { key: props.column.key, value: nu
     :label="`${t('nui.filter.label', 'Filter')} ${column.label}`"
     :trigger-class="`inline-flex items-center gap-0.5 shrink-0 align-middle hover:text-nui-accent ${selectedCount() ? 'text-nui-accent' : 'text-nui-muted'}`"
   >
-    <span class="i-lucide-list-filter size-3.5" aria-hidden="true" />
+    <span class="i-lucide-list-filter size-3 opacity-70" aria-hidden="true" />
     <span v-if="selectedCount()" class="text-[10px] leading-none font-semibold">{{ selectedCount() }}</span>
 
     <template #content>

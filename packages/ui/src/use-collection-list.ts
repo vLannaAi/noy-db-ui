@@ -39,17 +39,19 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   columns: AppColumn[]
   defaultSort: SortKey[]
   /** The engine schema for this collection — typically `schemaFromDescribe(collection.describe())`,
-   *  or a hand-authored `EntitySchema`. Required: the package is domain-agnostic and ships no registry. */
-  schema: EntitySchema
+   *  or a hand-authored `EntitySchema`. Required: the package is domain-agnostic and ships no registry.
+   *  Pass a GETTER when the schema is reactive (e.g. localized field labels that change with the
+   *  active locale) — every derived computed re-reads it. */
+  schema: EntitySchema | (() => EntitySchema)
   /** Optional: translate a canonical enum value to a display label for group banners.
    *  Return `undefined` to fall back to the default capitalization. */
   formatGroupLabel?: (field: string, value: string) => string | undefined
 }) {
-  const schema = o.schema
-  const ast = computed<Ast>(() => resolve(parse(o.query.value).ast, schema))
+  const schemaOf = (): EntitySchema => (typeof o.schema === 'function' ? o.schema() : o.schema)
+  const ast = computed<Ast>(() => resolve(parse(o.query.value).ast, schemaOf()))
   const effectiveSort = computed<SortKey[]>(() => (ast.value.sort.length ? ast.value.sort : o.defaultSort))
   const visibleRows = computed<T[]>(() =>
-    evaluate(o.baseRows.value, { where: ast.value.where, sort: effectiveSort.value, groupBy: [] }, schema))
+    evaluate(o.baseRows.value, { where: ast.value.where, sort: effectiveSort.value, groupBy: [] }, schemaOf()))
 
   const setQuery = (a: Ast) => { o.query.value = serialize(a) }
 
@@ -69,12 +71,19 @@ export function useCollectionList<T extends Record<string, any>>(o: {
 
   const enumFacets = computed<Record<string, Facet[]>>(() => {
     const out: Record<string, Facet[]> = {}
-    for (const c of o.columns) if (c.filter === 'enum') out[c.key] = facetsForColumn(o.baseRows.value, ast.value, schema, c.key)
+    for (const c of o.columns) if (c.filter === 'enum') {
+      const facets = facetsForColumn(o.baseRows.value, ast.value, schemaOf(), c.key)
+      // Attach the host's display label (dict/locale) so the filter popover shows "Rock", not "rock".
+      // `value` stays canonical for filtering; `label` is display-only.
+      out[c.key] = o.formatGroupLabel
+        ? facets.map((f) => ({ ...f, label: o.formatGroupLabel!(c.key, f.value) ?? f.value }))
+        : facets
+    }
     return out
   })
   const entityFacets = computed<Record<string, EntityFacets>>(() => {
     const out: Record<string, EntityFacets> = {}
-    for (const c of o.columns) if (c.filter === 'entity') out[c.key] = entityFacetsForColumn(o.baseRows.value, ast.value, schema, c.key, visibleRows.value)
+    for (const c of o.columns) if (c.filter === 'entity') out[c.key] = entityFacetsForColumn(o.baseRows.value, ast.value, schemaOf(), c.key, visibleRows.value)
     return out
   })
   const subtotals = computed<Record<string, number>>(() => {
@@ -90,9 +99,29 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   })
 
   // Grouping (multi-level): build the group tree, then flatten it to a collapse-aware line list.
-  const groupFields = computed<string[]>(() => ast.value.groupBy.map((g) => g.field))
+  //
+  // One logical DIMENSION can be reachable via two field ids: the FK schema field (labelId) and the
+  // joined display column keyed by it (label_name, whose AppColumn declares field: 'labelId').
+  // Canonicalize every group field through the column link to its dimension id and dedupe, so
+  // `group:label_name` (typed) and toggling "Label" in the panel are the SAME group level — never
+  // two nested copies of one dimension.
+  const canonId = (id: string): string => resolveField(schemaOf(), id)?.id ?? id
+  const dimensionOf = (id: string): string => {
+    const canon = canonId(id)
+    const col = o.columns.find((c) => c.key === canon || canonId(c.field ?? c.key) === canon)
+    return col ? canonId(col.field ?? col.key) : canon
+  }
+  const groupFields = computed<string[]>(() => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const g of ast.value.groupBy) {
+      const dim = dimensionOf(g.field)
+      if (!seen.has(dim)) { seen.add(dim); out.push(dim) }
+    }
+    return out
+  })
   const isGrouped = computed(() => groupFields.value.length > 0)
-  const groupTree = computed<GroupNode<T>[]>(() => groupRowsMulti(visibleRows.value, schema, groupFields.value))
+  const groupTree = computed<GroupNode<T>[]>(() => groupRowsMulti(visibleRows.value, schemaOf(), groupFields.value))
 
   // Collapsed group ids — persisted per entity in localStorage (G4a) so the expand/collapse state
   // survives a reload. Group ids embed field=value, so stale ids from a different group config are
@@ -141,14 +170,15 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   // ── Group-by interface (the dropdown control + the `group:`/`group-by:` token both write here) ──
   // Only categorical fields (enum/entity) are offered — grouping a numeric/date column rarely helps.
   const groupableFields = computed<{ id: string; label: string }[]>(() =>
-    schema.fields.filter((f) => f.type === 'enum' || f.type === 'entity').map((f) => ({ id: f.id, label: f.label })))
+    schemaOf().fields.filter((f) => f.type === 'enum' || f.type === 'entity').map((f) => ({ id: f.id, label: f.label })))
 
   const setGroupBy = (fieldIds: string[]) => setQuery({ ...ast.value, groupBy: fieldIds.map((field) => ({ field })) })
-  /** Toggle one field in the group-by chain (canonicalised); preserves the order of the others. */
+  /** Toggle one DIMENSION in the group-by chain; preserves the order of the others. Matching by
+   *  dimension means toggling "Label" also removes a typed `group:label_name` (same dimension). */
   function toggleGroupField(id: string): void {
-    const canon = resolveField(schema, id)?.id ?? id
-    const cur = groupFields.value
-    setGroupBy(cur.includes(canon) ? cur.filter((f) => f !== canon) : [...cur, canon])
+    const dim = dimensionOf(id)
+    const cur = groupFields.value // already dimension-canonical + deduped
+    setGroupBy(cur.includes(dim) ? cur.filter((f) => f !== dim) : [...cur, dim])
   }
   function clearGroups(): void { setGroupBy([]) }
 
@@ -157,8 +187,8 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   const groupedColumnKeys = computed<string[]>(() => {
     const keys: string[] = []
     for (const g of groupFields.value) {
-      const canon = resolveField(schema, g)?.id ?? g
-      const col = o.columns.find((c) => (resolveField(schema, c.key)?.id ?? c.key) === canon)
+      const canon = resolveField(schemaOf(), g)?.id ?? g
+      const col = o.columns.find((c) => (resolveField(schemaOf(), c.field ?? c.key)?.id ?? c.field ?? c.key) === canon)
       if (col) keys.push(col.key)
     }
     return keys
@@ -188,8 +218,8 @@ export function useCollectionList<T extends Record<string, any>>(o: {
 
   // Map a (possibly aliased) field id to its column, by canonical id. Shared by focus + view (R5).
   const colForField = (f: string) => {
-    const canon = resolveField(schema, f)?.id ?? f
-    return o.columns.find((c) => (resolveField(schema, c.key)?.id ?? c.key) === canon)
+    const canon = resolveField(schemaOf(), f)?.id ?? f
+    return o.columns.find((c) => (resolveField(schemaOf(), c.field ?? c.key)?.id ?? c.field ?? c.key) === canon)
   }
   const showColumnKeys = computed<string[]>(() =>
     (ast.value.view?.show ?? []).map((f) => colForField(f)?.key).filter((k): k is string => !!k))
@@ -206,10 +236,10 @@ export function useCollectionList<T extends Record<string, any>>(o: {
   })
 
   function rollupCells(node: GroupNode<T>): Record<string, string> {
-    const groupCanon = resolveField(schema, node.field)?.id ?? node.field
+    const groupCanon = resolveField(schemaOf(), node.field)?.id ?? node.field
     const cells: Record<string, string> = {}
     for (const c of o.columns) {
-      if ((resolveField(schema, c.key)?.id ?? c.key) === groupCanon) { cells[c.key] = `${node.value} (${node.rows.length})`; continue }
+      if ((resolveField(schemaOf(), c.key)?.id ?? c.key) === groupCanon) { cells[c.key] = `${node.value} (${node.rows.length})`; continue }
       // Same per-column aggregate as the second header (sum no-€, distinct, days, count).
       const a = columnAggregate(node.rows, c)
       if (a) { cells[c.key] = a.text; continue }
@@ -242,9 +272,10 @@ export function useCollectionList<T extends Record<string, any>>(o: {
         serial++
         const id = parentId ? `${parentId}|${n.field}=${n.value}` : `${n.field}=${n.value}`
         const isCollapsed = collapsed.value.has(id)
-        const label = resolveField(schema, n.field)?.label ?? n.field
+        // Banner shows the VALUE only — the grouped field is named by the group-by chips above, so a
+        // "Field:" prefix on every banner is redundant (and crowds out the value on a narrow screen).
         const displayValue = o.formatGroupLabel?.(n.field, n.value) ?? n.value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-        lines.push({ kind: 'group', id, level, field: n.field, value: n.value, label: `${label}: ${displayValue}`, count: n.rows.length, cells: rollupCells(n), collapsed: isCollapsed, serial })
+        lines.push({ kind: 'group', id, level, field: n.field, value: n.value, label: displayValue, count: n.rows.length, cells: rollupCells(n), collapsed: isCollapsed, serial })
         if (isCollapsed) continue
         if (n.children.length) walk(n.children, level + 1, id)
         else n.rows.forEach((row, i) => lines.push({ kind: 'row', level: level + 1, row, serial: i + 1 }))

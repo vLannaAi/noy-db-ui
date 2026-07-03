@@ -15,6 +15,21 @@ export default defineConfig({
     presetIcons({ scale: 1.1, warn: true }),
   ],
   transformers: [transformerVariantGroup(), transformerDirectives()],
+  // The schema-derived data-type icons (see @noy-db/ui FIELD_TYPE_ICON) reach a column header /
+  // ColumnChooser as runtime `col.icon` DATA, never as a literal class the scanner can see. Because
+  // this package ships a PRE-COMPILED style.css (built from src/runtime/**/*.vue only), those icons
+  // must be safelisted or they emit no CSS and render blank. Keep this in sync with FIELD_TYPE_ICON
+  // plus the host's type-icon overrides (blob/cover, boolean).
+  safelist: [
+    'i-lucide-type',         // text
+    'i-lucide-hash',         // number
+    'i-lucide-calendar',     // date
+    'i-lucide-dollar-sign',  // money
+    'i-lucide-tags',         // enum
+    'i-lucide-link-2',       // entity
+    'i-lucide-image',        // blob / cover
+    'i-lucide-square-check', // boolean
+  ],
   theme: {
     colors: {
       'nui-fg': 'var(--nui-fg)',

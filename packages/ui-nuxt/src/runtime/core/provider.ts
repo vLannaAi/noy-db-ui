@@ -9,7 +9,13 @@ export interface LlmClient { complete(prompt: { system: string; user: string }):
 /** Pluggable speech-to-text source (Web Speech now; AI-Edge/Whisper-WASM later). */
 export interface VoiceSource {
   supported: boolean
-  start(handlers: { onResult: (text: string, final: boolean) => void; onEnd: () => void }): void
+  start(handlers: {
+    onResult: (text: string, final: boolean) => void
+    onEnd: () => void
+    /** Recognition failed to (keep) running — e.g. 'not-allowed' (mic permission), 'network',
+     *  'audio-capture'. Callers surface this: capture failing SILENTLY reads as a dead button. */
+    onError?: (code: string) => void
+  }): void
   stop(): void
 }
 

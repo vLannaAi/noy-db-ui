@@ -38,6 +38,27 @@ describe('resolveResponsiveColumns', () => {
   })
 })
 
+describe('xs sheds non-essential columns (higher xs threshold)', () => {
+  // relevance 80 = "shown down to sm, dropped at xs" (the cover-thumbnail tier).
+  const withCover = [
+    { key: 'title' },                // core — always
+    { key: 'cover', relevance: 80 }, // sm and up, but not xs
+    { key: 'year', relevance: 70 },  // md and up
+  ]
+  it('xs (300) → core only (cover and md-tier dropped)', () => {
+    expect(resolveResponsiveColumns(withCover, 300).map((c) => c.key)).toEqual(['title'])
+  })
+  it('sm (500) → keeps cover, still drops the md-tier', () => {
+    expect(resolveResponsiveColumns(withCover, 500).map((c) => c.key)).toEqual(['title', 'cover'])
+  })
+  it('md (800) → brings back the md-tier too', () => {
+    expect(resolveResponsiveColumns(withCover, 800).map((c) => c.key)).toEqual(['title', 'cover', 'year'])
+  })
+  it('force-show overrides the xs drop', () => {
+    expect(resolveResponsiveColumns(withCover, 300, new Set(['cover'])).map((c) => c.key)).toEqual(['title', 'cover'])
+  })
+})
+
 describe('shouldStack', () => {
   it('only the xs bucket stacks', () => {
     expect(shouldStack(300)).toBe(true)

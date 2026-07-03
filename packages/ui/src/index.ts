@@ -8,6 +8,21 @@
 export type { EntitySchema, FieldDef, FieldType } from './types'
 export { resolveField, ordinalRank } from './resolve-field'
 
+// schema-derived data-type icons (column chooser / header type indicators)
+export { FIELD_TYPE_ICON, fieldTypeIcon } from './field-icons'
+
+// responsive width engine: fit-the-container column sizing (no horizontal overflow)
+export {
+  WIDTH_ARCHETYPES, archetypeForFieldType, selectColumns, distributeWidths, fitColumns,
+  type WidthArchetype, type ArchetypeSpec, type SizedColumn,
+} from './column-width'
+
+// adaptive text: fit a value into a width via abbreviate → condense → wrap → ellipsis
+export {
+  fitText, repsFor, compactNumber,
+  type FitTreatment, type FitOptions, type TextKind,
+} from './adaptive-text'
+
 // describe()-driven schema + cross-collection joins
 export { schemaFromDescribe, type SchemaFromDescribeOptions } from './schema-from-describe'
 export { joinedSchema, joinedRows, joinedKey, type JoinLeg } from './collection-source'
@@ -24,6 +39,7 @@ export * from './group'
 export * from './summary'
 export * from './dates'
 export * from './pills'
+export * from './narrate'
 export * from './column-filter'
 
 // filter value types — explicit so they win over column-filter's re-export of Facet/EntityFacets
@@ -56,3 +72,6 @@ export * from './format'
 export * from './aggregate'
 export * from './responsive-columns'
 export * from './use-column-prefs'
+
+// shipped locale catalogs for the engine's own strings (hosts spread into their translator)
+export { LOCALE_TH } from './locale-th'

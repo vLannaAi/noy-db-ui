@@ -2,7 +2,7 @@
 // (a collection name), not a fixed union — the app supplies whatever collections it has.
 
 /** Coarse field kind the engine branches on for filtering, sorting, faceting and formatting. */
-export type FieldType = 'enum' | 'entity' | 'date' | 'money' | 'number' | 'text'
+export type FieldType = 'enum' | 'entity' | 'date' | 'money' | 'number' | 'boolean' | 'text'
 
 export interface FieldDef {
   /** Canonical field id (used in the AST and pills). */

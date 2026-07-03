@@ -19,11 +19,20 @@ export interface SchemaFromDescribeOptions {
   textFields?: readonly string[]
   /** Drop fields from the searchable set (e.g. raw audit/id columns) by key. */
   exclude?: readonly string[]
+  /**
+   * Localized display label for a field, or `undefined` to keep the describe() label.
+   * noy-db's `FieldMeta.label` is deliberately single-language ("active-locale selection stays
+   * app-side"), so the locale dictionary lives in the host and is injected here. When a field is
+   * relabeled, its original describe() label is kept as an alias so queries typed in the data
+   * language (`genre:jazz`) still resolve.
+   */
+  labelFor?: (key: string, label: string) => string | undefined
 }
 
 /** Map a describe() field (+ its role) to the search engine's coarse FieldType. */
 function fieldType(f: DescribedField, isDisplayTarget: boolean, forceEnum: boolean): FieldType {
   if (f.dict || forceEnum) return 'enum'
+  if (f.widget === 'checkbox') return 'boolean' // narrated as the bare label ("Favorite" / "not Favorite")
   if (isDisplayTarget || f.semanticType === 'entity') return 'entity'
   switch (f.semanticType) {
     case 'currency':
@@ -62,8 +71,13 @@ export function schemaFromDescribe(
   for (const f of described) {
     if (excluded.has(f.key) || idSides.has(f.key)) continue
     const type = fieldType(f, displayTargets.has(f.key), enumSet.has(f.key))
-    const def: FieldDef = { id: f.key, label: f.label, type }
-    if (f.aliases?.length) def.aliases = f.aliases
+    const localized = opts.labelFor?.(f.key, f.label)
+    const def: FieldDef = { id: f.key, label: localized ?? f.label, type }
+    const aliases = [
+      ...(f.aliases ?? []),
+      ...(localized && localized !== f.label ? [f.label] : []),
+    ]
+    if (aliases.length) def.aliases = aliases
     if (type === 'enum' && f.dict?.values?.length) {
       def.enumOrder = f.dict.values.map((v) => v.value)
     }
