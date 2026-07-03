@@ -28,14 +28,20 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Install
         run: pnpm install --frozen-lockfile
+      - name: Configure git identity
+        # changesets creates ANNOTATED tags (`git tag -m`), which fail with exit 128 on a
+        # runner with no committer identity — and changesets discards the exit code after
+        # logging "New tag", so the failure is silent and the tag push finds nothing.
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Publish
         run: pnpm release # = pnpm build && changeset publish --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Push release tags
-        # `changeset publish` logs "New tag" but the tags have twice not survived to this
-        # step (push saw "Everything up-to-date"). `changeset tag` is idempotent — it
-        # re-creates any missing tag for the versions currently in package.json.
+        # `changeset tag` is idempotent (skips tags that exist locally or on the remote),
+        # so this also back-fills tags for any release where tagging failed.
         run: |
           pnpm exec changeset tag
           git push origin --tags
