@@ -96,7 +96,7 @@ function accept(s: Suggestion): void {
  *  and so does a MULTI-TOKEN paste (a second `field:` in the tail) — that is DSL, not one value. */
 function smartQuote(d: string): string {
   const m = d.match(/^(\S+?):([^"[>=<!].*\s.+)$/)
-  return m && !/\s\S+:/.test(m[2]) ? `${m[1]}:"${m[2].replace(/"/g, '\\"')}"` : d
+  return m && !/\s\S+:/.test(m[2]!) ? `${m[1]}:"${m[2]!.replace(/"/g, '\\"')}"` : d
 }
 function commitDraft(): void {
   const d = draft.value.trim()

@@ -160,7 +160,7 @@ const bannerFull = () => density.value.tier === 'sm' || visibleColumns().length 
 const bannerLeadCols = () => {
   const cols = visibleColumns()
   let n = 0
-  while (n < cols.length && !cols[n].aggregate) n++
+  while (n < cols.length && !cols[n]!.aggregate) n++
   return Math.max(1, n)
 }
 const bannerRollupCols = () => visibleColumns().slice(bannerLeadCols())
