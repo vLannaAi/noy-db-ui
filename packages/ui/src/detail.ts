@@ -12,6 +12,8 @@ export interface DetailCell {
   href?: string
   /** Entity reference → the host turns this into a route via `routeFor(collection, id)`. */
   ref?: { collection: string; id: string }
+  /** Per-locale entries when the field is i18n-declared and the record was read with { locale: 'raw' }. */
+  i18n?: { locale: string; display: string; missing: boolean }[]
   masked: boolean
   empty: boolean
 }
@@ -31,6 +33,20 @@ export function formatDetailCell(
 
   const sensitive = field.sensitivity === 'pii' || field.sensitivity === 'secret'
   if (sensitive && !opts.reveal) return { key, label, display: MASK, masked: true, empty: false }
+
+  // i18n locale map (host read with { locale: 'raw' }) → per-locale entries
+  if (field.i18n && typeof raw === 'object' && !Array.isArray(raw)) {
+    const map = raw as Record<string, unknown>
+    const locales = field.i18n.locales ?? Object.keys(map)
+    const entries = locales.map((locale) => {
+      const v = map[locale]
+      const missing = v == null || v === ''
+      return { locale, display: missing ? '—' : String(v), missing }
+    })
+    const first = entries.find((e) => !e.missing)
+    if (!first) return { key, label, display: '—', masked: false, empty: true }
+    return { key, label, display: first.display, i18n: entries, masked: false, empty: false }
+  }
 
   // entity pairing: the id field carries ref + displayFor → show the human name, link to the record
   if (field.displayFor && field.ref) {

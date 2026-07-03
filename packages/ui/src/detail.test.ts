@@ -51,3 +51,40 @@ describe('detailFields', () => {
     expect(detailFields(fields).map((x) => x.key)).toEqual(['buyerId', 'total'])
   })
 })
+
+describe('formatDetailCell — i18n locale maps (raw reads)', () => {
+  const nameField = f({ key: 'name', label: 'Name', i18n: { locales: ['en', 'th'] } })
+
+  it('explodes a raw locale map into per-locale entries, display = first non-missing', () => {
+    const c = formatDetailCell(nameField, { name: { en: 'Groove Hill', th: 'กรูฟ ฮิลล์' } })
+    expect(c.display).toBe('Groove Hill')
+    expect(c.i18n).toEqual([
+      { locale: 'en', display: 'Groove Hill', missing: false },
+      { locale: 'th', display: 'กรูฟ ฮิลล์', missing: false },
+    ])
+  })
+
+  it('missing locale renders as an empty-dash entry', () => {
+    const c = formatDetailCell(nameField, { name: { en: 'Only English' } })
+    expect(c.i18n).toEqual([
+      { locale: 'en', display: 'Only English', missing: false },
+      { locale: 'th', display: '—', missing: true },
+    ])
+    expect(c.empty).toBe(false)
+  })
+
+  it('a resolved-string read (locale collapsed) has no i18n entries', () => {
+    expect(formatDetailCell(nameField, { name: 'Groove Hill' }).i18n).toBeUndefined()
+  })
+
+  it('all locales missing → empty cell', () => {
+    expect(formatDetailCell(nameField, { name: {} }).empty).toBe(true)
+  })
+
+  it('sensitivity masking wins over locale explosion', () => {
+    const field = f({ key: 'alias', label: 'Alias', sensitivity: 'pii', i18n: { locales: ['en', 'th'] } })
+    const c = formatDetailCell(field, { alias: { en: 'x', th: 'y' } })
+    expect(c.masked).toBe(true)
+    expect(c.i18n).toBeUndefined()
+  })
+})
