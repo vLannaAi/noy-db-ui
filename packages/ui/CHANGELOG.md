@@ -5,6 +5,11 @@ All notable changes to `@noy-db/ui` are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.3.0-pre.1] — 2026-07-03
+
+Version alignment with `@noy-db/hub` 0.3.0-pre.1 — the package now tracks the noy-db version
+line. No functional changes over 0.2.0-pre.1.
+
 ## [0.2.0-pre.1] — 2026-07-03
 
 The fluent-search release: the query pipeline gains narration, presentation pills, and full
