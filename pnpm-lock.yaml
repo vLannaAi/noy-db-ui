@@ -39,11 +39,11 @@ importers:
   packages/ui:
     devDependencies:
       '@noy-db/hub':
-        specifier: ^0.2.0-pre.30
-        version: 0.2.0-pre.30
+        specifier: ^0.3.0-pre.1
+        version: 0.3.0-pre.1
       '@noy-db/to-memory':
-        specifier: ^0.2.0-pre.30
-        version: 0.2.0-pre.30(@noy-db/hub@0.2.0-pre.30)
+        specifier: ^0.3.0-pre.1
+        version: 0.3.0-pre.1(@noy-db/hub@0.3.0-pre.1)
       vue:
         specifier: ^3.5.0
         version: 3.5.39(typescript@5.9.3)
@@ -61,8 +61,8 @@ importers:
         specifier: ^1.2.114
         version: 1.2.114
       '@noy-db/hub':
-        specifier: ^0.2.0-pre.30
-        version: 0.2.0-pre.30
+        specifier: ^0.3.0-pre.1
+        version: 0.3.0-pre.1
       '@nuxt/kit':
         specifier: ^4.0.0
         version: 4.4.8(magicast@0.5.3)
@@ -787,24 +787,24 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@noy-db/attestation@0.2.0-pre.30':
-    resolution: {integrity: sha512-tJB5d1BRjn0/NOq/JRAi9l+5nUIUwJBRT8CqXX0fvntUwUSP+99+RdpGc9d3dvv1zqiUmcYPN3uf+exxjG14Cg==}
-    engines: {node: '>=18.0.0'}
+  '@noy-db/attestation@0.3.0-pre.1':
+    resolution: {integrity: sha512-74O8ZZYdL3gyiyRdpGVgFtxvNqWLIXPwzHG8jTzOpq2V44UpBfgehct73qQYCRoSwZh+OgOtzmRYaupirtc+sw==}
+    engines: {node: '>=22.0.0'}
 
-  '@noy-db/hub@0.2.0-pre.30':
-    resolution: {integrity: sha512-M7ycWUap27COfpTP3fIR7w9UZhIyaPRBuIPw7uCOJE8PSVT3zl7RvPI4m5Y3F1TUwKz0Bc1M67pqcZqHiCSytg==}
-    engines: {node: '>=18.0.0'}
+  '@noy-db/hub@0.3.0-pre.1':
+    resolution: {integrity: sha512-+2n8twUWOwWXpNuu2IvMXv56K6WyzsBEKTeaA0zlteqwPV44CM52x9HOPnqi4fDED3LOLgCzs6LuvbM9N2bq7w==}
+    engines: {node: '>=22.0.0'}
     peerDependencies:
       zod-to-json-schema: ^3.25.0
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
 
-  '@noy-db/to-memory@0.2.0-pre.30':
-    resolution: {integrity: sha512-M+vkFFEqGz7t0NvfkblPHkl1ppmNH0ijoSvc1n3U8VG1DsMUzOvOOxsFDWj/Jblxr7iKhn6CY5M6P1ncYq/jLg==}
-    engines: {node: '>=18.0.0'}
+  '@noy-db/to-memory@0.3.0-pre.1':
+    resolution: {integrity: sha512-/UXwSvSsQMTZUb3vTmxIGmNl6jn+gVAKoPnxbxjaPifrmHZd+n9qwby9C5MiqOp8fqdG8r4he1i/mq25uQgdeA==}
+    engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': 0.2.0-pre.30
+      '@noy-db/hub': 0.3.0-pre.1
 
   '@nuxt/cli@3.36.1':
     resolution: {integrity: sha512-qu0LLFjOr1alMSrcVb3k3fWYXGeETeOIN5UoGoGEjwWVtf+KxQbN5IAzdXb7ip5D3pfKLcrAOTbIGf9XFmeGFQ==}
@@ -5395,15 +5395,15 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@noy-db/attestation@0.2.0-pre.30': {}
+  '@noy-db/attestation@0.3.0-pre.1': {}
 
-  '@noy-db/hub@0.2.0-pre.30':
+  '@noy-db/hub@0.3.0-pre.1':
     dependencies:
-      '@noy-db/attestation': 0.2.0-pre.30
+      '@noy-db/attestation': 0.3.0-pre.1
 
-  '@noy-db/to-memory@0.2.0-pre.30(@noy-db/hub@0.2.0-pre.30)':
+  '@noy-db/to-memory@0.3.0-pre.1(@noy-db/hub@0.3.0-pre.1)':
     dependencies:
-      '@noy-db/hub': 0.2.0-pre.30
+      '@noy-db/hub': 0.3.0-pre.1
 
   '@nuxt/cli@3.36.1(@nuxt/schema@4.4.8)(cac@6.7.14)(magicast@0.5.3)':
     dependencies:
