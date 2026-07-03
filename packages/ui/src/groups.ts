@@ -2,10 +2,6 @@
 // card sections. Pure + framework-free; RecordDetail (and the form views) share it.
 import type { DescribedField } from '@noy-db/hub'
 
-// group/order ship in @noy-db/hub 0.3.0-pre.2 (DescribedField.group/order). Until the
-// peer floor bumps, read them structurally — same shape, no behavior difference.
-type GroupableField = DescribedField & { group?: string; order?: number }
-
 export interface FieldGroup {
   /** The raw group id from field.group ('_default' for the ungrouped bucket). */
   id: string
@@ -23,15 +19,15 @@ export function groupFields(
   fields: readonly DescribedField[],
   t: (key: string, fallback: string) => string = (_k, fb) => fb,
 ): FieldGroup[] {
-  const buckets = new Map<string, GroupableField[]>()
-  for (const field of fields as readonly GroupableField[]) {
+  const buckets = new Map<string, DescribedField[]>()
+  for (const field of fields) {
     const id = field.group ?? DEFAULT_ID
     const bucket = buckets.get(id)
     if (bucket) bucket.push(field)
     else buckets.set(id, [field])
   }
 
-  const rank = (id: string, members: GroupableField[]): number => {
+  const rank = (id: string, members: DescribedField[]): number => {
     if (id === DEFAULT_ID) return Number.POSITIVE_INFINITY
     const orders = members.map((f) => f.order).filter((o): o is number => o !== undefined)
     return orders.length ? Math.min(...orders) : Number.MAX_SAFE_INTEGER

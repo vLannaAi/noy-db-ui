@@ -2,9 +2,8 @@ import { describe, it, expect } from 'vitest'
 import type { DescribedField } from '@noy-db/hub'
 import { groupFields } from './groups'
 
-// minimal DescribedField builder for the pure grouper (no vault needed).
-// group/order ride along structurally until the hub 0.3.0-pre.2 types land.
-const f = (p: Partial<DescribedField> & { key: string; group?: string; order?: number }): DescribedField =>
+// minimal DescribedField builder for the pure grouper (no vault needed)
+const f = (p: Partial<DescribedField> & { key: string }): DescribedField =>
   ({ type: 'string', optional: true, label: p.key, widget: 'text', editable: true, ...p }) as DescribedField
 
 describe('groupFields', () => {
