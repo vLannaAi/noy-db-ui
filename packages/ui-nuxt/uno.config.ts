@@ -40,6 +40,7 @@ export default defineConfig({
       'nui-border': 'var(--nui-border)',
       'nui-bg': 'var(--nui-bg)',
       'nui-bg-accent': 'var(--nui-bg-accent)',
+      'nui-danger': 'var(--nui-danger)',
     },
   },
   shortcuts: {

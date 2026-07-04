@@ -66,7 +66,7 @@ function num(v: string): void {
       :value="modelValue ?? ''" @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     >
 
-    <p v-if="error" class="text-[11px] text-red-500 mt-1">{{ error }}</p>
+    <p v-if="error" class="text-[11px] text-nui-danger mt-1">{{ error }}</p>
     <p v-else-if="hint?.text" class="text-[11px] text-nui-subtle mt-1">{{ hint.text }}</p>
   </div>
 </template>

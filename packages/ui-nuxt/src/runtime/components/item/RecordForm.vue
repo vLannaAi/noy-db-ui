@@ -51,7 +51,7 @@ function submit(): void { if (!props.submitting) emit('submit', { ...draft.value
       <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">{{ card.title }}</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
         <div v-for="inp in card.inputs" :key="inp.key" class="min-w-0" :class="inp.kind === 'textarea' ? 'sm:col-span-2' : ''">
-          <label v-if="inp.kind !== 'checkbox'" class="block text-xs text-nui-muted mb-1" :for="`f-${inp.key}`">{{ inp.label }}</label>
+          <label v-if="inp.kind !== 'checkbox'" class="block text-xs text-nui-muted mb-1" :for="inp.kind === 'i18n-text' && inp.locales?.length ? `f-${inp.key}-${inp.locales[0]}` : `f-${inp.key}`">{{ inp.label }}</label>
           <FieldControl
             :input="inp" :model-value="draft[inp.key]" :error="errors?.[inp.key]"
             @update:model-value="(v) => { draft[inp.key] = v }"
