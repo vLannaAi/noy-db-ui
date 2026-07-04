@@ -8,7 +8,7 @@ export interface WidthOverride { mode: 'pct' | 'fixed'; value: number }
 // sticky accent header, an optional sticky subtotal/aggregate row, responsive column dropping +
 // xs-stacking, and collapse-aware grouped rendering. Nuxt-UI-free (UnoCSS + --nui tokens + the
 // hand-rolled Popover-based header filters).
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { AppColumn, SubtotalEnum } from '@noy-db/ui'
 import type { ColumnFilterValue, EntityFacets, Facet, FilterChip } from '@noy-db/ui'
 import type { SortKey } from '@noy-db/ui'
@@ -61,6 +61,8 @@ const props = withDefaults(defineProps<{
   resizing?: boolean
   /** User width overrides (v-model:widths) — per column: a proportional `pct` or a `fixed` px width. */
   widths?: Record<string, WidthOverride>
+  /** A row key to scroll into view + flash-highlight once (e.g. returning from a detail's back()). */
+  anchorKey?: string
 }>(), { serialIndex: true, rowNoun: 'rows' })
 
 // Measure the table container so responsive resolution can drop low-relevance columns as it narrows.
@@ -73,7 +75,7 @@ onMounted(() => {
     ro.observe(wrapperEl.value)
   }
 })
-onBeforeUnmount(() => ro?.disconnect())
+onBeforeUnmount(() => { ro?.disconnect(); if (anchorTimer) clearTimeout(anchorTimer) })
 
 const showSerial = () => props.serialIndex
 
@@ -190,6 +192,20 @@ function setOverride(key: string, ov: WidthOverride | null): void {
   emit('update:widths', next)
 }
 function resetWidths(): void { overrides.value = {}; emit('update:widths', {}) }
+
+// Anchor a row (e.g. returning from a detail's back()): scroll it into view + flash it once.
+let anchorTimer: ReturnType<typeof setTimeout> | null = null
+watch(() => props.anchorKey, async (key) => {
+  if (!key || key.includes('"')) return
+  await nextTick()
+  const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key
+  const row = wrapperEl.value?.querySelector(`[data-row-key="${escaped}"]`)
+  if (!row) return
+  row.scrollIntoView({ block: 'center' })
+  row.classList.add('nui-row-anchored')
+  if (anchorTimer) clearTimeout(anchorTimer)
+  anchorTimer = setTimeout(() => row.classList.remove('nui-row-anchored'), 1600)
+})
 
 /** Pixel bounds for a column drag: never below its min, never so wide the table can't fit. */
 function resizeBounds(key: string): { min: number; max: number } {
@@ -513,6 +529,7 @@ const groupSummary = computed(() => {
             <tr
               v-else
               class="border-t border-nui-border hover:bg-nui-bg-accent transition-colors cursor-pointer"
+              :data-row-key="rowKey ? rowKey(line.row) : (line.row.id as string)"
               @click="!resizeMode && emit('rowClick', line.row)"
             >
               <td v-if="showSerial()" class="px-3 py-2 text-right tabular-nums text-nui-muted w-px whitespace-nowrap ps-6">{{ line.serial }}</td>
@@ -537,6 +554,7 @@ const groupSummary = computed(() => {
           :key="rowKey ? rowKey(row) : (row.id as string)"
           class="nui-row transition-colors cursor-pointer"
           :class="index % 2 === 1 ? 'zebra' : ''"
+          :data-row-key="rowKey ? rowKey(row) : (row.id as string)"
           @click="!resizeMode && emit('rowClick', row)"
         >
           <td v-if="showSerial()" class="px-3 py-2 text-right tabular-nums text-nui-muted w-px whitespace-nowrap">{{ index + 1 }}</td>
@@ -663,4 +681,11 @@ table.table-fixed thead tr:first-child th { overflow: hidden; text-overflow: ell
 }
 thead th:first-child { border-top-left-radius: 0.5rem; }
 thead th:last-child { border-top-right-radius: 0.5rem; }
+
+/* Anchored row (returning from a detail's back()): scroll target flashes once, then settles. */
+.nui-row-anchored td { animation: nui-anchor-flash 1.6s ease-out; }
+@keyframes nui-anchor-flash {
+  0%, 35% { background-color: color-mix(in oklab, var(--nui-accent) 18%, transparent); }
+  100% { background-color: transparent; }
+}
 </style>

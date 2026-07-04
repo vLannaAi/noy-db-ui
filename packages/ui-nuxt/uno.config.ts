@@ -30,6 +30,10 @@ export default defineConfig({
     'i-lucide-image',        // blob / cover
     'i-lucide-square-check', // boolean
     'i-lucide-lock',         // read-only field in edit mode
+    'i-lucide-chevron-up',      // traverse: prev
+    'i-lucide-chevron-down',    // traverse: next
+    'i-lucide-chevrons-up',     // traverse: first
+    'i-lucide-chevrons-down',   // traverse: last
   ],
   theme: {
     colors: {

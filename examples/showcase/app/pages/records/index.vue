@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useCollectionList, findByQuery, narrate } from '@noy-db/ui'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useCollectionList, findByQuery, narrate, captureFoundSet, consumeReturnAnchor, type FoundSetItem } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
 import { COVER_FIELD } from '../../../src/data/vault'
@@ -49,10 +49,43 @@ const list = useCollectionList({
   formatGroupLabel: labelForValue,
 })
 
+// Return-restore (spec §5): one-shot read of the anchor a detail-page "back" may have left.
+const anchor = consumeReturnAnchor('records')
+if (anchor) query.value = anchor.query
+const anchorKey = ref<string | undefined>()
+onMounted(() => { if (anchor) nextTick(() => { anchorKey.value = anchor.id }) })
+
 // Fluent search description (narrate): the compact title drives the window title (history
 // navigation, printed report header); the subtitle is the full sentence for the page subhead.
 const searchText = computed(() => narrate(list.ast.value, view.value.schema, { t, formatValue: labelForValue }))
 useHead({ title: () => (searchText.value.title ? `${searchText.value.title} · noy-db` : 'noy-db · Vinyl') })
+
+// Found-set capture (spec §4): freeze the current display order for detail-page traversal.
+function foundSetItems(): FoundSetItem[] {
+  const lines = list.groupLines.value
+  if (lines.length > 0) {
+    const trail: string[] = []
+    const items: FoundSetItem[] = []
+    for (const line of lines) {
+      if (line.kind === 'group') { trail.length = line.level; trail[line.level] = line.label }
+      else items.push({ id: String(line.row.id), label: String(line.row.title ?? line.row.name ?? line.row.id), group: [...trail] })
+    }
+    return items
+  }
+  return list.visibleRows.value.map((r: any) => ({ id: String(r.id), label: String(r.title ?? r.name ?? r.id) }))
+}
+
+function openRecord(r: any): void {
+  captureFoundSet({
+    kind: 'query', entity: 'records',
+    query: query.value,
+    title: searchText.value.title,
+    items: foundSetItems(),
+    total: view.value.rows.length,
+    capturedAt: new Date().toISOString(),
+  })
+  navigateTo(`/records/${r.id}`)
+}
 
 // Print: the report header below is hidden on screen and materializes in print (see themes.css
 // @media print) — the fluent title IS the report title (contract I1 extends to paper).
@@ -300,6 +333,7 @@ onMounted(() => {
         :focus-keys="colFocusKeys"
         :hide-keys="colHideKeys"
         :serial-index="true"
+        :anchor-key="anchorKey"
         row-noun="records"
         @sort="list.onSort"
         @lock-sort="list.onLockSort"
@@ -308,7 +342,7 @@ onMounted(() => {
         @clear-filters="list.clearAll"
         @toggle-group="list.toggleGroup"
         @toggle-collapse-all="list.toggleCollapseAll"
-        @row-click="(r) => navigateTo(`/records/${r.id}`)"
+        @row-click="openRecord"
       >
         <template #serial-header>
           <ColumnChooser

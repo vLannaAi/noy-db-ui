@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useCollectionList, narrate } from '@noy-db/ui'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useCollectionList, narrate, captureFoundSet, consumeReturnAnchor, type FoundSetItem } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildSimpleView } from '../../lib/simpleView'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
@@ -22,6 +22,12 @@ const list = useCollectionList({
   schema: () => view.value.schema, // getter: field labels are locale-reactive
 })
 
+// Return-restore (spec §5): one-shot read of the anchor a detail-page "back" may have left.
+const anchor = consumeReturnAnchor('labels')
+if (anchor) query.value = anchor.query
+const anchorKey = ref<string | undefined>()
+onMounted(() => { if (anchor) nextTick(() => { anchorKey.value = anchor.id }) })
+
 // Search voices + morphing reset + key sheet + `/` focus (spec:
 // docs/superpowers/specs/2026-07-02-search-toolbar-interaction-design.md).
 const {
@@ -35,6 +41,33 @@ const {
 const printText = computed(() => narrate(list.ast.value, view.value.schema, { t }))
 const printPage = (): void => window.print()
 const printedAt = () => new Date().toLocaleString(locale.value === 'th' ? 'th-TH' : 'en-US')
+
+// Found-set capture (spec §4): freeze the current display order for detail-page traversal.
+function foundSetItems(): FoundSetItem[] {
+  const lines = list.groupLines.value
+  if (lines.length > 0) {
+    const trail: string[] = []
+    const items: FoundSetItem[] = []
+    for (const line of lines) {
+      if (line.kind === 'group') { trail.length = line.level; trail[line.level] = line.label }
+      else items.push({ id: String(line.row.id), label: String(line.row.name ?? line.row.id), group: [...trail] })
+    }
+    return items
+  }
+  return list.visibleRows.value.map((r: any) => ({ id: String(r.id), label: String(r.name ?? r.id) }))
+}
+
+function openLabel(r: any): void {
+  captureFoundSet({
+    kind: 'query', entity: 'labels',
+    query: query.value,
+    title: printText.value.title,
+    items: foundSetItems(),
+    total: view.value.rows.length,
+    capturedAt: new Date().toISOString(),
+  })
+  navigateTo(`/labels/${r.id}`)
+}
 </script>
 
 <template>
@@ -134,8 +167,9 @@ const printedAt = () => new Date().toLocaleString(locale.value === 'th' ? 'th-TH
       :group-lines="list.groupLines.value"
       :grouped-keys="list.groupedColumnKeys.value"
       :all-collapsed="list.allTopCollapsed.value"
+      :anchor-key="anchorKey"
       row-noun="labels"
-      @row-click="(r) => navigateTo(`/labels/${r.id}`)"
+      @row-click="openLabel"
       @sort="list.onSort"
       @filter-change="(p) => list.setColumnFilter(p.key, p.value)"
       @toggle-group="list.toggleGroup"
