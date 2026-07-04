@@ -9,7 +9,7 @@ import { ref, computed } from 'vue'
 import type { DescribedField } from '@noy-db/hub'
 import {
   detailFields, formatDetailCell, groupFields, type DetailCell,
-  fieldInput, formFields, fieldHint, type FieldHint, type FieldInput,
+  fieldInput, formFields, fieldHint, type FieldInput,
 } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
 import { useContainerSize } from '../../core/container'
@@ -36,8 +36,6 @@ const props = withDefaults(defineProps<{
   draft?: Record<string, any> | null
   /** Per-field error text (from a failed put()). */
   errors?: Record<string, string>
-  /** Per-field constraint hints (from fieldHint over async describe({}) fields). */
-  hints?: Record<string, FieldHint>
   /** Select options for entity/ref fields, keyed by field key. */
   options?: Record<string, { value: string; label: string }[]>
   submitting?: boolean
