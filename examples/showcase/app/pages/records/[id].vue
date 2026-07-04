@@ -2,10 +2,11 @@
 import { useRecordItem } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
+import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
 const route = useRoute()
 const { vault } = useVault()
-const { fieldLabel, locale } = useShowcaseI18n()
+const { fieldLabel, enumLabel, locale } = useShowcaseI18n()
 
 const id = route.params.id as string
 const records = vault.value!.collection('records')
@@ -23,10 +24,13 @@ const fields = computed(() => described.fields.map((f) => {
 // ref-select options: entity pickers fed by the target collections (localized names)
 const artistRows = await vault.value!.collection('artists').list({ locale: locale.value }) as { id: string; name: string }[]
 const labelRows = await vault.value!.collection('labels').list({ locale: locale.value }) as { id: string; name: string }[]
-const options = {
+const options = computed(() => ({
   artistId: artistRows.map((a) => ({ value: a.id, label: a.name })),
   labelId: labelRows.map((l) => ({ value: l.id, label: l.name })),
-}
+  genre: GENRES.map((v) => ({ value: v, label: enumLabel('genre', v) })),
+  format: FORMATS.map((v) => ({ value: v, label: enumLabel('format', v) })),
+  condition: CONDITIONS.map((v) => ({ value: v, label: enumLabel('condition', v) })),
+}))
 </script>
 
 <template>
