@@ -2,7 +2,7 @@
 // (labels from the snapshot — zero data access); a settle debounce triggers the real
 // record load, generation-guarded so a stale settle can never fire after a newer
 // interaction. Slow clicks screen records; fast clicks skim titles.
-import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, watch, getCurrentScope, onScopeDispose, type Ref, type ComputedRef } from 'vue'
 import { positionOf, itemAt, type FoundSetSnapshot, type FoundSetItem, type TraversePosition } from './traverse'
 
 export function useTraverse(opts: {
@@ -54,8 +54,10 @@ export function useTraverse(opts: {
     const s = opts.snapshot()
     if (!s || s.items.length === 0) return
     const clamped = Math.min(Math.max(index, 0), s.items.length - 1)
+    const noop = clamped === cursor.value
     if (index > cursor.value) lastDirection.value = 1
     else if (index < cursor.value) lastDirection.value = -1
+    if (noop) return // clamped to where we already are: don't skim, leave any armed settle alone
     cursor.value = clamped
     skimming.value = true
     settle(immediate)
@@ -70,11 +72,22 @@ export function useTraverse(opts: {
   }
 
   watch(() => opts.currentId(), (id) => {
+    // external navigation invalidates any in-flight skim intent (spec D4); harmless in the
+    // self-settle path, since currentId only changes from our own onSettle after that settle fired.
+    if (timer) { clearTimeout(timer); timer = null }
+    generation++
     const s = opts.snapshot()
     const p = s ? positionOf(s, id) : null
     if (p) cursor.value = p.index
     skimming.value = false
   }, { immediate: true, flush: 'sync' })
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (timer) { clearTimeout(timer); timer = null }
+      generation++
+    })
+  }
 
   return { cursor, cursorItem, position, skimming, lastDirection, go, goTo, first, last }
 }
