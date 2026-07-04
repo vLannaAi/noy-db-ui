@@ -5,6 +5,24 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.3.0-pre.2] — 2026-07-04
+
+The item-family foundation: RecordDetail joins the list's responsive system.
+
+### Added
+- **`useContainerSize(host)`** (auto-imported from `core/`) — container-measured
+  (ResizeObserver) width + `'sm' | 'md' | 'lg'` density tier on the list's 448/640
+  thresholds; widest-first before measurement.
+
+### Changed
+- **`RecordDetail`** — cards now derive from `describe()`'s `group`/`order` metadata via
+  `groupFields` (the `groups` prop remains as a host override); the grid is
+  container-measured instead of viewport-`sm:` (1-column cells `<448px`, two card columns
+  `≥992px`); values render through `NuiText`; i18n fields read with `{ locale: 'raw' }`
+  render one badged row per language (missing locale dimmed); card padding follows the
+  density tier via `--nui-card-px` (host-overridable).
+- `@noy-db/hub` peer floor → `^0.3.0-pre.2`.
+
 ## [0.3.0-pre.1] — 2026-07-03
 
 Version alignment with `@noy-db/hub` 0.3.0-pre.1 — the package now tracks the noy-db version

@@ -5,6 +5,22 @@ All notable changes to `@noy-db/ui` are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.3.0-pre.2] — 2026-07-04
+
+The item-family foundation: schema-driven card grouping + dual-language detail cells.
+
+### Added
+- **`groupFields(fields, t?)`** — turns `describe()`'s new `group`/`order` metadata into
+  ordered card sections (`FieldGroup { id, title, fields }`): groups rank by their minimum
+  member `order`, fields sort stably within a group, ungrouped fields land in a localizable
+  default bucket (`nui.detail.details`); group titles localize via `nui.detail.group.<id>`.
+- **`DetailCell.i18n`** — `formatDetailCell` explodes a raw i18n locale map (record read with
+  `{ locale: 'raw' }`) into per-locale entries `{ locale, display, missing }`; `display` stays
+  the first non-missing locale. Resolved-string reads are untouched; sensitivity masking wins.
+
+### Changed
+- `@noy-db/hub` peer floor → `^0.3.0-pre.2` (the release that ships `DescribedField.group/order`).
+
 ## [0.3.0-pre.1] — 2026-07-03
 
 Version alignment with `@noy-db/hub` 0.3.0-pre.1 — the package now tracks the noy-db version
