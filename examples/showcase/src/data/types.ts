@@ -23,17 +23,18 @@ export const RecordSchema = z.object({
   title: z.record(z.string()),
   artistId: z.string(),
   labelId: z.string(),
-  year: z.number().int(),
+  year: z.number().int().min(1900).max(2100),
   genre: z.enum(GENRES),
   format: z.enum(FORMATS),
   condition: z.enum(CONDITIONS),
-  durationMin: z.number(),
-  trackCount: z.number().int(),
+  durationMin: z.number().min(0),
+  trackCount: z.number().int().min(1),
   rating: z.number().int().min(1).max(5),
-  priceUsd: z.number(),
+  priceUsd: z.number().min(0),
   purchasedOn: z.string(),   // ISO date
   favorite: z.boolean(),
-  notes: z.string(),
+  notes: z.string().max(300),
+  shopUrl: z.string().url().optional(),
 })
 
 export type Artist = z.infer<typeof ArtistSchema>

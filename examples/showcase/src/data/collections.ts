@@ -65,6 +65,7 @@ export function declareCollections(vault: Vault): {
       rating:      { semanticType: 'number', group: 'Condition & Value', order: 21 },
       priceUsd:    { semanticType: 'currency', unit: 'USD', group: 'Condition & Value', order: 22 },
       purchasedOn: { semanticType: 'date', group: 'Condition & Value', order: 23 },
+      shopUrl:     { semanticType: 'url', group: 'Condition & Value', order: 24 },
       durationMin: { semanticType: 'number', unit: 'min', group: 'Listening', order: 30 },
       trackCount:  { semanticType: 'number', group: 'Listening', order: 31 },
       favorite:    { widget: 'checkbox', group: 'Listening', order: 32 },
