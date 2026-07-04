@@ -7,6 +7,12 @@ import type { FoundSetSnapshot } from './traverse'
 
 const snapshots = new Map<string, Ref<FoundSetSnapshot | null>>()
 const anchors = new Map<string, { query: string; id: string }>()
+const directions = new Map<string, 1 | -1>()
+
+/** Traversal direction memory — survives the page remount that router.replace causes,
+ *  so the missing-record skip continues in the direction the user was travelling. */
+export function rememberDirection(entity: string, dir: 1 | -1): void { directions.set(entity, dir) }
+export function recallDirection(entity: string): 1 | -1 { return directions.get(entity) ?? 1 }
 
 function refFor(entity: string): Ref<FoundSetSnapshot | null> {
   let r = snapshots.get(entity)

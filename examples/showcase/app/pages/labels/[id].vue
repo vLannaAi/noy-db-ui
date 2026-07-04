@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFoundSet, setReturnAnchor, useTraverse, pathSegments } from '@noy-db/ui'
+import { useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 
@@ -19,12 +19,14 @@ const fields = computed(() => vault.value!.collection('labels').describe().field
 // Found-set traversal (spec §4): the list's captured snapshot drives the skim/step cluster;
 // a missing record (deleted between capture and visit) auto-advances past it.
 const { snapshot } = useFoundSet('labels')
+// `traverse` is referenced inside its own onSettle closure — safe: the closure only runs on a
+// later go()/goTo() call, by which point `const traverse` has been initialized.
 const traverse = useTraverse({
   snapshot: () => snapshot.value,
   currentId: () => (route.params.id as string),
-  onSettle: (nid) => { router.replace(`/labels/${nid}`) },
+  onSettle: (nid) => { rememberDirection('labels', traverse.lastDirection.value); router.replace(`/labels/${nid}`) },
 })
-if (!record && snapshot.value) traverse.go(traverse.lastDirection.value)
+if (!record && snapshot.value) traverse.go(recallDirection('labels'))
 
 function goBack(): void {
   if (snapshot.value) setReturnAnchor('labels', { query: snapshot.value.query, id: String(route.params.id) })

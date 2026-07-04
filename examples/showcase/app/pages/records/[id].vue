@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRecordItem, useFoundSet, setReturnAnchor, useTraverse, pathSegments } from '@noy-db/ui'
+import { useRecordItem, useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
@@ -18,12 +18,14 @@ await item.load()
 // Found-set traversal (spec §4): the list's captured snapshot drives the skim/step cluster;
 // a missing record (deleted between capture and visit) auto-advances past it.
 const { snapshot } = useFoundSet('records')
+// `traverse` is referenced inside its own onSettle closure — safe: the closure only runs on a
+// later go()/goTo() call, by which point `const traverse` has been initialized.
 const traverse = useTraverse({
   snapshot: () => snapshot.value,
   currentId: () => (route.params.id as string),
-  onSettle: (nid) => { router.replace(`/records/${nid}`) },
+  onSettle: (nid) => { rememberDirection('records', traverse.lastDirection.value); router.replace(`/records/${nid}`) },
 })
-if (!item.record.value && snapshot.value) traverse.go(traverse.lastDirection.value)
+if (!item.record.value && snapshot.value) traverse.go(recallDirection('records'))
 
 function goBack(): void {
   if (snapshot.value) setReturnAnchor('records', { query: snapshot.value.query, id: String(route.params.id) })
