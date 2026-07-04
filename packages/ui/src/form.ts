@@ -28,7 +28,7 @@ export function fieldInput(field: DescribedField, extraOptions?: { value: string
   else if (w === 'textarea') kind = 'textarea'
   else if (w === 'checkbox' || field.type === 'boolean') kind = 'checkbox'
   else if (w === 'date' || field.semanticType === 'date' || field.semanticType === 'datetime') kind = 'date'
-  else if (w === 'number' || w === 'money' || field.semanticType === 'currency' || field.semanticType === 'percent' || field.type === 'number') kind = 'number'
+  else if (w === 'number' || w === 'money' || field.semanticType === 'currency' || field.semanticType === 'percent' || field.type === 'number' || field.type === 'integer') kind = 'number'
   return {
     key: field.key, label: field.label, kind, options,
     ...(field.i18n?.locales ? { locales: field.i18n.locales } : {}),

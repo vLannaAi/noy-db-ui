@@ -45,6 +45,10 @@ describe('fieldInput — phase-3 widgets', () => {
     expect(fieldInput(field, [{ value: 'lb1', label: 'Groove Hill' }]).kind).toBe('select')
     expect(fieldInput(field).kind).toBe('text')
   })
+
+  it('an integer-typed field (zod .int()) is a number input', () => {
+    expect(fieldInput(f({ key: 'year', label: 'Year', type: 'integer' })).kind).toBe('number')
+  })
 })
 
 describe('fieldHint', () => {
