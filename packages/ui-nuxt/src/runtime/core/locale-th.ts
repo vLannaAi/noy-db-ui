@@ -98,6 +98,7 @@ export const NUI_LOCALE_TH: Record<string, string> = {
   // detail view
   'nui.detail.details': 'รายละเอียด',
   'nui.detail.edit': 'แก้ไข',
+  'nui.detail.readonly': 'อ่านอย่างเดียว',
   // shared verbs
   'nui.save': 'บันทึก',
   'nui.cancel': 'ยกเลิก',

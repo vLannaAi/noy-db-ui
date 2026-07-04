@@ -7,10 +7,14 @@
 // render one row per language. Schema-driven, Nuxt-UI-free; the edit form (RecordForm) is a sibling.
 import { ref, computed } from 'vue'
 import type { DescribedField } from '@noy-db/hub'
-import { detailFields, formatDetailCell, groupFields, type DetailCell } from '@noy-db/ui'
+import {
+  detailFields, formatDetailCell, groupFields, type DetailCell,
+  fieldInput, formFields, fieldHint, type FieldHint, type FieldInput,
+} from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
 import { useContainerSize } from '../../core/container'
 import NuiText from '../NuiText.vue'
+import FieldControl from '../../internal/FieldControl.vue'
 
 const { t } = useNuiI18n()
 
@@ -26,9 +30,22 @@ const props = withDefaults(defineProps<{
   reveal?: boolean
   /** Show an Edit affordance (emits `edit`). */
   editable?: boolean
-}>(), { reveal: false, editable: false })
+  /** In-place edit mode: editable cells morph into their input widgets bound to `draft`. */
+  editing?: boolean
+  /** The working copy (from useRecordItem). The component mutates draft[key] in place. */
+  draft?: Record<string, any> | null
+  /** Per-field error text (from a failed put()). */
+  errors?: Record<string, string>
+  /** Per-field constraint hints (from fieldHint over async describe({}) fields). */
+  hints?: Record<string, FieldHint>
+  /** Select options for entity/ref fields, keyed by field key. */
+  options?: Record<string, { value: string; label: string }[]>
+  submitting?: boolean
+  /** Non-field failure message (generic banner over the cards). */
+  errorBanner?: string | null
+}>(), { reveal: false, editable: false, editing: false, submitting: false })
 
-const emit = defineEmits<{ edit: []; navigate: [{ collection: string; id: string }] }>()
+const emit = defineEmits<{ edit: []; save: []; cancel: []; navigate: [{ collection: string; id: string }] }>()
 
 const host = ref<HTMLElement | null>(null)
 const { width, size } = useContainerSize(host)
@@ -36,11 +53,21 @@ const { width, size } = useContainerSize(host)
 const shown = computed(() => detailFields(props.fields))
 const byKey = computed(() => new Map(shown.value.map((f) => [f.key, f])))
 
+const editableKeys = computed(() => new Set(formFields(props.fields).map((f) => f.key)))
+
 const cards = computed(() => {
   const groups = props.groups?.length
     ? props.groups.map((g) => ({ title: g.title, fields: g.keys.map((k) => byKey.value.get(k)).filter(Boolean) as DescribedField[] }))
     : groupFields(shown.value, t)
-  return groups.map((g) => ({ title: g.title, cells: g.fields.map((f) => formatDetailCell(f, props.record, { reveal: props.reveal })) }))
+  return groups.map((g) => ({
+    title: g.title,
+    cells: g.fields.map((f) => ({
+      cell: formatDetailCell(f, props.record, { reveal: props.reveal }),
+      input: fieldInput(f, props.options?.[f.key]) as FieldInput,
+      hint: fieldHint(f),
+      canEdit: editableKeys.value.has(f.key),
+    })),
+  }))
 })
 
 function linkHref(c: DetailCell): string | undefined {
@@ -55,27 +82,41 @@ function onLink(c: DetailCell, e: MouseEvent): void {
 
 <template>
   <div ref="host" class="nui-detail space-y-4" :data-nui-size="size">
-    <div v-if="editable" class="flex justify-end">
-      <button type="button" class="nui-btn bg-nui-accent text-nui-accent-fg px-3 py-1.5" @click="emit('edit')">
+    <div v-if="editable || editing" class="flex items-center justify-end gap-2">
+      <template v-if="editing">
+        <button type="button" class="nui-btn-ghost px-3 py-1.5" :disabled="submitting" @click="emit('cancel')">{{ t('nui.cancel', 'Cancel') }}</button>
+        <button type="button" class="nui-btn bg-nui-accent text-nui-accent-fg px-3 py-1.5" :disabled="submitting" @click="emit('save')">
+          {{ submitting ? '…' : t('nui.save', 'Save') }}
+        </button>
+      </template>
+      <button v-else type="button" class="nui-btn bg-nui-accent text-nui-accent-fg px-3 py-1.5" @click="emit('edit')">
         <span class="i-lucide-pencil size-3.5" aria-hidden="true" /> {{ t('nui.detail.edit', 'Edit') }}
       </button>
     </div>
+    <p v-if="editing && errorBanner" class="text-[11px] text-nui-danger">{{ errorBanner }}</p>
 
     <div class="grid gap-4" :class="width >= 992 ? 'grid-cols-2' : 'grid-cols-1'">
       <section v-for="card in cards" :key="card.title" class="nui-panel nui-card">
         <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">{{ card.title }}</h3>
         <dl class="grid gap-x-6 gap-y-3" :class="width < 448 ? 'grid-cols-1' : 'grid-cols-2'">
-          <div v-for="c in card.cells" :key="c.key" class="min-w-0">
-            <dt class="text-xs text-nui-muted">{{ c.label }}</dt>
-            <dd class="text-sm mt-0.5" :class="c.empty ? 'text-nui-subtle' : 'text-nui-fg'">
+          <div v-for="c in card.cells" :key="c.cell.key" class="min-w-0" :class="editing && c.input.kind === 'textarea' ? 'md:col-span-2' : ''">
+            <dt class="text-xs text-nui-muted flex items-center gap-1">
+              {{ c.cell.label }}
+              <span v-if="editing && c.hint.required" class="text-nui-danger" aria-hidden="true">*</span>
+              <span v-if="editing && !c.canEdit" class="i-lucide-lock size-3 text-nui-subtle" :title="t('nui.detail.readonly', 'Read-only')" />
+            </dt>
+            <dd class="text-sm mt-0.5" :class="c.cell.empty ? 'text-nui-subtle' : 'text-nui-fg'">
+              <FieldControl
+                v-if="editing && c.canEdit && draft"
+                :input="c.input" :model-value="draft[c.cell.key]" :error="errors?.[c.cell.key]" :hint="c.hint"
+                id-prefix="d" @update:model-value="(v) => { draft![c.cell.key] = v }"
+              />
               <a
-                v-if="linkHref(c)"
-                :href="linkHref(c)"
-                class="text-nui-accent hover:underline"
-                @click="onLink(c, $event)"
-              >{{ c.display }}</a>
-              <template v-else-if="c.i18n">
-                <span v-for="e in c.i18n" :key="e.locale" class="flex items-baseline gap-1.5 min-w-0">
+                v-else-if="linkHref(c.cell)" :href="linkHref(c.cell)" class="text-nui-accent hover:underline"
+                @click="onLink(c.cell, $event)"
+              >{{ c.cell.display }}</a>
+              <template v-else-if="c.cell.i18n">
+                <span v-for="e in c.cell.i18n" :key="e.locale" class="flex items-baseline gap-1.5 min-w-0">
                   <span
                     class="shrink-0 text-[10px] uppercase leading-4 px-1 rounded border border-nui-border"
                     :class="e.missing ? 'text-nui-subtle opacity-60' : 'text-nui-muted'"
@@ -83,7 +124,7 @@ function onLink(c: DetailCell, e: MouseEvent): void {
                   <NuiText :reps="[e.display]" :class="e.missing ? 'text-nui-subtle' : ''" />
                 </span>
               </template>
-              <NuiText v-else :reps="[c.display]" />
+              <NuiText v-else :reps="[c.cell.display]" />
             </dd>
           </div>
         </dl>

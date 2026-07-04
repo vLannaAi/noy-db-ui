@@ -29,6 +29,7 @@ export default defineConfig({
     'i-lucide-link-2',       // entity
     'i-lucide-image',        // blob / cover
     'i-lucide-square-check', // boolean
+    'i-lucide-lock',         // read-only field in edit mode
   ],
   theme: {
     colors: {
