@@ -35,12 +35,18 @@ export function formFields(fields: readonly DescribedField[]): DescribedField[] 
 /**
  * Decompose a failed `put()` into per-field error text for `RecordForm`'s `errors` prop.
  *
- * noy-db throws a `SchemaValidationError` carrying Standard-Schema-v1 `issues`, each with a `message`
- * and a `path`. We key by the **first** path segment (the top-level field) and keep the first message
- * per field. Duck-typed on `issues` so it's resilient across module realms; a non-validation error
+ * Maps both `SchemaValidationError` (carrying Standard-Schema-v1 `issues`) and `MissingTranslationError`
+ * (duck-typed on `field` + `missing` array) into per-field error messages. For `issues`, we key by the
+ * **first** path segment (the top-level field) and keep the first message per field. Duck-typed on
+ * `issues` and `field`+`missing` so it's resilient across module realms; a non-validation error
  * (or one with no field path) yields `{}` — the host shows its generic message instead.
  */
 export function fieldErrors(err: unknown): Record<string, string> {
+  // i18n `required` violation: MissingTranslationError carries the offending field directly
+  const mt = err as { field?: unknown; missing?: unknown; message?: unknown } | null | undefined
+  if (typeof mt?.field === 'string' && Array.isArray(mt.missing)) {
+    return { [mt.field]: String(mt.message ?? 'Missing required translation') }
+  }
   const issues = (err as { issues?: readonly StandardSchemaV1Issue[] } | null | undefined)?.issues
   if (!Array.isArray(issues)) return {}
   const out: Record<string, string> = {}

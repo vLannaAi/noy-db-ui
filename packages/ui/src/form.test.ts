@@ -49,6 +49,20 @@ describe('fieldErrors', () => {
   })
 })
 
+describe('fieldErrors — MissingTranslationError', () => {
+  it('maps a missing-translation failure to its field', () => {
+    const err = Object.assign(new Error('Field "title": missing required translation(s): th.'), {
+      field: 'title',
+      missing: ['th'],
+    })
+    expect(fieldErrors(err)).toEqual({ title: 'Field "title": missing required translation(s): th.' })
+  })
+
+  it('still returns {} for a plain error', () => {
+    expect(fieldErrors(new Error('boom'))).toEqual({})
+  })
+})
+
 describe('formFields', () => {
   it('keeps editable fields, drops computed/id/audit', () => {
     const fields = [
