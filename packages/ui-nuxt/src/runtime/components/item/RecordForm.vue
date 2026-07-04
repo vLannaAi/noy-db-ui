@@ -7,6 +7,7 @@ import { ref, watch, computed } from 'vue'
 import type { DescribedField } from '@noy-db/hub'
 import { fieldInput, formFields, type FieldInput } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
+import FieldControl from '../../internal/FieldControl.vue'
 
 const { t } = useNuiI18n()
 
@@ -50,21 +51,11 @@ function submit(): void { if (!props.submitting) emit('submit', { ...draft.value
       <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">{{ card.title }}</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
         <div v-for="inp in card.inputs" :key="inp.key" class="min-w-0" :class="inp.kind === 'textarea' ? 'sm:col-span-2' : ''">
-          <label class="block text-xs text-nui-muted mb-1" :for="`f-${inp.key}`">{{ inp.label }}</label>
-
-          <textarea v-if="inp.kind === 'textarea'" :id="`f-${inp.key}`" v-model="draft[inp.key]" rows="3" class="nui-field" />
-          <select v-else-if="inp.kind === 'select'" :id="`f-${inp.key}`" v-model="draft[inp.key]" class="nui-field">
-            <option value="">—</option>
-            <option v-for="o in inp.options" :key="o.value" :value="o.value">{{ o.label }}</option>
-          </select>
-          <label v-else-if="inp.kind === 'checkbox'" class="flex items-center gap-2 h-9">
-            <input :id="`f-${inp.key}`" v-model="draft[inp.key]" type="checkbox" class="accent-nui-accent"> <span class="text-sm">{{ inp.label }}</span>
-          </label>
-          <input v-else-if="inp.kind === 'number'" :id="`f-${inp.key}`" v-model.number="draft[inp.key]" type="number" step="any" class="nui-field">
-          <input v-else-if="inp.kind === 'date'" :id="`f-${inp.key}`" v-model="draft[inp.key]" type="date" class="nui-field">
-          <input v-else :id="`f-${inp.key}`" v-model="draft[inp.key]" type="text" class="nui-field">
-
-          <p v-if="errors?.[inp.key]" class="text-[11px] text-red-500 mt-1">{{ errors[inp.key] }}</p>
+          <label v-if="inp.kind !== 'checkbox'" class="block text-xs text-nui-muted mb-1" :for="`f-${inp.key}`">{{ inp.label }}</label>
+          <FieldControl
+            :input="inp" :model-value="draft[inp.key]" :error="errors?.[inp.key]"
+            @update:model-value="(v) => { draft[inp.key] = v }"
+          />
         </div>
       </div>
     </section>
