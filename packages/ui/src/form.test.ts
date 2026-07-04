@@ -106,6 +106,10 @@ describe('fieldErrors — MissingTranslationError', () => {
   it('still returns {} for a plain error', () => {
     expect(fieldErrors(new Error('boom'))).toEqual({})
   })
+
+  it('an empty field name falls through to {} (banner path)', () => {
+    expect(fieldErrors(Object.assign(new Error('x'), { field: '', missing: ['th'] }))).toEqual({})
+  })
 })
 
 describe('formFields', () => {

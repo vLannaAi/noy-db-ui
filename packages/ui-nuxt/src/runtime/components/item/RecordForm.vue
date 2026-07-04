@@ -5,7 +5,7 @@
 // and passes any per-field `errors` back. Nuxt-UI-free; pairs with RecordDetail (card-matching).
 import { ref, watch, computed } from 'vue'
 import type { DescribedField } from '@noy-db/hub'
-import { fieldInput, formFields, type FieldInput } from '@noy-db/ui'
+import { fieldInput, formFields, fieldHint } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
 import FieldControl from '../../internal/FieldControl.vue'
 
@@ -39,7 +39,7 @@ const cards = computed(() => {
   const groups = props.groups?.length
     ? props.groups.map((g) => ({ title: g.title, fields: g.keys.map((k) => byKey.value.get(k)).filter(Boolean) as DescribedField[] }))
     : [{ title: t('nui.detail.details', 'Details'), fields: editable.value }]
-  return groups.map((g) => ({ title: g.title, inputs: g.fields.map((f): FieldInput => fieldInput(f, props.options?.[f.key])) }))
+  return groups.map((g) => ({ title: g.title, inputs: g.fields.map((f) => ({ input: fieldInput(f, props.options?.[f.key]), hint: fieldHint(f) })) }))
 })
 
 function submit(): void { if (!props.submitting) emit('submit', { ...draft.value } as T) }
@@ -50,10 +50,10 @@ function submit(): void { if (!props.submitting) emit('submit', { ...draft.value
     <section v-for="card in cards" :key="card.title" class="nui-panel p-4">
       <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">{{ card.title }}</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-        <div v-for="inp in card.inputs" :key="inp.key" class="min-w-0" :class="inp.kind === 'textarea' ? 'sm:col-span-2' : ''">
+        <div v-for="{ input: inp, hint } in card.inputs" :key="inp.key" class="min-w-0" :class="inp.kind === 'textarea' ? 'sm:col-span-2' : ''">
           <label v-if="inp.kind !== 'checkbox'" class="block text-xs text-nui-muted mb-1" :for="inp.kind === 'i18n-text' && inp.locales?.length ? `f-${inp.key}-${inp.locales[0]}` : `f-${inp.key}`">{{ inp.label }}</label>
           <FieldControl
-            :input="inp" :model-value="draft[inp.key]" :error="errors?.[inp.key]"
+            :input="inp" :model-value="draft[inp.key]" :error="errors?.[inp.key]" :hint="hint"
             @update:model-value="(v) => { draft[inp.key] = v }"
           />
         </div>

@@ -97,10 +97,10 @@ function onLink(c: DetailCell, e: MouseEvent): void {
       <section v-for="card in cards" :key="card.title" class="nui-panel nui-card">
         <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">{{ card.title }}</h3>
         <dl class="grid gap-x-6 gap-y-3" :class="width < 448 ? 'grid-cols-1' : 'grid-cols-2'">
-          <div v-for="c in card.cells" :key="c.cell.key" class="min-w-0" :class="editing && c.input.kind === 'textarea' ? 'md:col-span-2' : ''">
+          <div v-for="c in card.cells" :key="c.cell.key" class="min-w-0" :class="editing && c.input.kind === 'textarea' && width >= 448 ? 'col-span-2' : ''">
             <dt class="text-xs text-nui-muted flex items-center gap-1">
               {{ c.cell.label }}
-              <span v-if="editing && c.hint.required" class="text-nui-danger" aria-hidden="true">*</span>
+              <span v-if="editing && c.hint.required && c.canEdit" class="text-nui-danger" aria-hidden="true">*</span>
               <span v-if="editing && !c.canEdit" class="i-lucide-lock size-3 text-nui-subtle" :title="t('nui.detail.readonly', 'Read-only')" />
             </dt>
             <dd class="text-sm mt-0.5" :class="c.cell.empty ? 'text-nui-subtle' : 'text-nui-fg'">

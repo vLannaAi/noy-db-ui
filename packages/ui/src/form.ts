@@ -73,7 +73,7 @@ export function formFields(fields: readonly DescribedField[]): DescribedField[] 
 export function fieldErrors(err: unknown): Record<string, string> {
   // i18n `required` violation: MissingTranslationError carries the offending field directly
   const mt = err as { field?: unknown; missing?: unknown; message?: unknown } | null | undefined
-  if (typeof mt?.field === 'string' && Array.isArray(mt.missing)) {
+  if (typeof mt?.field === 'string' && mt.field && Array.isArray(mt.missing)) {
     return { [mt.field]: String(mt.message ?? 'Missing required translation') }
   }
   const issues = (err as { issues?: readonly StandardSchemaV1Issue[] } | null | undefined)?.issues
