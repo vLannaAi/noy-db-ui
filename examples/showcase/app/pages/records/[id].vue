@@ -22,8 +22,8 @@ const fields = computed(() => described.fields.map((f) => {
 }))
 
 // ref-select options: entity pickers fed by the target collections (localized names)
-const artistRows = await vault.value!.collection('artists').list({ locale: locale.value }) as { id: string; name: string }[]
-const labelRows = await vault.value!.collection('labels').list({ locale: locale.value }) as { id: string; name: string }[]
+const artistRows = await vault.value!.collection('artists').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
+const labelRows = await vault.value!.collection('labels').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
 const options = computed(() => ({
   artistId: artistRows.map((a) => ({ value: a.id, label: a.name })),
   labelId: labelRows.map((l) => ({ value: l.id, label: l.name })),
