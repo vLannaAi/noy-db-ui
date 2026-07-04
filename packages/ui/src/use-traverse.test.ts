@@ -76,4 +76,34 @@ describe('useTraverse — skim', () => {
     expect(t.cursor.value).toBe(3)
     expect(t.skimming.value).toBe(false)
   })
+  it('a no-op boundary move does not enter skim state or schedule a settle', () => {
+    const { t, settled } = make('e')          // already at the last item
+    t.go(1)
+    expect(t.skimming.value).toBe(false)
+    expect(t.cursor.value).toBe(4)
+    vi.advanceTimersByTime(300)
+    expect(settled).toEqual([])
+  })
+  it('an external currentId change cancels a pending settle (D4: Back stays on the list)', () => {
+    const { t, settled, currentId } = make('a')
+    t.go(1)                                    // pending settle for b
+    currentId.value = 'd'                      // external navigation (e.g. user clicked Back / another route)
+    vi.advanceTimersByTime(300)
+    expect(settled).toEqual([])                // orphan never fires
+    expect(t.cursor.value).toBe(3)             // synced to the external id
+    expect(t.skimming.value).toBe(false)
+  })
+  it('scope disposal cancels a pending settle (unmount mid-skim)', async () => {
+    const { effectScope } = await import('vue')
+    const scope = effectScope()
+    const settled: string[] = []
+    let cur = 'a'
+    const t = scope.run(() => useTraverse({
+      snapshot: () => SNAP, currentId: () => cur, onSettle: (id) => { settled.push(id); cur = id },
+    }))!
+    t.go(1)
+    scope.stop()
+    vi.advanceTimersByTime(300)
+    expect(settled).toEqual([])
+  })
 })
