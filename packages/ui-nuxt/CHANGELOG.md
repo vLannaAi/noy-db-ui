@@ -23,6 +23,12 @@ The item-family foundation: RecordDetail joins the list's responsive system.
   density tier via `--nui-card-px` (host-overridable).
 - `@noy-db/hub` peer floor → `^0.3.0-pre.2`.
 
+### Fixed
+- `possibly undefined` type errors in `CollectionList` (`bannerLeadCols`) and `SearchBox`
+  (`smartQuote`) that surfaced when a consuming app type-checks the shipped `.vue` runtime
+  under a strict tsconfig (`noUncheckedIndexedAccess`). Both accesses are guaranteed by
+  surrounding logic; asserted non-null. No behavior change.
+
 ## [0.3.0-pre.1] — 2026-07-03
 
 Version alignment with `@noy-db/hub` 0.3.0-pre.1 — the package now tracks the noy-db version
