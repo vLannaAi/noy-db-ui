@@ -14,22 +14,22 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.69.0
-        version: 0.69.0(zod@3.25.76)
+        version: 0.69.0(zod@4.4.3)
       '@noy-db/as-noydb':
         specifier: file:../../../noy-db/packages/as-noydb
-        version: file:../../../noy-db/packages/as-noydb(@noy-db/hub@file:../../../noy-db/packages/hub)
+        version: file:../../../noy-db/packages/as-noydb(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))
       '@noy-db/hub':
         specifier: file:../../../noy-db/packages/hub
-        version: file:../../../noy-db/packages/hub
+        version: file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
       '@noy-db/to-memory':
         specifier: file:../../../noy-db/packages/to-memory
-        version: file:../../../noy-db/packages/to-memory(@noy-db/hub@file:../../../noy-db/packages/hub)
+        version: file:../../../noy-db/packages/to-memory(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))
       '@noy-db/ui':
         specifier: file:../../packages/ui
-        version: file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub)(vue@3.5.39(typescript@5.9.3))
+        version: file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
       '@noy-db/ui-nuxt':
         specifier: file:../../packages/ui-nuxt
-        version: file:../../packages/ui-nuxt(@noy-db/hub@file:../../../noy-db/packages/hub)(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))
+        version: file:../../packages/ui-nuxt(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))
       nuxt:
         specifier: ^4.0.0
         version: 4.4.8(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@parcel/watcher@2.5.6)(@vue/compiler-sfc@3.5.39)(cac@6.7.14)(db0@0.3.4)(esbuild@0.28.1)(ioredis@5.11.1)(magicast@0.5.3)(rollup-plugin-visualizer@7.0.1(rollup@4.62.2))(rollup@4.62.2)(srvx@0.11.17)(terser@5.48.0)(tsx@4.22.4)(typescript@5.9.3)(vite@7.3.6(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0)
@@ -37,8 +37,8 @@ importers:
         specifier: ^3.5.0
         version: 3.5.39(typescript@5.9.3)
       zod:
-        specifier: ^3.23.0
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       tsx:
         specifier: ^4.19.0
@@ -497,7 +497,7 @@ packages:
     resolution: {directory: ../../packages/ui-nuxt, type: directory}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@noy-db/hub': ^0.3.0-pre.1
+      '@noy-db/hub': ^0.3.0-pre.2
       '@nuxt/kit': ^3.0.0 || ^4.0.0
       vue: ^3.5.0
     peerDependenciesMeta:
@@ -508,7 +508,7 @@ packages:
     resolution: {directory: ../../packages/ui, type: directory}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@noy-db/hub': ^0.3.0-pre.1
+      '@noy-db/hub': ^0.3.0-pre.2
       vue: ^3.5.0
 
   '@nuxt/cli@3.36.1':
@@ -3528,16 +3528,21 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+  zod-to-json-schema@3.25.2:
+    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
+    peerDependencies:
+      zod: ^3.25.28 || ^4
+
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
-  '@anthropic-ai/sdk@0.69.0(zod@3.25.76)':
+  '@anthropic-ai/sdk@0.69.0(zod@4.4.3)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
-      zod: 3.25.76
+      zod: 4.4.3
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -3938,31 +3943,33 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@noy-db/as-noydb@file:../../../noy-db/packages/as-noydb(@noy-db/hub@file:../../../noy-db/packages/hub)':
+  '@noy-db/as-noydb@file:../../../noy-db/packages/as-noydb(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))':
     dependencies:
-      '@noy-db/hub': file:../../../noy-db/packages/hub
+      '@noy-db/hub': file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
 
   '@noy-db/attestation@file:../../../noy-db/packages/attestation': {}
 
-  '@noy-db/hub@file:../../../noy-db/packages/hub':
+  '@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))':
     dependencies:
       '@noy-db/attestation': file:../../../noy-db/packages/attestation
+    optionalDependencies:
+      zod-to-json-schema: 3.25.2(zod@4.4.3)
 
-  '@noy-db/to-memory@file:../../../noy-db/packages/to-memory(@noy-db/hub@file:../../../noy-db/packages/hub)':
+  '@noy-db/to-memory@file:../../../noy-db/packages/to-memory(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))':
     dependencies:
-      '@noy-db/hub': file:../../../noy-db/packages/hub
+      '@noy-db/hub': file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
 
-  '@noy-db/ui-nuxt@file:../../packages/ui-nuxt(@noy-db/hub@file:../../../noy-db/packages/hub)(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))':
+  '@noy-db/ui-nuxt@file:../../packages/ui-nuxt(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))':
     dependencies:
-      '@noy-db/hub': file:../../../noy-db/packages/hub
-      '@noy-db/ui': file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub)(vue@3.5.39(typescript@5.9.3))
+      '@noy-db/hub': file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
+      '@noy-db/ui': file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
       vue: 3.5.39(typescript@5.9.3)
     optionalDependencies:
       '@nuxt/kit': 4.4.8(magicast@0.5.3)
 
-  '@noy-db/ui@file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub)(vue@3.5.39(typescript@5.9.3))':
+  '@noy-db/ui@file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))':
     dependencies:
-      '@noy-db/hub': file:../../../noy-db/packages/hub
+      '@noy-db/hub': file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
       vue: 3.5.39(typescript@5.9.3)
 
   '@nuxt/cli@3.36.1(@nuxt/schema@4.4.8)(cac@6.7.14)(magicast@0.5.3)':
@@ -7208,4 +7215,9 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.7.0
 
-  zod@3.25.76: {}
+  zod-to-json-schema@3.25.2(zod@4.4.3):
+    dependencies:
+      zod: 4.4.3
+    optional: true
+
+  zod@4.4.3: {}

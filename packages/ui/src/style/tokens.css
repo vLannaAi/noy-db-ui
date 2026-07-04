@@ -10,6 +10,7 @@
   --nui-border: #e2e8f0;
   --nui-bg: #ffffff;
   --nui-bg-accent: #f1f5f9;
+  --nui-danger: #dc2626;
 }
 
 /* Dark theme — a host (or useTheme()) sets data-theme="dark" on <html>. Overrides the defaults. */
@@ -22,4 +23,5 @@
   --nui-border: #334155;
   --nui-bg: #0f172a;
   --nui-bg-accent: #1e293b;
+  --nui-danger: #f87171;
 }

@@ -20,6 +20,14 @@ export interface DetailCell {
 
 const MASK = '••••••'
 
+/** Only http(s) values become links — zod's .url() does not block javascript:/data: schemes. */
+function safeHref(raw: unknown): string | undefined {
+  try {
+    const u = new URL(String(raw))
+    return u.protocol === 'http:' || u.protocol === 'https:' ? u.href : undefined
+  } catch { return undefined }
+}
+
 /** Format one field of a record for display, honouring semanticType, enum labels, refs and PII. */
 export function formatDetailCell(
   field: DescribedField,
@@ -60,7 +68,7 @@ export function formatDetailCell(
   switch (field.semanticType) {
     case 'currency': return { key, label, display: `${raw}${field.unit ? ` ${field.unit}` : ''}`, masked: false, empty: false }
     case 'percent': return { key, label, display: `${raw}%`, masked: false, empty: false }
-    case 'url': return { key, label, display: String(raw), href: String(raw), masked: false, empty: false }
+    case 'url': return { key, label, display: String(raw), ...(safeHref(raw) !== undefined ? { href: safeHref(raw) } : {}), masked: false, empty: false }
     case 'email': return { key, label, display: String(raw), href: `mailto:${raw}`, masked: false, empty: false }
   }
   // enum → prefer the dictionary's human label over the raw code

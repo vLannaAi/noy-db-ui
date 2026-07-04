@@ -36,6 +36,7 @@ export const FIELD_LABELS: Record<string, Record<string, { en: string; th: strin
     purchasedOn: { en: 'Purchased', th: 'วันที่ซื้อ' },
     favorite: { en: 'Favorite', th: 'รายการโปรด' },
     notes: { en: 'Notes', th: 'บันทึก' },
+    shopUrl: { en: 'Shop link', th: 'ลิงก์ร้านค้า' },
   },
   artists: {
     name: { en: 'Name', th: 'ชื่อ' },

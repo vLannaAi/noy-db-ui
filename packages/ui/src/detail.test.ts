@@ -39,6 +39,21 @@ describe('formatDetailCell', () => {
   })
 })
 
+describe('formatDetailCell — href scheme safety', () => {
+  const url = (v: string) => formatDetailCell(f({ key: 'link', label: 'Link', semanticType: 'url' }), { link: v })
+  it('http/https become links', () => {
+    expect(url('https://vinyl.example/x').href).toBe('https://vinyl.example/x')
+    expect(url('http://vinyl.example/x').href).toBe('http://vinyl.example/x')
+  })
+  it('javascript:/data:/relative values render as text, not links', () => {
+    expect(url('javascript:alert(1)').href).toBeUndefined()
+    expect(url('JavaScript:alert(1)').href).toBeUndefined()
+    expect(url('data:text/html,<script>x</script>').href).toBeUndefined()
+    expect(url('/relative/path').href).toBeUndefined()
+    expect(url('javascript:alert(1)').display).toBe('javascript:alert(1)')
+  })
+})
+
 describe('detailFields', () => {
   it('drops id, audit internals and display-target names', () => {
     const fields = [

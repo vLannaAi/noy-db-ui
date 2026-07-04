@@ -1,9 +1,12 @@
-import { ref, computed } from 'vue'
+import { shallowRef, computed } from 'vue'
 import type { Vault } from '@noy-db/hub'
 import { openVaultFromBundle } from '../../src/data/vault'
 import { declareCollections } from '../../src/data/collections'
 
-const vault = ref<Vault | null>(null)
+// shallowRef: the vault is an encryption engine, not view state — deep-reactifying it
+// wraps its internals (incl. zod schemas) in Vue proxies, which breaks zod 4's
+// toJSONSchema ('_zod' is non-configurable) and costs proxy overhead on every read.
+const vault = shallowRef<Vault | null>(null)
 
 export function useVault() {
   async function unlock(secret: string) {

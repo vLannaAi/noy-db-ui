@@ -29,6 +29,7 @@ export default defineConfig({
     'i-lucide-link-2',       // entity
     'i-lucide-image',        // blob / cover
     'i-lucide-square-check', // boolean
+    'i-lucide-lock',         // read-only field in edit mode
   ],
   theme: {
     colors: {
@@ -40,6 +41,7 @@ export default defineConfig({
       'nui-border': 'var(--nui-border)',
       'nui-bg': 'var(--nui-bg)',
       'nui-bg-accent': 'var(--nui-bg-accent)',
+      'nui-danger': 'var(--nui-danger)',
     },
   },
   shortcuts: {
