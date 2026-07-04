@@ -5,7 +5,8 @@ All notable changes to `@noy-db/ui` are documented here. Format follows
 
 ## [Unreleased]
 
-In-place editing: hints, i18n/unit inputs, and the edit-state composable.
+In-place editing: hints, i18n/unit inputs, and the edit-state composable. Also: found-set
+traversal — frozen query-derivable snapshots, path-shaped titles, and the skim controller.
 
 ### Added
 - **`fieldHint(field)`** — derives a client-side *hint* (never validation) from `describe()`'s async
@@ -22,6 +23,21 @@ In-place editing: hints, i18n/unit inputs, and the edit-state composable.
   proxies aren't structured-cloneable).
 - **`--nui-danger`** design token (light `#dc2626` / dark `#f87171`) — the 9th `--nui-*` variable, for
   error text/marks.
+- **`FoundSetItem`/`FoundSetSnapshot`** (`traverse.ts`) — the found set as a frozen, query-derivable
+  snapshot (spec D1/D2): serialized DSL + `narrate()` title + the captured row order/labels
+  (`kind: 'query' | 'fixed'`); `positionOf`/`itemAt` locate a record within it for
+  destination-labelled steppers.
+- **`pathSegments`** (`path.ts`) — the detail title as a path (spec D7): the group-by trail when the
+  found set was grouped, else the entity's natural ref-axis, terminating in the record's own title.
+- **`captureFoundSet`/`useFoundSet`/`setReturnAnchor`/`consumeReturnAnchor`/`rememberDirection`/
+  `recallDirection`** (`use-found-set.ts`) — a per-entity, per-tab found-set session store: a row
+  click captures the current display order; the detail's "back" hands the list a return anchor
+  (query + row) to restore to; direction memory survives the page remount a returning navigation
+  causes.
+- **`useTraverse`** (`use-traverse.ts`) — the skim controller (spec D8): an instant cursor over the
+  frozen snapshot, with a ~250ms generation-guarded settle before triggering the real record load
+  (fast clicks skim titles; a paused click loads the record) — `go`/`goTo`/`first`/`last`,
+  `skimming`, `lastDirection`.
 
 ### Changed
 - **`fieldErrors(err)`** also maps noy-db's `MissingTranslationError` (duck-typed on `field` +
