@@ -5,7 +5,8 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 
 ## [Unreleased]
 
-`RecordDetail` gains in-place editing, sharing its widget renderer with `RecordForm`.
+`RecordDetail` gains in-place editing, sharing its widget renderer with `RecordForm`. Also: found-set
+traversal — a sticky stepper bar and a path-shaped detail title.
 
 ### Added
 - **`FieldControl`** (internal) — the single widget renderer for a `FieldInput`
@@ -17,6 +18,16 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
   Editable cells morph into their `FieldControl` widget in the same grid cell; required fields get a
   `*` mark, constraints render as a hint line, and non-editable fields show a lock affordance
   (`i-lucide-lock`, `nui.detail.readonly` string).
+- **`TraverseBar`** — sticky found-set stepper above a detail view: the narrated-search breadcrumb
+  doubles as "back to list"; a fixed vertical cluster (⤒ first, ▲ prev, N/M, ▼ next, ⤓ last) with
+  destination-named tooltips/labels and a tabular-nums reserved width so it never reflows; `j`/`k`
+  and `⌥↑`/`⌥↓` step; a popover scrubber (internal `TraverseScrubber`) offers a typed jump and a
+  grouped mini-list; goes inert while `editing`.
+- **`ItemPath`** — a detail's path-shaped title: the group-by trail when the found set was grouped,
+  else the entity's natural ref-axis, terminating in the record's title; collapses to
+  first › … › terminal below 448px; group segments emit `back`, entity segments emit `navigate`.
+- **`CollectionList` gains `anchorKey`** — scrolls a row into view and flash-highlights it once,
+  e.g. when a detail's `back()` restores the list to where you left it.
 
 ### Changed
 - **`RecordForm`** delegates its per-field controls to the internal `FieldControl` renderer instead of
