@@ -5,6 +5,29 @@ All notable changes to `@noy-db/ui` are documented here. Format follows
 
 ## [Unreleased]
 
+In-place editing: hints, i18n/unit inputs, and the edit-state composable.
+
+### Added
+- **`fieldHint(field)`** — derives a client-side *hint* (never validation) from `describe()`'s async
+  constraints: a required mark plus a compact range/length/format text (`minimum`/`maximum`/`gt`/`lt`
+  → `1900–2100` / `≥ 0`; `minLength`/`maxLength` → `≤ 300 chars`; `format` → `uri`). New `FieldHint`
+  type.
+- **`fieldInput` gains an `i18n-text` kind** — one text box per locale for `field.i18n` fields;
+  `FieldInput` carries `locales` for it, and `unit` passes through for number inputs (display suffix
+  like `USD`/`min`). Integer-typed fields (`field.type === 'integer'`) now map to the `number` kind.
+- **`useRecordItem({ collection, id, readOptions? })`** — the edit-state machine behind an in-place
+  editable record: `load`/`enterEdit`/`draft`/`dirty`/`errors`/`errorBanner`/`submitting`/`cancel`/
+  `submit`. `submit()` calls `collection.put()`, decomposes a failure through `fieldErrors`, and
+  reloads on success. Clones via a JSON round-trip (both Vue reactive proxies and the hub's sealed-view
+  proxies aren't structured-cloneable).
+- **`--nui-danger`** design token (light `#dc2626` / dark `#f87171`) — the 9th `--nui-*` variable, for
+  error text/marks.
+
+### Changed
+- **`fieldErrors(err)`** also maps noy-db's `MissingTranslationError` (duck-typed on `field` +
+  `missing`) to its offending field, alongside `SchemaValidationError` issues — same
+  `Record<fieldKey, message>` shape either way.
+
 ## [0.3.0-pre.2] — 2026-07-04
 
 The item-family foundation: schema-driven card grouping + dual-language detail cells.

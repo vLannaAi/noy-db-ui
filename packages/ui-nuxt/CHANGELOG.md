@@ -5,6 +5,23 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 
 ## [Unreleased]
 
+`RecordDetail` gains in-place editing, sharing its widget renderer with `RecordForm`.
+
+### Added
+- **`FieldControl`** (internal) — the single widget renderer for a `FieldInput`
+  (text/textarea/number+unit/date/select/checkbox/i18n-text), with error and constraint-hint lines
+  underneath. Shared by `RecordForm` and `RecordDetail`'s edit mode so both surfaces stay
+  pixel-consistent.
+- **`RecordDetail` in-place edit mode** — new `editing`/`draft`/`errors`/`options`/`submitting`/
+  `errorBanner` props and `save`/`cancel` emits (pair with `useRecordItem` from `@noy-db/ui`).
+  Editable cells morph into their `FieldControl` widget in the same grid cell; required fields get a
+  `*` mark, constraints render as a hint line, and non-editable fields show a lock affordance
+  (`i-lucide-lock`, `nui.detail.readonly` string).
+
+### Changed
+- **`RecordForm`** delegates its per-field controls to the internal `FieldControl` renderer instead of
+  inlining them.
+
 ## [0.3.0-pre.2] — 2026-07-04
 
 The item-family foundation: RecordDetail joins the list's responsive system.
