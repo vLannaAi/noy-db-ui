@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { captureFoundSet, useFoundSet, setReturnAnchor, consumeReturnAnchor } from './use-found-set'
+import { captureFoundSet, useFoundSet, setReturnAnchor, consumeReturnAnchor, rememberDirection, recallDirection } from './use-found-set'
 import type { FoundSetSnapshot } from './traverse'
 
 const snap = (entity: string): FoundSetSnapshot => ({
@@ -24,5 +24,11 @@ describe('found-set store', () => {
     setReturnAnchor('fs-r', { query: 'genre:jazz', id: 'rc02' })
     expect(consumeReturnAnchor('fs-r')).toEqual({ query: 'genre:jazz', id: 'rc02' })
     expect(consumeReturnAnchor('fs-r')).toBeNull()
+  })
+  it('direction memory survives across reads and defaults to forward', () => {
+    expect(recallDirection('fs-dir')).toBe(1)
+    rememberDirection('fs-dir', -1)
+    expect(recallDirection('fs-dir')).toBe(-1)
+    expect(recallDirection('fs-dir')).toBe(-1) // NOT one-shot — a chain of deleted records keeps skipping the same way
   })
 })
