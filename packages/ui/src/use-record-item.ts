@@ -2,8 +2,14 @@
 // Mirrors useCollectionList's position: vue-reactive, framework-light (no DOM, no lifecycle),
 // testable against a structural collection fake. Validation belongs to noy-db: submit() calls
 // put(), and a failure decomposes through fieldErrors into per-field messages.
-import { ref, computed, toRaw, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import { fieldErrors } from './form'
+
+/** Vault records are JSON-serializable by construction; a JSON round-trip clones through
+ *  BOTH Vue's reactive proxies and the hub's sealed-view proxies (getters are invoked). */
+function cloneRecord<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
 
 /** Structural slice of a noy-db collection that the item machine needs. */
 export interface ItemCollection<T> {
@@ -47,7 +53,7 @@ export function useRecordItem<T extends Record<string, any>>(opts: {
 
   function enterEdit(): void {
     if (record.value === null) return
-    draft.value = structuredClone(toRaw(record.value)) as Record<string, any>
+    draft.value = cloneRecord(record.value) as Record<string, any>
     errors.value = {}
     errorBanner.value = null
     editing.value = true
@@ -66,7 +72,7 @@ export function useRecordItem<T extends Record<string, any>>(opts: {
     errors.value = {}
     errorBanner.value = null
     try {
-      await opts.collection.put(opts.id, toRaw(draft.value) as T)
+      await opts.collection.put(opts.id, cloneRecord(draft.value) as T)
       await load()
       editing.value = false
       draft.value = null

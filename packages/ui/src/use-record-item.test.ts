@@ -98,4 +98,18 @@ describe('useRecordItem', () => {
     expect(item.errorBanner.value).toBeNull()
     expect(item.errors.value).toEqual({})
   })
+
+  it('enterEdit clones through a foreign proxy (hub sealed-view records)', async () => {
+    // the hub wraps records in its own Proxy; structuredClone throws on any Proxy
+    const proxied: ItemCollection<Rec> = {
+      async get() { return new Proxy(structuredClone(REC), {}) },
+      async put() {},
+    }
+    const item = useRecordItem({ collection: proxied, id: 'r1' })
+    await item.load()
+    item.enterEdit()                       // must not throw DataCloneError
+    expect(item.draft.value).toEqual(REC)  // plain clone, structurally equal
+    item.draft.value!.title.en = 'X'
+    expect(item.record.value!.title.en).toBe('First') // still isolated from the record
+  })
 })
