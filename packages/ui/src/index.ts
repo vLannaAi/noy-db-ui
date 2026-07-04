@@ -65,6 +65,7 @@ export { useRecordItem, type ItemCollection } from './use-record-item'
 
 // Traverse family: found-set snapshots + traversal position + path-shaped titles
 export { positionOf, itemAt, type FoundSetItem, type FoundSetSnapshot, type TraversePosition } from './traverse'
+export { useTraverse } from './use-traverse'
 export { pathSegments, type PathSegment } from './path'
 export { captureFoundSet, useFoundSet, setReturnAnchor, consumeReturnAnchor } from './use-found-set'
 
