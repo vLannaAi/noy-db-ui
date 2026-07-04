@@ -39,11 +39,11 @@ importers:
   packages/ui:
     devDependencies:
       '@noy-db/hub':
-        specifier: ^0.3.0-pre.2
-        version: 0.3.0-pre.2
+        specifier: ^0.3.0-pre.3
+        version: 0.3.0-pre.3
       '@noy-db/to-memory':
         specifier: ^0.3.0-pre.1
-        version: 0.3.0-pre.1(@noy-db/hub@0.3.0-pre.2)
+        version: 0.3.0-pre.1(@noy-db/hub@0.3.0-pre.3)
       vue:
         specifier: ^3.5.0
         version: 3.5.39(typescript@5.9.3)
@@ -61,8 +61,8 @@ importers:
         specifier: ^1.2.114
         version: 1.2.114
       '@noy-db/hub':
-        specifier: ^0.3.0-pre.2
-        version: 0.3.0-pre.2
+        specifier: ^0.3.0-pre.3
+        version: 0.3.0-pre.3
       '@nuxt/kit':
         specifier: ^4.0.0
         version: 4.4.8(magicast@0.5.3)
@@ -787,12 +787,12 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@noy-db/attestation@0.3.0-pre.2':
-    resolution: {integrity: sha512-8kEE8mdBJwAfUGP4vf+qeZIkDmXLjFB3W6aE3Ccnr7JYxyLO8Qu7BLkguK4urlw7jcseXR6zRK+NkQA20fb7Kg==}
+  '@noy-db/attestation@0.3.0-pre.3':
+    resolution: {integrity: sha512-FAwXybZJi9YDN3s5KktIgei6JN2U9R7MX4+vAvupD83CD8BLMP/63RpfeHiDPm9IKwy7NCOW6+xaiAOH/gmiJA==}
     engines: {node: '>=22.0.0'}
 
-  '@noy-db/hub@0.3.0-pre.2':
-    resolution: {integrity: sha512-8W2QypChYM2KoNyOqdt94bTPSdzpkSylxTjIOWY2OGxleGMxKYs1LYwY4ij8WZKWh2ArP+3jCMX/6xEEObQbWA==}
+  '@noy-db/hub@0.3.0-pre.3':
+    resolution: {integrity: sha512-VNKDdiV6HHa5cjAY0T01OJc40K0eOVUDCZF1oWv/2lbqz/W9ff5dl82E6HGqLKlAn8cI+t4RmNwEYOLiTkKq7g==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       zod-to-json-schema: ^3.25.0
@@ -5395,15 +5395,15 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@noy-db/attestation@0.3.0-pre.2': {}
+  '@noy-db/attestation@0.3.0-pre.3': {}
 
-  '@noy-db/hub@0.3.0-pre.2':
+  '@noy-db/hub@0.3.0-pre.3':
     dependencies:
-      '@noy-db/attestation': 0.3.0-pre.2
+      '@noy-db/attestation': 0.3.0-pre.3
 
-  '@noy-db/to-memory@0.3.0-pre.1(@noy-db/hub@0.3.0-pre.2)':
+  '@noy-db/to-memory@0.3.0-pre.1(@noy-db/hub@0.3.0-pre.3)':
     dependencies:
-      '@noy-db/hub': 0.3.0-pre.2
+      '@noy-db/hub': 0.3.0-pre.3
 
   '@nuxt/cli@3.36.1(@nuxt/schema@4.4.8)(cac@6.7.14)(magicast@0.5.3)':
     dependencies:
