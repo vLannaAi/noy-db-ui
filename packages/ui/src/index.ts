@@ -63,6 +63,9 @@ export { groupFields, type FieldGroup } from './groups'
 export { fieldInput, formFields, fieldErrors, fieldHint, type FieldInput, type InputKind, type FieldHint } from './form'
 export { useRecordItem, type ItemCollection } from './use-record-item'
 
+// Traverse family: found-set snapshots + traversal position + path-shaped titles
+export { positionOf, itemAt, type FoundSetItem, type FoundSetSnapshot, type TraversePosition } from './traverse'
+
 // search-box + saved/recent/NL search logic (domain-free; storage data supplied by the host)
 export * from './suggest'
 export * from './history'
