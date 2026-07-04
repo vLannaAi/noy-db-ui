@@ -66,6 +66,7 @@ export { useRecordItem, type ItemCollection } from './use-record-item'
 // Traverse family: found-set snapshots + traversal position + path-shaped titles
 export { positionOf, itemAt, type FoundSetItem, type FoundSetSnapshot, type TraversePosition } from './traverse'
 export { pathSegments, type PathSegment } from './path'
+export { captureFoundSet, useFoundSet, setReturnAnchor, consumeReturnAnchor } from './use-found-set'
 
 // search-box + saved/recent/NL search logic (domain-free; storage data supplied by the host)
 export * from './suggest'
