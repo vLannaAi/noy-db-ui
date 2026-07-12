@@ -1,0 +1,180 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e27]:
+    - complementary [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]:
+          - generic [ref=f1e31]: Vinyl
+          - button "✕" [ref=f1e32] [cursor=pointer]
+        - navigation [ref=f1e33]:
+          - link "Collection" [ref=f1e34] [cursor=pointer]:
+            - /url: /collection
+          - link "Records" [ref=f1e35] [cursor=pointer]:
+            - /url: /records
+          - link "Artists" [ref=f1e36] [cursor=pointer]:
+            - /url: /artists
+          - link "Labels" [ref=f1e37] [cursor=pointer]:
+            - /url: /labels
+        - generic [ref=f1e39]:
+          - button "Blue Note" [ref=f1e40] [cursor=pointer]
+          - button "Hi-Fi" [ref=f1e43] [cursor=pointer]
+          - button "White Label" [ref=f1e46] [cursor=pointer]
+          - button "Speed" [ref=f1e49] [cursor=pointer]
+        - generic [ref=f1e54]:
+          - button "◐" [ref=f1e55] [cursor=pointer]
+          - combobox [ref=f1e56] [cursor=pointer]:
+            - option "EN" [selected]
+            - option "TH"
+          - button "?" [ref=f1e57] [cursor=pointer]
+    - generic [ref=f1e58]:
+      - button "Open menu" [ref=f1e59] [cursor=pointer]: ☰
+      - generic [ref=f1e61]:
+        - generic [ref=f1e62]:
+          - generic [ref=f1e65]:
+            - 'button "Genre: Jazz — Enter edits, Delete removes, Alt+arrows reorder" [ref=f1e827]':
+              - generic [ref=f1e828]: "Genre: Jazz"
+              - 'button "Remove Genre: Jazz" [ref=f1e829]'
+            - textbox [active] [ref=f1e831]
+          - generic [ref=f1e67]:
+            - radiogroup "Search mode" [ref=f1e68]:
+              - radio "Search — type exact filters" [checked] [ref=f1e70]
+              - radio "Ask — describe it, AI interprets" [ref=f1e72]
+              - button "Hold to speak — voice, AI interprets" [ref=f1e74]
+            - button "Group by" [ref=f1e77]
+            - button "Saved searches" [ref=f1e80]
+            - button "Recent searches" [ref=f1e832]
+            - button "Print this view" [ref=f1e83]
+            - button "Clear search" [ref=f1e834]
+        - table [ref=f1e87]:
+          - rowgroup [ref=f1e99]:
+            - row [ref=f1e100]:
+              - columnheader "Row number" [ref=f1e101]:
+                - button "Columns" [ref=f1e103]
+              - columnheader [ref=f1e105]
+              - columnheader [ref=f1e106]:
+                - button "Title" [ref=f1e108]:
+                  - generic [ref=f1e109]:
+                    - generic [ref=f1e110]: Title
+                    - generic [ref=f1e111]: ▲
+              - columnheader [ref=f1e112]:
+                - button "Artist" [ref=f1e114]
+              - columnheader [ref=f1e118]:
+                - button "Label" [ref=f1e120]
+              - columnheader [ref=f1e124]:
+                - button "Year" [ref=f1e126]
+              - columnheader [ref=f1e130]:
+                - button "Genre" [ref=f1e132]
+              - columnheader [ref=f1e136]:
+                - button "Format" [ref=f1e138]
+              - columnheader [ref=f1e142]:
+                - button "★" [ref=f1e144]
+              - columnheader [ref=f1e147]:
+                - button "Price" [ref=f1e149]:
+                  - generic [ref=f1e150]:
+                    - generic [ref=f1e151]: Price
+                    - generic [ref=f1e152]: $
+            - row [ref=f1e835]:
+              - cell [ref=f1e155]
+              - cell [ref=f1e156]
+              - cell [ref=f1e157]
+              - cell "2 Filter Artist" [ref=f1e836]:
+                - generic [ref=f1e159]:
+                  - generic "2 artists" [ref=f1e837]: "2"
+                  - button "Filter Artist" [ref=f1e163]
+              - cell "1 Filter Label" [ref=f1e838]:
+                - generic [ref=f1e166]:
+                  - generic "1 label" [ref=f1e839]: "1"
+                  - button "Filter Label" [ref=f1e170]
+              - cell "1961–78" [ref=f1e840]
+              - cell "1 Filter Genre" [ref=f1e841]:
+                - generic [ref=f1e176]:
+                  - generic "1 genre" [ref=f1e842]: "1"
+                  - button "Filter Genre" [ref=f1e180]:
+                    - generic [ref=f1e843]: "1"
+              - cell "2 Filter Format" [ref=f1e844]:
+                - generic [ref=f1e183]:
+                  - generic "2 formats" [ref=f1e845]: "2"
+                  - button "Filter Format" [ref=f1e187]
+              - cell "4.2" [ref=f1e846]
+              - cell "26–58" [ref=f1e847]
+          - rowgroup [ref=f1e195]:
+            - row [ref=f1e848] [cursor=pointer]:
+              - cell "1" [ref=f1e849]
+              - cell [ref=f1e224]:
+                - figure [ref=f1e226]:
+                  - img "cover" [ref=f1e227]
+              - cell "After Hours" [ref=f1e228]
+              - cell "Blue Quartet" [ref=f1e231]:
+                - generic "Blue Quartet" [ref=f1e233]
+              - cell "Groove Hill" [ref=f1e235]:
+                - generic "Groove Hill" [ref=f1e237]
+              - cell "1965" [ref=f1e239]
+              - cell "Jazz" [ref=f1e242]
+              - cell "LP" [ref=f1e243]
+              - cell "4" [ref=f1e246]
+              - cell "35" [ref=f1e247]
+            - row [ref=f1e850] [cursor=pointer]:
+              - cell "2" [ref=f1e851]
+              - cell [ref=f1e250]:
+                - figure [ref=f1e252]:
+                  - img "cover" [ref=f1e253]
+              - cell "Blue Note Sketches" [ref=f1e254]
+              - cell "Blue Quartet" [ref=f1e257]:
+                - generic "Blue Quartet" [ref=f1e259]
+              - cell "Groove Hill" [ref=f1e261]:
+                - generic "Groove Hill" [ref=f1e263]
+              - cell "1963" [ref=f1e265]
+              - cell "Jazz" [ref=f1e268]
+              - cell "LP" [ref=f1e269]
+              - cell "4" [ref=f1e272]
+              - cell "33" [ref=f1e273]
+            - row [ref=f1e852] [cursor=pointer]:
+              - cell "3" [ref=f1e853]
+              - cell [ref=f1e354]:
+                - figure [ref=f1e356]:
+                  - img "cover" [ref=f1e357]
+              - cell "Cosmic Suite" [ref=f1e358]
+              - cell "Sun Ra Tribute" [ref=f1e361]:
+                - generic "Sun Ra Tribute" [ref=f1e363]
+              - cell "Groove Hill" [ref=f1e365]:
+                - generic "Groove Hill" [ref=f1e367]
+              - cell "1978" [ref=f1e369]
+              - cell "Jazz" [ref=f1e372]
+              - cell "12-inch" [ref=f1e373]
+              - cell "4" [ref=f1e376]
+              - cell "26" [ref=f1e377]
+            - row [ref=f1e854] [cursor=pointer]:
+              - cell "4" [ref=f1e855]
+              - cell [ref=f1e588]:
+                - figure [ref=f1e590]:
+                  - img "cover" [ref=f1e591]
+              - cell "Quartet in Blue" [ref=f1e592]
+              - cell "Blue Quartet" [ref=f1e595]:
+                - generic "Blue Quartet" [ref=f1e597]
+              - cell "Groove Hill" [ref=f1e599]:
+                - generic "Groove Hill" [ref=f1e601]
+              - cell "1961" [ref=f1e603]
+              - cell "Jazz" [ref=f1e606]
+              - cell "LP" [ref=f1e607]
+              - cell "5" [ref=f1e610]
+              - cell "58" [ref=f1e611]
+            - row [ref=f1e856] [cursor=pointer]:
+              - cell "5" [ref=f1e857]
+              - cell [ref=f1e640]:
+                - figure [ref=f1e642]:
+                  - img "cover" [ref=f1e643]
+              - cell "Space Chant" [ref=f1e644]
+              - cell "Sun Ra Tribute" [ref=f1e647]:
+                - generic "Sun Ra Tribute" [ref=f1e649]
+              - cell "Groove Hill" [ref=f1e651]:
+                - generic "Groove Hill" [ref=f1e653]
+              - cell "1976" [ref=f1e655]
+              - cell "Jazz" [ref=f1e658]
+              - cell "LP" [ref=f1e659]
+              - cell "4" [ref=f1e662]
+              - cell "40" [ref=f1e663]
+  - generic [ref=f1e13]:
+    - button "Toggle Nuxt DevTools" [ref=f1e14] [cursor=pointer]
+    - generic "Page load time" [ref=f1e18]:
+      - generic [ref=f1e19]: "504"
+      - generic [ref=f1e20]: ms
+    - button "Toggle Component Inspector" [ref=f1e22] [cursor=pointer]

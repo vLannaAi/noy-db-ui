@@ -1,0 +1,94 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e27]:
+    - complementary [ref=f2e28]:
+      - generic [ref=f2e29]:
+        - generic [ref=f2e30]:
+          - generic [ref=f2e31]: Vinyl
+          - button "✕" [ref=f2e32] [cursor=pointer]
+        - navigation [ref=f2e33]:
+          - link "Collection" [ref=f2e34] [cursor=pointer]:
+            - /url: /collection
+          - link "Records" [ref=f2e35] [cursor=pointer]:
+            - /url: /records
+          - link "Artists" [ref=f2e36] [cursor=pointer]:
+            - /url: /artists
+          - link "Labels" [ref=f2e37] [cursor=pointer]:
+            - /url: /labels
+        - generic [ref=f2e39]:
+          - button "Blue Note" [ref=f2e40] [cursor=pointer]
+          - button "Hi-Fi" [ref=f2e43] [cursor=pointer]
+          - button "White Label" [ref=f2e46] [cursor=pointer]
+          - button "Speed" [ref=f2e49] [cursor=pointer]
+        - generic [ref=f2e54]:
+          - button "◐" [ref=f2e55] [cursor=pointer]
+          - combobox [ref=f2e56] [cursor=pointer]:
+            - option "EN" [selected]
+            - option "TH"
+          - button "?" [ref=f2e57] [cursor=pointer]
+    - generic [ref=f2e58]:
+      - button "Open menu" [ref=f2e59] [cursor=pointer]: ☰
+      - generic [ref=f2e822]:
+        - generic [ref=f2e823]:
+          - generic [ref=f2e826]:
+            - textbox
+            - generic [ref=f2e827]: Filter — type to search, Tab to add a pill…
+          - generic [ref=f2e828]:
+            - radiogroup "Search mode" [ref=f2e829]:
+              - radio "Search — type exact filters" [checked] [ref=f2e831]
+              - radio "Ask — describe it, AI interprets" [ref=f2e833]
+              - button "Hold to speak — voice, AI interprets" [ref=f2e835]
+            - button "Group by" [ref=f2e838]
+            - button "Print this view" [ref=f2e840]
+            - button "Clear search"
+        - table [ref=f2e843]:
+          - rowgroup [ref=f2e850]:
+            - row [ref=f2e851]:
+              - columnheader "Row number" [ref=f2e852]: "#"
+              - columnheader [ref=f2e853]:
+                - button "Country" [ref=f2e855]
+              - columnheader [ref=f2e859]:
+                - button "Founded" [ref=f2e861]
+              - columnheader [ref=f2e865]:
+                - button "Name" [ref=f2e867]:
+                  - generic [ref=f2e868]:
+                    - generic [ref=f2e869]: Name
+                    - generic [ref=f2e870]: ▲
+              - columnheader [ref=f2e871]:
+                - button "Notes" [ref=f2e873]
+          - rowgroup [ref=f2e877]:
+            - row [ref=f2e878] [cursor=pointer]:
+              - cell "1" [ref=f2e879]
+              - cell "US" [ref=f2e880]
+              - cell "1990" [ref=f2e881]
+              - cell "Deep Crate" [ref=f2e882]
+              - 'cell "{ \"en\": \"Crate-digger favourite — limited hip-hop and soul runs.\", \"th\": \"ขวัญใจนักขุดแผ่น งานฮิปฮอปและโซลจำนวนจำกัด\" }" [ref=f2e883]'
+            - row [ref=f2e884] [cursor=pointer]:
+              - cell "2" [ref=f2e885]
+              - cell "US" [ref=f2e886]
+              - cell "1958" [ref=f2e887]
+              - cell "Groove Hill" [ref=f2e888]
+              - 'cell "{ \"en\": \"Independent jazz and soul imprint; deep-groove pressings through 1972.\", \"th\": \"ค่ายแจ๊สและโซลอิสระ งานปั๊มแบบดีพกรูฟจนถึงปี 1972\" }" [ref=f2e889]'
+            - row [ref=f2e890] [cursor=pointer]:
+              - cell "3" [ref=f2e891]
+              - cell "DE" [ref=f2e892]
+              - cell "1975" [ref=f2e893]
+              - cell "Kosmos Audio" [ref=f2e894]
+              - 'cell "{ \"en\": \"German audiophile label; classical and electronic catalogues.\", \"th\": \"ค่ายออดิโอไฟล์เยอรมัน แคตตาล็อกคลาสสิกและอิเล็กทรอนิกส์\" }" [ref=f2e895]'
+            - row [ref=f2e896] [cursor=pointer]:
+              - cell "4" [ref=f2e897]
+              - cell "GB" [ref=f2e898]
+              - cell "1969" [ref=f2e899]
+              - cell "Northern Wax" [ref=f2e900]
+              - 'cell "{ \"en\": \"British rock house — famous for gatefold sleeves and heavyweight vinyl.\", \"th\": \"ค่ายร็อกอังกฤษ ขึ้นชื่อเรื่องปกแบบเกตโฟลด์และแผ่นไวนิลหนา\" }" [ref=f2e901]'
+            - row [ref=f2e902] [cursor=pointer]:
+              - cell "5" [ref=f2e903]
+              - cell "JP" [ref=f2e904]
+              - cell "1981" [ref=f2e905]
+              - cell "Sakura Sound" [ref=f2e906]
+              - 'cell "{ \"en\": \"City pop and ambient catalogue.\" }" [ref=f2e907]'
+  - generic [ref=f2e13]:
+    - button "Toggle Nuxt DevTools" [ref=f2e14] [cursor=pointer]
+    - generic "Page load time" [ref=f2e18]:
+      - generic [ref=f2e19]: "20"
+      - generic [ref=f2e20]: ms
+    - button "Toggle Component Inspector" [ref=f2e22] [cursor=pointer]

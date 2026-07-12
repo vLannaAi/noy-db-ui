@@ -43,6 +43,9 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 - **`fieldErrors(err)`** also maps noy-db's `MissingTranslationError` (duck-typed on `field` +
   `missing`) to its offending field, alongside `SchemaValidationError` issues — same
   `Record<fieldKey, message>` shape either way.
+- `@noy-db/hub` peer floor → `^0.3.0-pre.9` (the via-port line: lookup/computed/classified
+  describe() blocks are additive; the `dict` block consumed here is byte-stable). `@noy-db/to-memory`
+  dev floor follows (it peer-pins hub per release).
 
 ## [0.3.0-pre.2] — 2026-07-04
 

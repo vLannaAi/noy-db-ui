@@ -1,0 +1,138 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e27]:
+    - complementary [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]:
+          - generic [ref=f1e31]: Vinyl
+          - button "✕" [ref=f1e32] [cursor=pointer]
+        - navigation [ref=f1e33]:
+          - link "Collection" [ref=f1e34] [cursor=pointer]:
+            - /url: /collection
+          - link "Records" [ref=f1e35] [cursor=pointer]:
+            - /url: /records
+          - link "Artists" [ref=f1e36] [cursor=pointer]:
+            - /url: /artists
+          - link "Labels" [ref=f1e37] [cursor=pointer]:
+            - /url: /labels
+        - generic [ref=f1e39]:
+          - button "Blue Note" [ref=f1e40] [cursor=pointer]
+          - button "Hi-Fi" [ref=f1e43] [cursor=pointer]
+          - button "White Label" [ref=f1e46] [cursor=pointer]
+          - button "Speed" [ref=f1e49] [cursor=pointer]
+        - generic [ref=f1e54]:
+          - button "◐" [ref=f1e55] [cursor=pointer]
+          - combobox [ref=f1e56] [cursor=pointer]:
+            - option "EN" [selected]
+            - option "TH"
+          - button "?" [ref=f1e57] [cursor=pointer]
+    - generic [ref=f1e58]:
+      - button "Open menu" [ref=f1e59] [cursor=pointer]: ☰
+      - article [ref=f1e987]:
+        - generic [ref=f1e988]:
+          - button "Back to list" [ref=f1e989]:
+            - generic [ref=f1e990]: ←
+            - 'generic "Records: Jazz" [ref=f1e991]'
+          - generic [ref=f1e993]:
+            - button "First" [ref=f1e994]
+            - generic [ref=f1e996]: Blue Note Sketches
+            - button "Previous — Blue Note Sketches" [ref=f1e997]
+            - 'button "Go to #" [ref=f1e1000]':
+              - generic [ref=f1e1001]: 3/5
+            - button "Next — Quartet in Blue" [ref=f1e1002]
+            - generic [ref=f1e1004]: Quartet in Blue
+            - button "Last" [ref=f1e1005]
+        - navigation "Path" [ref=f1e1007]:
+          - button "Groove Hill" [ref=f1e1008]
+          - generic [ref=f1e1009]: ›
+          - button "Sun Ra Tribute" [ref=f1e1010]
+          - generic [ref=f1e1011]: ›
+          - generic "Cosmic Suite" [ref=f1e1012]
+        - generic [ref=f1e1014]:
+          - figure "decrypted from a vault blob · 12 KB" [ref=f1e1015]:
+            - img "cover" [ref=f1e1016]
+          - generic [ref=f1e1018]:
+            - button "Edit" [ref=f1e1020]
+            - generic [ref=f1e1022]:
+              - generic [ref=f1e1023]:
+                - heading "Identity" [level=3] [ref=f1e1024]
+                - generic [ref=f1e1025]:
+                  - generic [ref=f1e1026]:
+                    - term [ref=f1e1027]: Title
+                    - definition [ref=f1e1028]:
+                      - generic [ref=f1e1029]:
+                        - generic [ref=f1e1030]: en
+                        - generic "Cosmic Suite" [ref=f1e1031]
+                      - generic [ref=f1e1033]:
+                        - generic [ref=f1e1034]: th
+                        - generic "ชุดอวกาศ" [ref=f1e1035]
+                  - generic [ref=f1e1037]:
+                    - term [ref=f1e1038]: Artist
+                    - definition [ref=f1e1039]:
+                      - generic "ar8" [ref=f1e1040]
+                  - generic [ref=f1e1042]:
+                    - term [ref=f1e1043]: Label
+                    - definition [ref=f1e1044]:
+                      - generic "lb1" [ref=f1e1045]
+              - generic [ref=f1e1047]:
+                - heading "Release" [level=3] [ref=f1e1048]
+                - generic [ref=f1e1049]:
+                  - generic [ref=f1e1050]:
+                    - term [ref=f1e1051]: Year
+                    - definition [ref=f1e1052]:
+                      - generic "1978" [ref=f1e1053]
+                  - generic [ref=f1e1055]:
+                    - term [ref=f1e1056]: Genre
+                    - definition [ref=f1e1057]:
+                      - generic "jazz" [ref=f1e1058]
+                  - generic [ref=f1e1060]:
+                    - term [ref=f1e1061]: Format
+                    - definition [ref=f1e1062]:
+                      - generic "12\"" [ref=f1e1063]
+              - generic [ref=f1e1065]:
+                - heading "Condition & Value" [level=3] [ref=f1e1066]
+                - generic [ref=f1e1067]:
+                  - generic [ref=f1e1068]:
+                    - term [ref=f1e1069]: Condition
+                    - definition [ref=f1e1070]:
+                      - generic "NM" [ref=f1e1071]
+                  - generic [ref=f1e1073]:
+                    - term [ref=f1e1074]: Rating
+                    - definition [ref=f1e1075]:
+                      - generic "4" [ref=f1e1076]
+                  - generic [ref=f1e1078]:
+                    - term [ref=f1e1079]: Price
+                    - definition [ref=f1e1080]:
+                      - generic "26 USD" [ref=f1e1081]
+                  - generic [ref=f1e1083]:
+                    - term [ref=f1e1084]: Purchased
+                    - definition [ref=f1e1085]:
+                      - generic "2023-12-10" [ref=f1e1086]
+                  - generic [ref=f1e1088]:
+                    - term [ref=f1e1089]: Shop link
+                    - definition [ref=f1e1090]:
+                      - generic "—" [ref=f1e1091]
+              - generic [ref=f1e1093]:
+                - heading "Listening" [level=3] [ref=f1e1094]
+                - generic [ref=f1e1095]:
+                  - generic [ref=f1e1096]:
+                    - term [ref=f1e1097]: Duration
+                    - definition [ref=f1e1098]:
+                      - generic "19.8" [ref=f1e1099]
+                  - generic [ref=f1e1101]:
+                    - term [ref=f1e1102]: Tracks
+                    - definition [ref=f1e1103]:
+                      - generic "2" [ref=f1e1104]
+                  - generic [ref=f1e1106]:
+                    - term [ref=f1e1107]: Favorite
+                    - definition [ref=f1e1108]:
+                      - generic "false" [ref=f1e1109]
+                  - generic [ref=f1e1111]:
+                    - term [ref=f1e1112]: Notes
+                    - definition [ref=f1e1113]:
+                      - generic "—" [ref=f1e1114]
+  - generic [ref=f1e13]:
+    - button "Toggle Nuxt DevTools" [ref=f1e14] [cursor=pointer]
+    - generic "Page load time" [ref=f1e18]:
+      - generic [ref=f1e19]: "14"
+      - generic [ref=f1e20]: ms
+    - button "Toggle Component Inspector" [ref=f1e22] [cursor=pointer]

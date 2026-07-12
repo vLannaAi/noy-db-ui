@@ -1,0 +1,137 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e27]:
+    - complementary [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]:
+          - generic [ref=f1e31]: Vinyl
+          - button "✕" [ref=f1e32] [cursor=pointer]
+        - navigation [ref=f1e33]:
+          - link "Collection" [ref=f1e34] [cursor=pointer]:
+            - /url: /collection
+          - link "Records" [ref=f1e35] [cursor=pointer]:
+            - /url: /records
+          - link "Artists" [ref=f1e36] [cursor=pointer]:
+            - /url: /artists
+          - link "Labels" [ref=f1e37] [cursor=pointer]:
+            - /url: /labels
+        - generic [ref=f1e39]:
+          - button "Blue Note" [ref=f1e40] [cursor=pointer]
+          - button "Hi-Fi" [ref=f1e43] [cursor=pointer]
+          - button "White Label" [ref=f1e46] [cursor=pointer]
+          - button "Speed" [ref=f1e49] [cursor=pointer]
+        - generic [ref=f1e54]:
+          - button "◐" [ref=f1e55] [cursor=pointer]
+          - combobox [ref=f1e56] [cursor=pointer]:
+            - option "EN" [selected]
+            - option "TH"
+          - button "?" [ref=f1e57] [cursor=pointer]
+    - generic [ref=f1e58]:
+      - button "Open menu" [ref=f1e59] [cursor=pointer]: ☰
+      - article [ref=f1e1116]:
+        - generic [ref=f1e1117]:
+          - button "Back to list" [ref=f1e1118]:
+            - generic [ref=f1e1119]: ←
+            - 'generic "Records: Jazz" [ref=f1e1120]'
+          - generic [ref=f1e1122]:
+            - button "First" [ref=f1e1123]
+            - generic [ref=f1e1125]: Quartet in Blue
+            - button "Previous — Quartet in Blue" [ref=f1e1126]
+            - 'button "Go to #" [ref=f1e1129]':
+              - generic [ref=f1e1130]: 5/5
+            - button "Next" [disabled] [ref=f1e1131]
+            - button "Last" [ref=f1e1133]
+        - navigation "Path" [ref=f1e1135]:
+          - button "Groove Hill" [ref=f1e1136]
+          - generic [ref=f1e1137]: ›
+          - button "Sun Ra Tribute" [ref=f1e1138]
+          - generic [ref=f1e1139]: ›
+          - generic "Space Chant" [ref=f1e1140]
+        - generic [ref=f1e1142]:
+          - figure "decrypted from a vault blob · 12 KB" [ref=f1e1143]:
+            - img "cover" [ref=f1e1144]
+          - generic [ref=f1e1146]:
+            - button "Edit" [ref=f1e1312]
+            - generic [ref=f1e1150]:
+              - generic [ref=f1e1151]:
+                - heading "Identity" [level=3] [ref=f1e1152]
+                - generic [ref=f1e1153]:
+                  - generic [ref=f1e1154]:
+                    - term [ref=f1e1155]: Title
+                    - definition [ref=f1e1156]:
+                      - generic [ref=f1e1314]:
+                        - generic [ref=f1e1315]: en
+                        - generic "Space Chant" [ref=f1e1316]
+                      - generic [ref=f1e1318]:
+                        - generic [ref=f1e1319]: th
+                        - generic "บทสวดอวกาศ" [ref=f1e1320]
+                  - generic [ref=f1e1165]:
+                    - term [ref=f1e1166]: Artist
+                    - definition [ref=f1e1167]:
+                      - generic "ar8" [ref=f1e1322]
+                  - generic [ref=f1e1170]:
+                    - term [ref=f1e1171]: Label
+                    - definition [ref=f1e1172]:
+                      - generic "lb1" [ref=f1e1324]
+              - generic [ref=f1e1175]:
+                - heading "Release" [level=3] [ref=f1e1176]
+                - generic [ref=f1e1177]:
+                  - generic [ref=f1e1178]:
+                    - term [ref=f1e1179]: Year
+                    - definition [ref=f1e1180]:
+                      - generic "1977" [ref=f1e1326]
+                  - generic [ref=f1e1183]:
+                    - term [ref=f1e1184]: Genre
+                    - definition [ref=f1e1185]:
+                      - generic "jazz" [ref=f1e1328]
+                  - generic [ref=f1e1188]:
+                    - term [ref=f1e1189]: Format
+                    - definition [ref=f1e1190]:
+                      - generic "LP" [ref=f1e1330]
+              - generic [ref=f1e1193]:
+                - heading "Condition & Value" [level=3] [ref=f1e1194]
+                - generic [ref=f1e1195]:
+                  - generic [ref=f1e1196]:
+                    - term [ref=f1e1197]: Condition
+                    - definition [ref=f1e1198]:
+                      - generic "VG" [ref=f1e1332]
+                  - generic [ref=f1e1201]:
+                    - term [ref=f1e1202]: Rating
+                    - definition [ref=f1e1203]:
+                      - generic "4" [ref=f1e1334]
+                  - generic [ref=f1e1206]:
+                    - term [ref=f1e1207]: Price
+                    - definition [ref=f1e1208]:
+                      - generic "40 USD" [ref=f1e1336]
+                  - generic [ref=f1e1211]:
+                    - term [ref=f1e1212]: Purchased
+                    - definition [ref=f1e1213]:
+                      - generic "2023-12-09" [ref=f1e1338]
+                  - generic [ref=f1e1216]:
+                    - term [ref=f1e1217]: Shop link
+                    - definition [ref=f1e1218]:
+                      - generic "—" [ref=f1e1340]
+              - generic [ref=f1e1221]:
+                - heading "Listening" [level=3] [ref=f1e1222]
+                - generic [ref=f1e1223]:
+                  - generic [ref=f1e1224]:
+                    - term [ref=f1e1225]: Duration
+                    - definition [ref=f1e1226]:
+                      - generic "44.6" [ref=f1e1342]
+                  - generic [ref=f1e1229]:
+                    - term [ref=f1e1230]: Tracks
+                    - definition [ref=f1e1231]:
+                      - generic "7" [ref=f1e1344]
+                  - generic [ref=f1e1234]:
+                    - term [ref=f1e1235]: Favorite
+                    - definition [ref=f1e1236]:
+                      - generic "false" [ref=f1e1346]
+                  - generic [ref=f1e1239]:
+                    - term [ref=f1e1240]: Notes
+                    - definition [ref=f1e1241]:
+                      - generic "Spiritual jazz classic." [ref=f1e1348]
+  - generic [ref=f1e13]:
+    - button "Toggle Nuxt DevTools" [ref=f1e14] [cursor=pointer]
+    - generic "Page load time" [ref=f1e18]:
+      - generic [ref=f1e19]: "15"
+      - generic [ref=f1e20]: ms
+    - button "Toggle Component Inspector" [ref=f1e22] [cursor=pointer]

@@ -32,6 +32,8 @@ traversal — a sticky stepper bar and a path-shaped detail title.
 ### Changed
 - **`RecordForm`** delegates its per-field controls to the internal `FieldControl` renderer instead of
   inlining them.
+- `@noy-db/hub` peer floor → `^0.3.0-pre.9` (additive describe() surface; no component changes
+  needed).
 
 ## [0.3.0-pre.2] — 2026-07-04
 
