@@ -85,6 +85,7 @@ export { positionOf, itemAt, type FoundSetItem, type FoundSetSnapshot, type Trav
 export { useTraverse } from './use-traverse'
 export { pathSegments, type PathSegment } from './path'
 export { captureFoundSet, useFoundSet, setReturnAnchor, consumeReturnAnchor, rememberDirection, recallDirection } from './use-found-set'
+export { foundSetItems, type FoundSetItemsOptions } from './found-set-items'
 
 // search-box + saved/recent/NL search logic (domain-free; storage data supplied by the host)
 export * from './suggest'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { useCollectionList, findByQuery, narrate, captureFoundSet, consumeReturnAnchor, resolveListIds, listKind, isFixedList, type FoundSetItem } from '@noy-db/ui'
+import { useCollectionList, findByQuery, narrate, captureFoundSet, consumeReturnAnchor, resolveListIds, listKind, isFixedList, foundSetItems as buildFoundSetItems, type FoundSetItem } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
 import { COVER_FIELD } from '../../../src/data/vault'
@@ -61,19 +61,26 @@ onMounted(() => { if (anchor) nextTick(() => { anchorKey.value = anchor.id }) })
 const searchText = computed(() => narrate(list.ast.value, view.value.schema, { t, formatValue: labelForValue }))
 useHead({ title: () => (searchText.value.title ? `${searchText.value.title} · noy-db` : 'noy-db · Vinyl') })
 
-// Found-set capture (spec §4): freeze the current display order for detail-page traversal.
+// Found-set capture (spec §4): freeze the current display order for detail-page traversal — the
+// SAME walk a forked/cold tab uses to rebuild from ?q= (spec §6 invariant 1).
 function foundSetItems(): FoundSetItem[] {
-  const lines = list.groupLines.value
-  if (lines.length > 0) {
-    const trail: string[] = []
-    const items: FoundSetItem[] = []
-    for (const line of lines) {
-      if (line.kind === 'group') { trail.length = line.level; trail[line.level] = line.label }
-      else items.push({ id: String(line.row.id), label: String(line.row.title ?? line.row.name ?? line.row.id), group: [...trail] })
-    }
-    return items
-  }
-  return list.visibleRows.value.map((r: any) => ({ id: String(r.id), label: String(r.title ?? r.name ?? r.id) }))
+  return buildFoundSetItems({ lines: list.groupLines.value as any[], rows: list.visibleRows.value as any[] })
+}
+
+// P-C multi-tab: the detail URL carries the query so a cmd-clicked (forked) tab can rebuild the
+// found set. A list view is a 'fixed' set (not query-derivable) → no ?q=, so a fork degrades to a
+// bare detail (D5). Encoded once here; reused by openRecord and the row link.
+function detailUrl(id: string): string {
+  const q = !activeList.value && query.value.trim() ? `?q=${encodeURIComponent(query.value.trim())}` : ''
+  return `/records/${id}${q}`
+}
+function onTitleClick(e: MouseEvent, row: any): void {
+  // Modifier / middle click → let the browser fork the real link natively (a new tab). Stop
+  // propagation so the row's @click doesn't ALSO fire a same-tab navigation (don't preventDefault
+  // — the native fork must still happen).
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) { e.stopPropagation(); return }
+  e.preventDefault(); e.stopPropagation()
+  openRecord(row) // plain click → in-memory capture + same-tab nav (router semantics)
 }
 
 function openRecord(r: any): void {
@@ -98,7 +105,7 @@ function openRecord(r: any): void {
       capturedAt: new Date().toISOString(),
     })
   }
-  navigateTo(`/records/${r.id}`)
+  navigateTo(detailUrl(String(r.id)))
 }
 
 // Print: the report header below is hidden on screen and materializes in print (see themes.css
@@ -548,8 +555,12 @@ onMounted(() => {
         </template>
         <!-- Title: width-aware. The cover gives the row 2 lines of height, so the title WRAPS before it
              condenses or ellipsizes (lines=2). -->
+        <!-- Real link (P-C): cmd/middle-click forks a new tab natively; plain click is intercepted
+             for same-tab router semantics + in-memory found-set capture. -->
         <template #cell-title="{ row }">
-          <NuiText :value="row.title" kind="text" :lines="2" class="font-medium" />
+          <a :href="detailUrl(row.id)" class="block cursor-pointer text-inherit no-underline" @click="onTitleClick($event, row)">
+            <NuiText :value="row.title" kind="text" :lines="2" class="font-medium" />
+          </a>
         </template>
         <!-- Year: abbreviates 2026 → ’26 when the column gets tight. -->
         <template #cell-year="{ row }">

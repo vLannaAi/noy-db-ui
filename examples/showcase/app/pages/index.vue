@@ -7,13 +7,18 @@ definePageMeta({ layout: false })
 
 const { unlock } = useVault()
 const { t } = useShowcaseI18n()
+const route = useRoute()
 const pass = ref('')
 const error = ref('')
 const busy = ref(false)
 async function submit() {
   busy.value = true; error.value = ''
-  try { await unlock(pass.value); await navigateTo('/records') }
-  catch { error.value = t('unlock.error', "That didn't unlock the vault.") }
+  try {
+    await unlock(pass.value)
+    // Restore the deep link a locked (e.g. cmd-clicked) tab was aiming for; else the collection.
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/records'
+    await navigateTo(redirect)
+  } catch { error.value = t('unlock.error', "That didn't unlock the vault.") }
   finally { busy.value = false }
 }
 </script>

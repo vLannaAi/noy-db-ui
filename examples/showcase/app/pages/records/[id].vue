@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useRecordItem, useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, type AttachmentItem } from '@noy-db/ui'
+import { useRecordItem, useFoundSet, captureFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection, useCollectionList, narrate, foundSetItems as buildFoundSetItems, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, type AttachmentItem } from '@noy-db/ui'
 import { diff } from '@noy-db/hub/history'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useLists } from '../../composables/useLists'
+import { buildRecordsView } from '../../lib/collectionView'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
 interface RawHistoryEntry { version: number; timestamp: string; userId: string; record: Record<string, unknown> }
@@ -11,7 +12,7 @@ interface RawHistoryEntry { version: number; timestamp: string; userId: string; 
 const route = useRoute()
 const router = useRouter()
 const { vault } = useVault()
-const { fieldLabel, enumLabel, locale } = useShowcaseI18n()
+const { t, fieldLabel, enumLabel, locale } = useShowcaseI18n()
 
 const id = route.params.id as string
 const records = vault.value!.collection('records')
@@ -22,12 +23,42 @@ await item.load()
 // Found-set traversal (spec §4): the list's captured snapshot drives the skim/step cluster;
 // a missing record (deleted between capture and visit) auto-advances past it.
 const { snapshot } = useFoundSet('records')
+
+// P-C multi-tab: a forked/cold tab (own empty per-tab store) has no captured snapshot. If the URL
+// carries ?q= it is fully derivable (spec §6 invariant 1) — re-evaluate the query through a headless
+// list and rebuild the frozen snapshot, so the traverse bar renders in the new tab too (spec D5).
+const routeQ = typeof route.query.q === 'string' ? route.query.q : ''
+if (!snapshot.value && routeQ && vault.value) {
+  const rv = buildRecordsView(vault.value)
+  const labelForValue = (field: string, value: string): string | undefined =>
+    field === 'priceUsd' ? `$${value}` : rv.entityName(field, value) ?? (enumLabel(field, value) || undefined)
+  const rebuilt = useCollectionList({
+    baseRows: computed(() => rv.rows as Record<string, any>[]),
+    query: ref(routeQ),
+    entity: 'records',
+    columns: rv.columns,
+    defaultSort: [{ field: 'title', dir: 'asc' }],
+    schema: () => rv.schema,
+    formatGroupLabel: labelForValue,
+  })
+  captureFoundSet({
+    kind: 'query', entity: 'records',
+    query: routeQ,
+    title: narrate(rebuilt.ast.value, rv.schema, { t, formatValue: labelForValue }).title,
+    items: buildFoundSetItems({ lines: rebuilt.groupLines.value as any[], rows: rebuilt.visibleRows.value as any[] }),
+    total: rv.rows.length,
+    capturedAt: new Date().toISOString(),
+  })
+}
+
 // `traverse` is referenced inside its own onSettle closure — safe: the closure only runs on a
-// later go()/goTo() call, by which point `const traverse` has been initialized.
+// later go()/goTo() call, by which point `const traverse` has been initialized. router.replace keeps
+// ?q= so the found set survives a further fork/refresh from this tab (P-C).
+const withQ = (nid: string): string => `/records/${nid}${routeQ ? `?q=${encodeURIComponent(routeQ)}` : ''}`
 const traverse = useTraverse({
   snapshot: () => snapshot.value,
   currentId: () => (route.params.id as string),
-  onSettle: (nid) => { rememberDirection('records', traverse.lastDirection.value); router.replace(`/records/${nid}`) },
+  onSettle: (nid) => { rememberDirection('records', traverse.lastDirection.value); router.replace(withQ(nid)) },
 })
 if (!item.record.value && snapshot.value) traverse.go(recallDirection('records'))
 

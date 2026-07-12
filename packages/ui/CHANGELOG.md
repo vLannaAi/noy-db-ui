@@ -73,6 +73,11 @@ And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema 
   click captures the current display order; the detail's "back" hands the list a return anchor
   (query + row) to restore to; direction memory survives the page remount a returning navigation
   causes.
+- **`foundSetItems({ lines, rows }, opts?)`** (`found-set-items.ts`, traverse P-C) — the pure
+  "display → frozen `FoundSetItem[]`" step: the grouped line list (carrying each row's group-by
+  trail, outermost first) when present, else the flat rows. Shared by the list's capture-on-click
+  AND a forked/cold tab's rebuild-from-`?q=`, so both tabs derive an identical order from the same
+  query (spec §6 invariant 1 — a snapshot is fully derivable from its query string).
 - **`useTraverse`** (`use-traverse.ts`) — the skim controller (spec D8): an instant cursor over the
   frozen snapshot, with a ~250ms generation-guarded settle before triggering the real record load
   (fast clicks skim titles; a paused click loads the record) — `go`/`goTo`/`first`/`last`,
