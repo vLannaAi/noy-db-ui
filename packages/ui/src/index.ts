@@ -92,6 +92,12 @@ export * from './history'
 export * from './saved'
 export * from './nl'
 
+// Lists — the hide/patch algebra (traverse P-D): smart / smart-overridden / fixed lists
+export {
+  makeList, resolveListIds, addToList, removeFromList, toggleInList, isInList,
+  isFixedList, listKind, isValidListName, listsForEntity, sortLists, type ListDef,
+} from './lists'
+
 // table utilities: formatting, column aggregates, responsive column resolution, column prefs
 export * from './format'
 export * from './aggregate'

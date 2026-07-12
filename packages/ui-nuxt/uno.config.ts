@@ -42,6 +42,10 @@ export default defineConfig({
     'i-lucide-upload',          // attachments: add
     'i-lucide-trash-2',         // attachments: delete
     'i-lucide-file',            // attachments: non-image tile
+    'i-lucide-list-checks',     // lists (P-D): menu + active-list banner
+    'i-lucide-list-plus',       // lists (P-D): detail pin-to-list
+    'i-lucide-check',           // lists (P-D): pinned membership
+    'i-lucide-plus',            // lists (P-D): add-to-list
   ],
   theme: {
     colors: {

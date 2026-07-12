@@ -10,6 +10,14 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`lists.ts` — the hide/patch list algebra** (traverse P-D). One `ListDef { name, entity, query,
+  hide[], patch[] }` unifies a smart list (bookmarked query), a smart list with overrides, and a
+  fixed playlist. `resolveListIds(def, evaluatedIds)` computes `(eval(query) − hide) ∪ patch` with
+  stable order (query members keep their sorted position, patch-only ids append); `addToList`/
+  `removeFromList` are **total** (`remove = id ∈ patch ? unpatch : hide`, `add = id ∈ hide ? unhide
+  : patch`) and idempotent; `toggleInList`/`isInList` (need the live `inQuery`), `listKind`
+  (fixed/smart/smart-overridden), plus `makeList`/`sortLists`/`listsForEntity`. Pure — the host owns
+  persistence (localStorage today; vault-encrypted/syncable is the endgame).
 - **`attachmentList(slots)` + `humanSize`/`attachmentSlot`/`ATTACHMENT_PREFIX`** (`attachments.ts`,
   Item Release P5) — filter a `blob(id).list()` result to the `att:`-prefixed attachment slots (the
   cover + named slots stay out) and shape each into an `AttachmentItem` (`{ slot, filename, mime,

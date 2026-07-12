@@ -3,6 +3,7 @@ import { useRecordItem, useFoundSet, setReturnAnchor, useTraverse, pathSegments,
 import { diff } from '@noy-db/hub/history'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
+import { useLists } from '../../composables/useLists'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
 interface RawHistoryEntry { version: number; timestamp: string; userId: string; record: Record<string, unknown> }
@@ -107,6 +108,16 @@ async function onRemoveAttachment(slot: string): Promise<void> {
 }
 onMounted(refreshAttachments)
 
+// Lists (P-D): pin this record into a list even when it doesn't match the list's query — the PATCH
+// half of the algebra. Membership shown here is the explicit `patch` set (the detail's domain);
+// removing a query-matched member happens in the list view's per-row ✕.
+const { lists: recordLists, addItem: addToList, removeItem: removeFromList } = useLists('records')
+const listMenuOpen = ref(false)
+const isPinned = (l: { patch: string[] }): boolean => l.patch.includes(id)
+function toggleList(l: { id: string; patch: string[] }): void {
+  isPinned(l) ? removeFromList(l.id, id) : addToList(l.id, id)
+}
+
 // Path-shaped detail title (spec D7): the group-by trail when found grouped, else the natural
 // artist/label ref axis, terminating in the record's own title.
 const segments = computed(() => pathSegments({
@@ -135,6 +146,31 @@ const segments = computed(() => pathSegments({
       @navigate="(r) => navigateTo(`/${r.collection}/${r.id}`)"
     />
     <div :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
+      <!-- Lists (P-D): pin/unpin this record to a named list (the patch operation). -->
+      <div v-if="recordLists.length" class="relative flex justify-end mb-2">
+        <button
+          type="button"
+          class="nui-btn-ghost text-xs flex items-center gap-1 text-nui-muted hover:text-nui-fg"
+          :aria-expanded="listMenuOpen"
+          @click="listMenuOpen = !listMenuOpen"
+        >
+          <span class="i-lucide-list-plus size-3.5" aria-hidden="true" /> Lists
+        </button>
+        <div v-if="listMenuOpen" class="absolute right-0 top-full mt-1 z-50 nui-panel p-1.5 w-56 space-y-0.5 shadow-lg">
+          <button
+            v-for="l in recordLists"
+            :key="l.id"
+            type="button"
+            class="w-full text-left text-sm px-2 py-1 rounded hover:bg-nui-bg-accent flex items-center gap-2"
+            @click="toggleList(l)"
+          >
+            <span class="size-4 shrink-0 flex items-center justify-center" :class="isPinned(l) ? 'text-nui-accent' : 'text-nui-subtle'">
+              <span :class="isPinned(l) ? 'i-lucide-check' : 'i-lucide-plus'" class="size-3.5" aria-hidden="true" />
+            </span>
+            <span class="truncate text-nui-fg">{{ l.name }}</span>
+          </button>
+        </div>
+      </div>
       <CoverImage :id="id" />
       <RecordDetail
         :record="item.record.value"

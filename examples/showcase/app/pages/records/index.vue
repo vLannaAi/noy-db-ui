@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { useCollectionList, findByQuery, narrate, captureFoundSet, consumeReturnAnchor, type FoundSetItem } from '@noy-db/ui'
+import { useCollectionList, findByQuery, narrate, captureFoundSet, consumeReturnAnchor, resolveListIds, listKind, isFixedList, type FoundSetItem } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { buildRecordsView } from '../../lib/collectionView'
 import { COVER_FIELD } from '../../../src/data/vault'
@@ -8,6 +8,7 @@ import { useTour } from '../../composables/useTour'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useSavedSearches } from '../../composables/useSavedSearches'
 import { useRecentSearches } from '../../composables/useRecentSearches'
+import { useLists } from '../../composables/useLists'
 
 const { vault } = useVault()
 const { t, enumLabel, locale } = useShowcaseI18n()
@@ -76,14 +77,27 @@ function foundSetItems(): FoundSetItem[] {
 }
 
 function openRecord(r: any): void {
-  captureFoundSet({
-    kind: 'query', entity: 'records',
-    query: query.value,
-    title: searchText.value.title,
-    items: foundSetItems(),
-    total: view.value.rows.length,
-    capturedAt: new Date().toISOString(),
-  })
+  if (activeList.value) {
+    // A list is a 'fixed' found set (spec D11): freeze its resolved order for traversal.
+    const items: FoundSetItem[] = (listViewRows.value ?? []).map((row) => ({ id: String(row.id), label: String(row.title ?? row.id) }))
+    captureFoundSet({
+      kind: 'fixed', entity: 'records',
+      query: query.value,
+      title: activeList.value.name,
+      items,
+      total: items.length,
+      capturedAt: new Date().toISOString(),
+    })
+  } else {
+    captureFoundSet({
+      kind: 'query', entity: 'records',
+      query: query.value,
+      title: searchText.value.title,
+      items: foundSetItems(),
+      total: view.value.rows.length,
+      capturedAt: new Date().toISOString(),
+    })
+  }
   navigateTo(`/records/${r.id}`)
 }
 
@@ -95,6 +109,51 @@ const printedAt = () => new Date().toLocaleString(locale.value === 'th' ? 'th-TH
 // Saved & recent searches
 const { saved, add: addSaved, rename: renameSaved, remove: removeSaved, toggleFavorite, setDefault } = useSavedSearches('records')
 const { recents, remove: removeRecent, clear: clearRecent } = useRecentSearches(query)
+
+// Lists (P-D): the hide/patch algebra over named lists. Viewing a list overlays its overrides on
+// the query eval (a smart list) or shows its patch verbatim (a fixed list); the rows become a
+// flat, frozen ('fixed') found set the detail-page traversal walks.
+const { lists, activeId: activeListId, byId: listById, create: createList, remove: removeList, removeItem: removeListItem } = useLists('records')
+const activeList = computed(() => (activeListId.value ? listById(activeListId.value) ?? null : null))
+// Returning from a detail with a list still active (the shared id survived navigation): restore the
+// list's query so the eval matches, unless a return anchor already set one (it carries the same query).
+if (activeList.value && !anchor) query.value = activeList.value.query
+const listsOpen = ref(false)
+const newListName = ref('')
+
+// Rows of the active list: (eval(query) − hide) ∪ patch, mapped back to full row objects (a patched
+// row may not be in the current eval, so resolve against ALL records). A fixed list ignores the eval.
+const listViewRows = computed<Record<string, any>[] | null>(() => {
+  const al = activeList.value
+  if (!al) return null
+  const evalIds = isFixedList(al) ? [] : (list.visibleRows.value as any[]).map((r) => String(r.id))
+  const byId = new Map((baseRows.value as any[]).map((r) => [String(r.id), r]))
+  return resolveListIds(al, evalIds).map((id) => byId.get(id)).filter(Boolean) as Record<string, any>[]
+})
+
+function activateList(id: string): void {
+  const l = listById(id)
+  if (!l) return
+  activeListId.value = id
+  query.value = l.query // a smart list's own query drives the eval; a fixed list clears the box
+  listsOpen.value = false
+}
+function exitList(): void {
+  activeListId.value = null
+  query.value = ''
+}
+function saveSearchAsList(): void {
+  const l = createList(newListName.value || (searchText.value.title || 'List'), { query: query.value })
+  if (l) { newListName.value = ''; activateList(l.id) }
+}
+function newFixedList(): void {
+  const l = createList(newListName.value || 'Playlist', {})
+  if (l) { newListName.value = ''; listsOpen.value = false }
+}
+function deleteList(id: string): void {
+  if (activeListId.value === id) exitList()
+  removeList(id)
+}
 
 // currentSaved: true when the current query matches an already-saved search
 const currentSaved = computed(() => !!findByQuery(saved.value, 'records', query.value.trim()))
@@ -208,9 +267,21 @@ onMounted(() => {
       <p>{{ searchText.subtitle }}</p>
       <p class="print-meta">{{ list.visibleRows.value.length }} {{ t('print.records', 'records') }} · {{ printedAt() }}</p>
     </header>
+    <!-- List view (P-D): while a named list is active the query toolbar is replaced by a banner —
+         the list's overrides own the found set, so query editing is out of scope until you exit. -->
+    <div v-if="activeList" class="flex items-center gap-2 print-hide nui-panel px-3 py-2">
+      <span class="i-lucide-list-checks size-4 text-nui-accent" aria-hidden="true" />
+      <span class="text-sm font-medium text-nui-fg">{{ activeList.name }}</span>
+      <span class="text-[10px] uppercase tracking-wide text-nui-subtle border border-nui-border rounded px-1">{{ listKind(activeList) }}</span>
+      <span class="text-xs text-nui-muted tabular-nums">{{ (listViewRows?.length ?? 0) }} {{ t('lists.items', 'items') }}</span>
+      <button type="button" class="nui-btn-ghost text-xs ml-auto text-nui-muted hover:text-nui-fg flex items-center gap-1" @click="exitList">
+        <span class="i-lucide-x size-3.5" aria-hidden="true" /> {{ t('lists.exit', 'Exit list') }}
+      </button>
+    </div>
+
     <!-- Unified toolbar (spec §1): the title/search field fills the width; the rail reads as a
          sentence — EXPRESS (mode capsule) │ SHAPE (group) │ MEMORY (saved, recent) │ RESET. -->
-    <div class="relative flex items-center gap-2 print-hide" data-tour="toolbar">
+    <div v-else class="relative flex items-center gap-2 print-hide" data-tour="toolbar">
       <div class="flex-1 min-w-0" data-tour="search">
         <SearchBox
           ref="searchBox"
@@ -270,6 +341,50 @@ onMounted(() => {
           @remove="removeRecent"
           @clear="clearRecent"
         />
+        <!-- Lists (P-D): create a smart list from the current search or an empty fixed list; pick one to view. -->
+        <div class="relative">
+          <button
+            type="button"
+            class="nui-btn text-nui-muted hover:bg-nui-bg-accent"
+            :aria-label="t('lists.menu', 'Lists')"
+            :title="t('lists.menu', 'Lists')"
+            :aria-expanded="listsOpen"
+            @click="listsOpen = !listsOpen"
+          >
+            <span class="i-lucide-list-checks size-[1.3125rem]" aria-hidden="true" />
+          </button>
+          <div v-if="listsOpen" class="absolute right-0 top-full mt-1 z-50 nui-panel p-2 w-64 space-y-2 shadow-lg">
+            <div class="flex gap-1.5">
+              <input
+                v-model="newListName"
+                type="text"
+                :placeholder="t('lists.namePlaceholder', 'List name…')"
+                class="flex-1 min-w-0 text-sm px-2 py-1 rounded border border-nui-border bg-nui-bg outline-none focus:border-nui-accent"
+                @keydown.enter.prevent="saveSearchAsList"
+              >
+            </div>
+            <div class="flex gap-1.5">
+              <button type="button" class="nui-btn-ghost text-xs flex-1 text-nui-muted hover:text-nui-fg" :disabled="!query.trim()" @click="saveSearchAsList">
+                {{ t('lists.fromSearch', 'From search') }}
+              </button>
+              <button type="button" class="nui-btn-ghost text-xs flex-1 text-nui-muted hover:text-nui-fg" @click="newFixedList">
+                {{ t('lists.newFixed', 'Empty list') }}
+              </button>
+            </div>
+            <div v-if="lists.length" class="border-t border-nui-border pt-1.5 space-y-0.5 max-h-56 overflow-auto">
+              <div v-for="l in lists" :key="l.id" class="flex items-center gap-1.5 group">
+                <button type="button" class="flex-1 min-w-0 text-left text-sm px-1.5 py-1 rounded hover:bg-nui-bg-accent flex items-center gap-1.5" @click="activateList(l.id)">
+                  <span class="truncate text-nui-fg">{{ l.name }}</span>
+                  <span class="text-[10px] uppercase tracking-wide text-nui-subtle shrink-0">{{ listKind(l) }}</span>
+                </button>
+                <button type="button" class="size-6 shrink-0 flex items-center justify-center text-nui-subtle hover:text-nui-danger" :aria-label="t('lists.delete', 'Delete list')" @click="deleteList(l.id)">
+                  <span class="i-lucide-trash-2 size-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+            <p v-else class="text-xs text-nui-subtle px-1">{{ t('lists.emptyMenu', 'No lists yet.') }}</p>
+          </div>
+        </div>
         <button
           type="button"
           class="nui-btn text-nui-muted hover:bg-nui-bg-accent"
@@ -317,7 +432,7 @@ onMounted(() => {
     <div data-tour="list" class="nui-records-list">
       <CollectionList
         :columns="orderedViewColumns"
-        :rows="list.visibleRows.value"
+        :rows="listViewRows ?? list.visibleRows.value"
         v-model:resizing="resizing"
         v-model:widths="columnWidths"
         :sort-key="list.sortKey.value"
@@ -327,7 +442,7 @@ onMounted(() => {
         :filters="list.columnFilters.value"
         :enum-facets="list.enumFacets.value"
         :entity-facets="list.entityFacets.value"
-        :group-lines="list.groupLines.value"
+        :group-lines="activeList ? [] : list.groupLines.value"
         :grouped-keys="list.groupedColumnKeys.value"
         :all-collapsed="list.allTopCollapsed.value"
         :focus-keys="colFocusKeys"
@@ -356,8 +471,19 @@ onMounted(() => {
           />
         </template>
         <template #[coverCell]="{ row }">
-          <span data-tour="cover">
+          <span data-tour="cover" class="relative inline-block">
             <CoverImage :id="row.id" :thumb="true" />
+            <!-- In list view: remove this row from the list (hide if in-query, unpatch if patched). -->
+            <button
+              v-if="activeList"
+              type="button"
+              class="absolute -top-1 -right-1 size-4 rounded-full bg-nui-bg border border-nui-border flex items-center justify-center text-nui-subtle hover:text-nui-danger"
+              :aria-label="t('lists.removeItem', 'Remove from list')"
+              :title="t('lists.removeItem', 'Remove from list')"
+              @click.stop="removeListItem(activeList.id, String(row.id))"
+            >
+              <span class="i-lucide-x size-2.5" aria-hidden="true" />
+            </button>
           </span>
         </template>
         <!-- Title: width-aware. The cover gives the row 2 lines of height, so the title WRAPS before it
