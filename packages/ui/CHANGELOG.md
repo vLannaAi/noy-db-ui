@@ -10,6 +10,11 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`crop.ts` — square-crop geometry** for a pan/zoom image cropper (cover upload): `coverScale`
+  (base scale where an image just covers a frame), `clampOffset` (keep the frame covered while
+  panning), `cropRect(view)` → `{ sx, sy, sw, sh }` (the source rectangle to feed
+  `ctx.drawImage`, so the crop renders at any output size), and `displaySize`. Pure — the component
+  owns pointer/canvas, this owns the math (11 tests).
 - **`lists.ts` — the hide/patch list algebra** (traverse P-D). One `ListDef { name, entity, query,
   hide[], patch[] }` unifies a smart list (bookmarked query), a smart list with overrides, and a
   fixed playlist. `resolveListIds(def, evaluatedIds)` computes `(eval(query) − hide) ∪ patch` with

@@ -5,6 +5,7 @@ import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useLists } from '../../composables/useLists'
 import { buildRecordsView } from '../../lib/collectionView'
+import { saveCoverBytes } from '../../lib/cover'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
 interface RawHistoryEntry { version: number; timestamp: string; userId: string; record: Record<string, unknown> }
@@ -139,6 +140,28 @@ async function onRemoveAttachment(slot: string): Promise<void> {
 }
 onMounted(refreshAttachments)
 
+// Change cover: pick an image → crop/zoom in a modal → store the resized PNG as the cover blob →
+// bump coverVersion so <CoverImage> remounts and shows it (session-only per D3).
+const coverVersion = ref(0)
+const cropSrc = ref<string | null>(null)
+const coverFileEl = ref<HTMLInputElement | null>(null)
+function pickCover(): void { coverFileEl.value?.click() }
+function onCoverFile(e: Event): void {
+  const input = e.target as HTMLInputElement
+  const f = input.files?.[0]
+  input.value = ''
+  if (f) cropSrc.value = URL.createObjectURL(f)
+}
+function closeCrop(): void {
+  if (cropSrc.value) URL.revokeObjectURL(cropSrc.value)
+  cropSrc.value = null
+}
+async function onCropConfirm(bytes: Uint8Array): Promise<void> {
+  await saveCoverBytes(vault.value!, id, bytes)
+  closeCrop()
+  coverVersion.value++
+}
+
 // Lists (P-D): pin this record into a list even when it doesn't match the list's query — the PATCH
 // half of the algebra. Membership shown here is the explicit `patch` set (the detail's domain);
 // removing a query-matched member happens in the list view's per-row ✕.
@@ -202,7 +225,18 @@ const segments = computed(() => pathSegments({
           </button>
         </div>
       </div>
-      <CoverImage :id="id" />
+      <div class="relative inline-block">
+        <CoverImage :key="coverVersion" :id="id" />
+        <button
+          v-if="!item.editing.value"
+          type="button"
+          class="absolute bottom-2 right-2 nui-btn bg-nui-bg/85 text-nui-fg text-xs px-2 py-1 flex items-center gap-1 shadow"
+          @click="pickCover"
+        >
+          <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
+        </button>
+        <input ref="coverFileEl" type="file" accept="image/*" class="hidden" @change="onCoverFile">
+      </div>
       <RecordDetail
         :record="item.record.value"
         :fields="fields"
@@ -236,4 +270,12 @@ const segments = computed(() => pathSegments({
     </div>
   </article>
   <p v-else class="p-4">Not found.</p>
+
+  <!-- Cover crop/resize modal -->
+  <div v-if="cropSrc" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" @click.self="closeCrop">
+    <div class="nui-panel p-4 w-full max-w-sm">
+      <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">Change cover</h3>
+      <ImageCropper :src="cropSrc" @confirm="onCropConfirm" @cancel="closeCrop" />
+    </div>
+  </div>
 </template>

@@ -23,6 +23,9 @@ export {
   type FitTreatment, type FitOptions, type TextKind,
 } from './adaptive-text'
 
+// square-crop geometry for a pan/zoom image cropper (cover upload)
+export { coverScale, clampOffset, cropRect, displaySize, type CropView } from './crop'
+
 // describe()-driven schema + cross-collection joins
 export { schemaFromDescribe, type SchemaFromDescribeOptions } from './schema-from-describe'
 export { joinedSchema, joinedRows, joinedKey, type JoinLeg } from './collection-source'

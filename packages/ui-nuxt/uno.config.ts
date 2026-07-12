@@ -47,6 +47,9 @@ export default defineConfig({
     'i-lucide-check',           // lists (P-D): pinned membership
     'i-lucide-plus',            // lists (P-D): add-to-list
     'i-lucide-check-check',     // bulk selection (P-E): selection banner
+    'i-lucide-zoom-in',         // image cropper: zoom control
+    'i-lucide-zoom-out',        // image cropper: zoom control
+    'i-lucide-image-up',        // change-cover affordance
   ],
   theme: {
     colors: {
