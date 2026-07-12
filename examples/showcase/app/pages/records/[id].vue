@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRecordItem, useFoundSet, captureFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection, useCollectionList, narrate, foundSetItems as buildFoundSetItems, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, type AttachmentItem } from '@noy-db/ui'
+import { useRecordItem, useFoundSet, captureFoundSet, setReturnAnchor, useTraverse, rememberDirection, recallDirection, useCollectionList, narrate, foundSetItems as buildFoundSetItems, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, type AttachmentItem } from '@noy-db/ui'
 import { diff } from '@noy-db/hub/history'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
@@ -78,6 +78,8 @@ const fields = computed(() => described.fields.map((f) => {
 // ref-select options: entity pickers fed by the target collections (localized names)
 const artistRows = await vault.value!.collection('artists').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
 const labelRows = await vault.value!.collection('labels').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
+// Every record (localized title + its label/artist) drives the slot-machine selector's three drums.
+const recordRows = await records.list({ locale: locale.value, fallback: 'any' }) as { id: string; title: string; labelId: string; artistId: string }[]
 const options = computed(() => ({
   artistId: artistRows.map((a) => ({ value: a.id, label: a.name })),
   labelId: labelRows.map((l) => ({ value: l.id, label: l.name })),
@@ -172,17 +174,6 @@ function toggleList(l: { id: string; patch: string[] }): void {
   isPinned(l) ? removeFromList(l.id, id) : addToList(l.id, id)
 }
 
-// Path-shaped detail title (spec D7): the group-by trail when found grouped, else the natural
-// artist/label ref axis, terminating in the record's own title.
-const segments = computed(() => pathSegments({
-  item: traverse.cursorItem.value,
-  record: traverse.skimming.value ? null : (item.record.value as Record<string, unknown> | null),
-  fields: described.fields,
-  naturalOrder: ['labelId', 'artistId'],
-  labelFor: (field, id) => options.value[field as 'artistId' | 'labelId']?.find((o) => o.value === id)?.label,
-  titleLabel: traverse.cursorItem.value?.label
-    ?? (item.record.value ? String((item.record.value as any).title ?? route.params.id) : String(route.params.id)),
-}))
 </script>
 
 <template>
@@ -194,10 +185,12 @@ const segments = computed(() => pathSegments({
       @go="traverse.go" @go-to="traverse.goTo" @first="traverse.first" @last="traverse.last" @back="goBack"
     />
     <NuxtLink v-else to="/records" class="text-sm text-nui-accent hover:underline">← records</NuxtLink>
-    <ItemPath
-      :segments="segments"
-      @back="goBack"
-      @navigate="(r) => navigateTo(`/${r.collection}/${r.id}`)"
+    <SlotPath
+      :records="recordRows"
+      :labels="labelRows"
+      :artists="artistRows"
+      :current-id="id"
+      @navigate="(rid) => navigateTo(withQ(rid))"
     />
     <div :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
       <!-- Lists (P-D): pin/unpin this record to a named list (the patch operation). -->
