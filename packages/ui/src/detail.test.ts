@@ -39,6 +39,37 @@ describe('formatDetailCell', () => {
   })
 })
 
+describe('formatDetailCell — lookup/enum label precedence', () => {
+  const lookupField = f({
+    key: 'genre', label: 'Genre',
+    dict: { name: 'genre', static: true, values: [{ value: 'jazz', label: 'Jazz (en)' }] },
+    lookup: { dimension: 'genre', backing: 'static', vocabulary: 'closed', key: 'id', onDelete: 'restrict' },
+  } as Partial<DescribedField> & { key: string })
+
+  it('prefers the hub-dressed <key>Label sibling (locale read) over everything', () => {
+    const c = formatDetailCell(lookupField, { genre: 'jazz', genreLabel: 'แจ๊ส' }, { options: [{ value: 'jazz', label: 'Jazz (host)' }] })
+    expect(c.display).toBe('แจ๊ส')
+  })
+
+  it('falls back to host options, then the dict label, then the raw code', () => {
+    expect(formatDetailCell(lookupField, { genre: 'jazz' }, { options: [{ value: 'jazz', label: 'Jazz (host)' }] }).display).toBe('Jazz (host)')
+    expect(formatDetailCell(lookupField, { genre: 'jazz' }).display).toBe('Jazz (en)')
+    const bare = f({ key: 'genre', label: 'Genre', lookup: { dimension: 'genre', backing: 'static', vocabulary: 'closed', key: 'id', onDelete: 'restrict' } } as Partial<DescribedField> & { key: string })
+    expect(formatDetailCell(bare, { genre: 'jazz' }).display).toBe('jazz')
+  })
+
+  it('a bare ref (no displayFor) still links, labelled from host options', () => {
+    const field = f({ key: 'artistId', label: 'Artist', ref: { target: 'artists', mode: 'warn' } })
+    const c = formatDetailCell(field, { artistId: 'ar2' }, { options: [{ value: 'ar2', label: 'Blue Quartet' }] })
+    expect(c.display).toBe('Blue Quartet')
+    expect(c.ref).toEqual({ collection: 'artists', id: 'ar2' })
+    // without options: raw id, but still a navigable ref
+    const plain = formatDetailCell(field, { artistId: 'ar2' })
+    expect(plain.display).toBe('ar2')
+    expect(plain.ref).toEqual({ collection: 'artists', id: 'ar2' })
+  })
+})
+
 describe('formatDetailCell — href scheme safety', () => {
   const url = (v: string) => formatDetailCell(f({ key: 'link', label: 'Link', semanticType: 'url' }), { link: v })
   it('http/https become links', () => {

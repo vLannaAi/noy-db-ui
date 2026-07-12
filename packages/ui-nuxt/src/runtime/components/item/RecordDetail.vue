@@ -36,7 +36,8 @@ const props = withDefaults(defineProps<{
   draft?: Record<string, any> | null
   /** Per-field error text (from a failed put()). */
   errors?: Record<string, string>
-  /** Select options for entity/ref fields, keyed by field key. */
+  /** `{ value, label }` lists keyed by field key: select options in edit mode, AND the read-mode
+   *  display labels for enum codes / bare entity ids (formatDetailCell's options). */
   options?: Record<string, { value: string; label: string }[]>
   submitting?: boolean
   /** Non-field failure message (generic banner over the cards). */
@@ -60,7 +61,7 @@ const cards = computed(() => {
   return groups.map((g) => ({
     title: g.title,
     cells: g.fields.map((f) => ({
-      cell: formatDetailCell(f, props.record, { reveal: props.reveal }),
+      cell: formatDetailCell(f, props.record, { reveal: props.reveal, options: props.options?.[f.key] }),
       input: fieldInput(f, props.options?.[f.key]) as FieldInput,
       hint: fieldHint(f),
       canEdit: editableKeys.value.has(f.key),

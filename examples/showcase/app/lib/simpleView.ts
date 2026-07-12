@@ -2,7 +2,8 @@ import { schemaFromDescribe, fieldTypeIcon } from '@noy-db/ui'
 import type { AppColumn, FieldType } from '@noy-db/ui'
 import type { Vault } from '@noy-db/hub'
 import { applyI18nLocale } from '@noy-db/hub/i18n'
-import { NAME_I18N } from '../../src/data/collections'
+import { NAME_I18N, NOTES_I18N } from '../../src/data/collections'
+import { LANGS } from '../../src/data/vault'
 import { FIELD_LABELS } from '../../src/data/dicts'
 import { useShowcaseI18n } from '../composables/useShowcaseI18n'
 
@@ -53,10 +54,18 @@ export function buildSimpleView(vault: Vault, entity: string) {
       sortable: true,
       ...config.columnOverrides?.[f.key],
     }))
-  const hasNameI18n = entity === 'artists' || entity === 'labels'
+  // Resolve EVERY i18n-declared field of the entity — labels carries notes as well as name;
+  // an unresolved field would render its raw locale map as JSON in the cell.
+  const I18N_FIELDS: Record<string, Record<string, typeof NAME_I18N>> = {
+    artists: { name: NAME_I18N },
+    labels: { name: NAME_I18N, notes: NOTES_I18N },
+  }
+  const i18nFields = I18N_FIELDS[entity]
   const rawRows = col.query().toArray()
-  const rows = hasNameI18n
-    ? rawRows.map(r => applyI18nLocale(r as Record<string, unknown>, { name: NAME_I18N }, locale.value))
+  // fallback: a partially-translated field (lb5's EN-only notes) resolves to any available
+  // language instead of leaking its raw locale map into the cell.
+  const rows = i18nFields
+    ? rawRows.map(r => applyI18nLocale(r as Record<string, unknown>, i18nFields, locale.value, LANGS))
     : rawRows
   return { schema, columns, rows }
 }

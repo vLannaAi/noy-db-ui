@@ -7,8 +7,19 @@ All notable changes to `@noy-db/ui` are documented here. Format follows
 
 In-place editing: hints, i18n/unit inputs, and the edit-state composable. Also: found-set
 traversal — frozen query-derivable snapshots, path-shaped titles, and the skim controller.
+And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`describe().lookup` consumption** — `schemaFromDescribe` treats a native
+  `lookup()`/`enum()`/`dict()` field as an enum even without a `dict` block, sourcing `enumOrder`
+  from the lookup's declared key set; `fieldInput` derives fallback select options from
+  `lookup.keys` when neither host options nor `dict.values` exist.
+- **`formatDetailCell` read-mode label resolution** — new `opts.options` (`{ value, label }[]`,
+  the same shape the form widgets take) resolves enum codes and entity ids to display labels;
+  label precedence for dict/lookup fields is the hub-dressed `<key>Label` sibling (a `{ locale }`
+  read resolved it at the call's locale) › host options › the dictionary's declared-locale label ›
+  the raw code. A bare `ref` field **without** `displayFor` now emits a navigable `ref` (linked,
+  named via options) instead of rendering its raw id as dead text.
 - **`fieldHint(field)`** — derives a client-side *hint* (never validation) from `describe()`'s async
   constraints: a required mark plus a compact range/length/format text (`minimum`/`maximum`/`gt`/`lt`
   → `1900–2100` / `≥ 0`; `minLength`/`maxLength` → `≤ 300 chars`; `format` → `uri`). New `FieldHint`
@@ -46,6 +57,10 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 - `@noy-db/hub` peer floor → `^0.3.0-pre.9` (the via-port line: lookup/computed/classified
   describe() blocks are additive; the `dict` block consumed here is byte-stable). `@noy-db/to-memory`
   dev floor follows (it peer-pins hub per release).
+
+### Fixed
+- **`fieldHint` suppresses zod `.int()`'s implicit ±`MAX_SAFE_INTEGER` bounds** — a
+  `z.number().int().min(1)` field now hints `≥ 1` instead of `1–9007199254740991`.
 
 ## [0.3.0-pre.2] — 2026-07-04
 

@@ -1,5 +1,5 @@
-import { ref, type Vault, type Collection } from '@noy-db/hub'
-import { i18nText, staticDict } from '@noy-db/hub/i18n'
+import { ref, lookup, type Vault, type Collection } from '@noy-db/hub'
+import { i18nText } from '@noy-db/hub/i18n'
 import { COVER_FIELD } from './vault'
 import { ArtistSchema, LabelSchema, RecordSchema, GENRES, FORMATS, CONDITIONS } from './types'
 import { FIELD_LABELS, GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS } from './dicts'
@@ -7,6 +7,17 @@ import { FIELD_LABELS, GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS } from './d
 export const NAME_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
 export const TITLE_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
 export const NOTES_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
+
+// One spelling for the three static enum dimensions: table-backed, closed, English display order.
+function staticLookup(dimension: string, table: Record<string, Record<string, string>>) {
+  return lookup(dimension, {
+    backing: 'static',
+    table,
+    vocabulary: 'closed',
+    displayLocale: 'en',
+    sortBy: 'label',
+  })
+}
 
 // fieldMeta builder: English label + per-field overrides.
 function fieldMeta(collection: string, overrides: Record<string, Record<string, unknown>> = {}) {
@@ -49,10 +60,15 @@ export function declareCollections(vault: Vault): {
     refs: { artistId: ref('artists', 'warn'), labelId: ref('labels', 'warn') },
     blobFields: { [COVER_FIELD]: { retainDays: 36500 } },
     i18nFields: { title: TITLE_I18N },
-    dictKeyFields: {
-      genre:     staticDict('genre',     GENRE_LABELS     as Record<string, Record<string, string>>),
-      format:    staticDict('format',    FORMAT_LABELS    as Record<string, Record<string, string>>),
-      condition: staticDict('condition', CONDITION_LABELS as Record<string, Record<string, string>>),
+    // Native via-lookup static tier (hub ≥0.3.0-pre.9) — the full spec, no `staticDict` alias:
+    // `vocabulary: 'closed'` makes membership a WRITE-TIME contract (UnknownLookupKeyError),
+    // `displayLocale` labels describe()'s dict.values + fixes the locale-less orderBy channel,
+    // reads with { locale } dress `<field>Label` on the record, and describe() emits the
+    // normalized `lookup` block the UI consumes.
+    lookupFields: {
+      genre:     staticLookup('genre',     GENRE_LABELS),
+      format:    staticLookup('format',    FORMAT_LABELS),
+      condition: staticLookup('condition', CONDITION_LABELS),
     },
     fieldMeta: fieldMeta('records', {
       title:       { group: 'Identity', order: 1 },

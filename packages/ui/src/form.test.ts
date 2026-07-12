@@ -70,6 +70,25 @@ describe('fieldHint', () => {
   it('no constraints → no text', () => {
     expect(fieldHint(f({ key: 'genre' })).text).toBeUndefined()
   })
+
+  it("suppresses zod .int()'s ±MAX_SAFE_INTEGER noise, keeping the real bound", () => {
+    expect(fieldHint(f({ key: 'trackCount', constraints: { minimum: 1, maximum: 9007199254740991 } })).text).toBe('≥ 1')
+    expect(fieldHint(f({ key: 'delta', constraints: { minimum: -9007199254740991, maximum: 9007199254740991 } })).text).toBeUndefined()
+  })
+})
+
+describe('fieldInput — native lookup fields', () => {
+  it('derives select options from the lookup block key set when there is no dict block', () => {
+    const field = f({
+      key: 'priority', widget: 'select',
+      lookup: { dimension: '', backing: 'static', vocabulary: 'closed', key: 'id', onDelete: 'restrict', keys: ['low', 'mid', 'high'] },
+    } as Parameters<typeof f>[0])
+    const input = fieldInput(field)
+    expect(input.kind).toBe('select')
+    expect(input.options).toEqual([
+      { value: 'low', label: 'low' }, { value: 'mid', label: 'mid' }, { value: 'high', label: 'high' },
+    ])
+  })
 })
 
 describe('fieldErrors', () => {

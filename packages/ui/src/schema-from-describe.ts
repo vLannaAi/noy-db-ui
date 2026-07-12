@@ -31,7 +31,7 @@ export interface SchemaFromDescribeOptions {
 
 /** Map a describe() field (+ its role) to the search engine's coarse FieldType. */
 function fieldType(f: DescribedField, isDisplayTarget: boolean, forceEnum: boolean): FieldType {
-  if (f.dict || forceEnum) return 'enum'
+  if (f.dict || f.lookup || forceEnum) return 'enum'
   if (f.widget === 'checkbox') return 'boolean' // narrated as the bare label ("Favorite" / "not Favorite")
   if (isDisplayTarget || f.semanticType === 'entity') return 'entity'
   switch (f.semanticType) {
@@ -78,8 +78,11 @@ export function schemaFromDescribe(
       ...(localized && localized !== f.label ? [f.label] : []),
     ]
     if (aliases.length) def.aliases = aliases
-    if (type === 'enum' && f.dict?.values?.length) {
-      def.enumOrder = f.dict.values.map((v) => v.value)
+    if (type === 'enum') {
+      // dict.values carries the declared order (and labels); a native lookup field without a
+      // dict block still contributes its closed-vocabulary key set.
+      const order = f.dict?.values?.length ? f.dict.values.map((v) => v.value) : f.lookup?.keys
+      if (order?.length) def.enumOrder = [...order]
     }
     fields.push(def)
   }

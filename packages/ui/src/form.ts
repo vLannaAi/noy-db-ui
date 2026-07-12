@@ -20,7 +20,9 @@ export interface FieldInput {
 
 /** Resolve the input control for a field, honouring its `widget`, then `semanticType`/`type`. */
 export function fieldInput(field: DescribedField, extraOptions?: { value: string; label: string }[]): FieldInput {
-  const options = extraOptions ?? field.dict?.values?.map((v) => ({ value: v.value, label: v.label ?? v.value }))
+  const options = extraOptions
+    ?? field.dict?.values?.map((v) => ({ value: v.value, label: v.label ?? v.value }))
+    ?? field.lookup?.keys?.map((k) => ({ value: k, label: k }))
   const w = field.widget
   let kind: InputKind = 'text'
   if (field.i18n) kind = 'i18n-text'
@@ -42,7 +44,8 @@ export interface FieldHint { required: boolean; text?: string }
 /** Derive a hint from the async describe({}) constraints (minimum/maximum/gt/lt/minLength/maxLength/format). */
 export function fieldHint(field: DescribedField): FieldHint {
   const c = (field.constraints ?? {}) as Record<string, unknown>
-  const num = (v: unknown): v is number => typeof v === 'number'
+  // zod's .int() derives ±MAX_SAFE_INTEGER bounds — implementation noise, not a hint ("1–9007199254740991")
+  const num = (v: unknown): v is number => typeof v === 'number' && Math.abs(v) < Number.MAX_SAFE_INTEGER
   const parts: string[] = []
   const lo = num(c.minimum) ? c.minimum : num(c.gt) ? c.gt : undefined
   const hi = num(c.maximum) ? c.maximum : num(c.lt) ? c.lt : undefined

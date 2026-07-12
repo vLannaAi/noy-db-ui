@@ -32,7 +32,12 @@ function safeHref(raw: unknown): string | undefined {
 export function formatDetailCell(
   field: DescribedField,
   record: Record<string, unknown>,
-  opts: { reveal?: boolean } = {},
+  opts: {
+    reveal?: boolean
+    /** Host-supplied `{ value, label }` list for THIS field (same shape as the form's select
+     *  options) — resolves enum codes and bare entity ids to display labels in read mode. */
+    options?: readonly { value: string; label: string }[]
+  } = {},
 ): DetailCell {
   const { key, label } = field
   const raw = record[key]
@@ -65,15 +70,34 @@ export function formatDetailCell(
     }
   }
 
+  // bare entity reference (no display pairing) → still a link; the name comes from host options
+  if (field.ref) {
+    return {
+      key, label, masked: false, empty: false,
+      display: opts.options?.find((o) => o.value === raw)?.label ?? String(raw),
+      ref: { collection: field.ref.target, id: String(raw) },
+    }
+  }
+
   switch (field.semanticType) {
     case 'currency': return { key, label, display: `${raw}${field.unit ? ` ${field.unit}` : ''}`, masked: false, empty: false }
     case 'percent': return { key, label, display: `${raw}%`, masked: false, empty: false }
     case 'url': return { key, label, display: String(raw), ...(safeHref(raw) !== undefined ? { href: safeHref(raw) } : {}), masked: false, empty: false }
     case 'email': return { key, label, display: String(raw), href: `mailto:${raw}`, masked: false, empty: false }
   }
-  // enum → prefer the dictionary's human label over the raw code
-  const dictLabel = field.dict?.values?.find((v) => v.value === raw)?.label
-  return { key, label, display: dictLabel ?? String(raw), masked: false, empty: false }
+  // enum (dict/lookup-declared) → label precedence: the hub-dressed `<key>Label` sibling (a
+  // { locale } read resolved it at the call's locale) › host options (active app locale) › the
+  // dictionary's declared-locale label › the raw code
+  if (field.dict || field.lookup) {
+    const dressed = record[`${key}Label`]
+    const display =
+      (typeof dressed === 'string' && dressed !== '' ? dressed : undefined)
+      ?? opts.options?.find((o) => o.value === raw)?.label
+      ?? field.dict?.values?.find((v) => v.value === raw)?.label
+      ?? String(raw)
+    return { key, label, display, masked: false, empty: false }
+  }
+  return { key, label, display: String(raw), masked: false, empty: false }
 }
 
 /** The fields a detail view should render: drop ids/audit internals and the display-target names

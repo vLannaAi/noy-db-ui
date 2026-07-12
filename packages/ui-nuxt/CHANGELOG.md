@@ -34,6 +34,11 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   inlining them.
 - `@noy-db/hub` peer floor → `^0.3.0-pre.9` (additive describe() surface; no component changes
   needed).
+- **`RecordDetail` read mode resolves display labels through `options`** — the prop that already
+  fed edit-mode selects now also names read-mode cells: enum codes render their localized label and
+  bare entity refs (no `displayFor` pairing) render as links named by their option entry, following
+  `formatDetailCell`'s new precedence (`<field>Label` sibling › options › declared-locale dict
+  label › raw code).
 
 ## [0.3.0-pre.2] — 2026-07-04
 
