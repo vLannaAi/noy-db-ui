@@ -28,6 +28,12 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   first › … › terminal below 448px; group segments emit `back`, entity segments emit `navigate`.
 - **`CollectionList` gains `anchorKey`** — scrolls a row into view and flash-highlights it once,
   e.g. when a detail's `back()` restores the list to where you left it.
+- **`RecordHistory`** — the change-history timeline (Item Release P4): a collapsed panel at the
+  detail's foot, newest version first, each row an actor + relative time with an expandable
+  field-change list (`from → to`, masking-aware, nested i18n paths labelled `Notes (TH)`). Rows come
+  from `@noy-db/ui`'s `historyRows()`; the panel is **lazy** — it emits `expand` once on first open
+  so the host fetches `collection.history(id)` only then, and re-fetches after an edit. Current
+  version renders as "Current", the oldest as "Created".
 
 ### Changed
 - **`RecordForm`** delegates its per-field controls to the internal `FieldControl` renderer instead of

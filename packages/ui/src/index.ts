@@ -63,6 +63,13 @@ export { groupFields, type FieldGroup } from './groups'
 export { fieldInput, formFields, fieldErrors, fieldHint, type FieldInput, type InputKind, type FieldHint } from './form'
 export { useRecordItem, type ItemCollection } from './use-record-item'
 
+// Item family: change-history "what / who / when" timeline (P4)
+export {
+  historyRows,
+  type HistoryRow, type HistoryChange, type HistoryChangeType,
+  type HistorySnapshot, type HistoryDiffEntry, type HistoryDiffFn, type HistoryRowsOptions,
+} from './history-view'
+
 // Traverse family: found-set snapshots + traversal position + path-shaped titles
 export { positionOf, itemAt, type FoundSetItem, type FoundSetSnapshot, type TraversePosition } from './traverse'
 export { useTraverse } from './use-traverse'

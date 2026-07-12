@@ -10,6 +10,13 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`historyRows(snapshots, diffFn, fields, opts?)`** (`history-view.ts`) — the change-history
+  "what / who / when" view model (Item Release P4). Turns newest-first version snapshots + a diff
+  function into display rows `{ version, actor?, iso?, relative?, isCurrent, genesis, changes[] }`;
+  each change resolves its field label (nested i18n paths → `Notes (TH)`), formats values through
+  `describe()` metadata (enum labels, currency units) and keeps sensitive fields masked. The live
+  version (no archived timestamp) is `isCurrent`; the oldest is `genesis` (renders as "created").
+  Pure — the host injects the hub's per-record `diff`, so it unit-tests without a vault.
 - **`describe().lookup` consumption** — `schemaFromDescribe` treats a native
   `lookup()`/`enum()`/`dict()` field as an enum even without a `dict` block, sourcing `enumOrder`
   from the lookup's declared key set; `fieldInput` derives fallback select options from

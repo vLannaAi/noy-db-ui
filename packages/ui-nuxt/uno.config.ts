@@ -34,6 +34,8 @@ export default defineConfig({
     'i-lucide-chevron-down',    // traverse: next
     'i-lucide-chevrons-up',     // traverse: first
     'i-lucide-chevrons-down',   // traverse: last
+    'i-lucide-history',         // change-history panel header
+    'i-lucide-arrow-right',     // change-history: from → to
   ],
   theme: {
     colors: {
