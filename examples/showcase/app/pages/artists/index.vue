@@ -7,7 +7,7 @@ import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useSearchVoices } from '../../composables/useSearchVoices'
 
 const { vault } = useVault()
-const { t, locale } = useShowcaseI18n()
+const { t, locale, enumLabel } = useShowcaseI18n()
 const query = ref('')
 
 const view = computed(() => buildSimpleView(vault.value!, 'artists'))
@@ -174,6 +174,9 @@ function openArtist(r: any): void {
       @filter-change="(p) => list.setColumnFilter(p.key, p.value)"
       @toggle-group="list.toggleGroup"
       @toggle-collapse-all="list.toggleCollapseAll"
-    />
+    >
+      <template #cell-genre="{ row }">{{ enumLabel('genre', String(row.genre ?? '')) }}</template>
+      <template #cell-country="{ row }">{{ enumLabel('country', String(row.country ?? '')) }}</template>
+    </CollectionList>
   </section>
 </template>

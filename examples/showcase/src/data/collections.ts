@@ -2,7 +2,7 @@ import { ref, lookup, type Vault, type Collection } from '@noy-db/hub'
 import { i18nText } from '@noy-db/hub/i18n'
 import { COVER_FIELD } from './vault'
 import { ArtistSchema, LabelSchema, RecordSchema, GENRES, FORMATS, CONDITIONS } from './types'
-import { FIELD_LABELS, GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS } from './dicts'
+import { FIELD_LABELS, GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS, COUNTRY_LABELS } from './dicts'
 
 export const NAME_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
 export const TITLE_I18N = i18nText({ languages: ['en', 'th'], required: 'any' })
@@ -36,6 +36,10 @@ export function declareCollections(vault: Vault): {
   const artists = vault.collection('artists', {
     schema: ArtistSchema,
     i18nFields: { name: NAME_I18N },
+    lookupFields: {
+      country: staticLookup('country', COUNTRY_LABELS),
+      genre:   staticLookup('genre',   GENRE_LABELS),
+    },
     fieldMeta: fieldMeta('artists', {
       name:       { group: 'Identity', order: 1 },
       country:    { semanticType: 'country', group: 'Identity', order: 2 },
@@ -47,6 +51,9 @@ export function declareCollections(vault: Vault): {
   const labels = vault.collection('labels', {
     schema: LabelSchema,
     i18nFields: { name: NAME_I18N, notes: NOTES_I18N },
+    lookupFields: {
+      country: staticLookup('country', COUNTRY_LABELS),
+    },
     fieldMeta: fieldMeta('labels', {
       name:    { group: 'Identity', order: 1 },
       country: { semanticType: 'country', group: 'Identity', order: 2 },

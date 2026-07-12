@@ -14,7 +14,8 @@ interface EntityConfig {
 
 const ENTITY_CONFIG: Record<string, EntityConfig> = {
   artists: {
-    enumFields: ['genre'],
+    // genre/country are dict dimensions now — schemaFromDescribe derives their enum type
+    // from describe() itself, no view-side enumFields forcing needed.
     columnOverrides: {
       genre: { filter: 'enum' },
       country: { filter: 'enum' },

@@ -1,11 +1,12 @@
 import { ref } from 'vue'
-import { GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS, FIELD_LABELS } from '../../src/data/dicts'
+import { GENRE_LABELS, FORMAT_LABELS, CONDITION_LABELS, COUNTRY_LABELS, FIELD_LABELS } from '../../src/data/dicts'
 import { MESSAGES } from '../i18n/messages'
 
 const DICTS: Record<string, Record<string, { en: string; th: string }>> = {
   genre: GENRE_LABELS,
   format: FORMAT_LABELS,
   condition: CONDITION_LABELS,
+  country: COUNTRY_LABELS,
 }
 
 const locale = ref<'en' | 'th'>('en')

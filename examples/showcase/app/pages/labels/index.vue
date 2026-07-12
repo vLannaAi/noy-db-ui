@@ -7,7 +7,7 @@ import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useSearchVoices } from '../../composables/useSearchVoices'
 
 const { vault } = useVault()
-const { t, locale } = useShowcaseI18n()
+const { t, locale, enumLabel } = useShowcaseI18n()
 const query = ref('')
 
 const view = computed(() => buildSimpleView(vault.value!, 'labels'))
@@ -174,6 +174,8 @@ function openLabel(r: any): void {
       @filter-change="(p) => list.setColumnFilter(p.key, p.value)"
       @toggle-group="list.toggleGroup"
       @toggle-collapse-all="list.toggleCollapseAll"
-    />
+    >
+      <template #cell-country="{ row }">{{ enumLabel('country', String(row.country ?? '')) }}</template>
+    </CollectionList>
   </section>
 </template>

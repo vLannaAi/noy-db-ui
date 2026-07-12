@@ -5,7 +5,7 @@ import { GENRE_LABELS } from '../src/data/dicts'
 
 describe('buildRecordsView', () => {
   it('produces a joined schema + 24 rows with artist/label names', async () => {
-    const vault = await seedVault()
+    const { vault } = await seedVault()
     await vault.collection('artists').list()
     await vault.collection('labels').list()
     await vault.collection('records').list()
@@ -19,7 +19,7 @@ describe('buildRecordsView', () => {
   }, 30_000)
 
   it('keeps enum values CANONICAL in rows so the engine filters/groups on stable keys', async () => {
-    const vault = await seedVault()
+    const { vault } = await seedVault()
     await vault.collection('records').list()
     const { rows } = buildRecordsView(vault)
     const canonical = new Set(Object.keys(GENRE_LABELS)) // 'rock','jazz',… not 'Rock'/'แจ๊ส'

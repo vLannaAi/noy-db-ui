@@ -19,6 +19,13 @@ export const CONDITION_LABELS: Record<string, { en: string; th: string }> = {
   VG: { en: 'Very Good', th: 'ดีมาก' },
   G: { en: 'Good', th: 'พอใช้' },
 }
+export const COUNTRY_LABELS: Record<string, { en: string; th: string }> = {
+  US: { en: 'United States', th: 'สหรัฐอเมริกา' },
+  GB: { en: 'United Kingdom', th: 'สหราชอาณาจักร' },
+  JP: { en: 'Japan', th: 'ญี่ปุ่น' },
+  DE: { en: 'Germany', th: 'เยอรมนี' },
+  AT: { en: 'Austria', th: 'ออสเตรีย' },
+}
 // Per-collection field labels (used as i18n metadata when seeding).
 export const FIELD_LABELS: Record<string, Record<string, { en: string; th: string }>> = {
   records: {

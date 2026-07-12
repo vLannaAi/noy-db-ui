@@ -9,7 +9,7 @@ const PASS = 'spin-the-black-circle'
 
 describe('seeded vault', () => {
   it('round-trips 24 records with joins, covers, and TH/EN labels', async () => {
-    const vault = await seedVault()
+    const { vault, recordIds } = await seedVault()
     const bytes = await toBytes(vault)
     const v = await openVaultFromBundle(bytes, PASS)
 
@@ -26,13 +26,18 @@ describe('seeded vault', () => {
     expect((rows[0] as any).artist).toBeTruthy()      // join resolved
     expect((rows[0] as any).label).toBeTruthy()
 
-    const covers = coverFiles()  // covers ship as static PNG assets, not in the bundle
+    const covers = coverFiles(recordIds)  // covers ship as static PNG assets, not in the bundle
     expect(covers).toHaveLength(24)
     expect(Array.from(covers[0]!.bytes.slice(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47])
 
-    // Dictionaries do NOT survive the bundle; raw enum key persists, labels come app-side from dicts.ts.
-    const rec = await records.get('rc01')
+    // Serial ids: the sequence service allocated formatted serials in dataset order.
+    expect(recordIds.get('rc01')).toBe('RC-001')
+    expect(covers[0]!.id).toBe('RC-001')
+
+    // Static lookup tables live in-code; raw enum key persists, labels come app-side from dicts.ts.
+    const rec = await records.get('RC-001')
     expect((rec as any).genre).toBe('rock')
+    expect((rec as any).artistId).toMatch(/^AR-\d{3}$/)
     expect(GENRE_LABELS['rock']).toEqual({ en: 'Rock', th: 'ร็อก' })
   }, 30_000)
 })

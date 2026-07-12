@@ -2,6 +2,7 @@
 import { useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection } from '@noy-db/ui'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
+import { COUNTRY_LABELS } from '../../../src/data/dicts'
 
 const route = useRoute()
 const router = useRouter()
@@ -9,11 +10,16 @@ const { vault } = useVault()
 
 const id = route.params.id as string
 const record = await vault.value!.collection('labels').get(id, { locale: 'raw' })
-const { fieldLabel } = useShowcaseI18n()
+const { fieldLabel, enumLabel } = useShowcaseI18n()
 // re-label per active locale (fieldLabel reads the locale ref -> computed re-tracks)
 const fields = computed(() => vault.value!.collection('labels').describe().fields.map((f) => {
   const l = fieldLabel('labels', f.key)
   return l === f.key ? f : { ...f, label: l }
+}))
+
+// dict-dimension display labels at the ACTIVE locale (read mode resolves via options).
+const options = computed(() => ({
+  country: Object.keys(COUNTRY_LABELS).map((v) => ({ value: v, label: enumLabel('country', v) })),
 }))
 
 // Found-set traversal (spec §4): the list's captured snapshot drives the skim/step cluster;
@@ -67,6 +73,7 @@ const segments = computed(() => pathSegments({
       <RecordDetail
         :record="record"
         :fields="fields"
+        :options="options"
         :route-for="(c: string, i: string) => `/${c}/${i}`"
         @navigate="(e: { collection: string; id: string }) => navigateTo(`/${e.collection}/${e.id}`)"
       />

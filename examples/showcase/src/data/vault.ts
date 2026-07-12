@@ -1,4 +1,4 @@
-import { createNoydb, readNoydbBundle, type Noydb, type Vault } from '@noy-db/hub'
+import { createNoydb, readNoydbBundle, withSequence, type Noydb, type Vault } from '@noy-db/hub'
 import { withBlobs } from '@noy-db/hub/blobs'
 import { withHistory } from '@noy-db/hub/history'
 import { withI18n } from '@noy-db/hub/i18n'
@@ -25,6 +25,7 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
     blobStrategy: withBlobs(),
     historyStrategy: withHistory(),
     i18nStrategy: withI18n(),
+    sequenceStrategy: withSequence(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
   return { db, vault }
@@ -49,6 +50,7 @@ export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Pr
     blobStrategy: withBlobs(),
     historyStrategy: withHistory(),
     i18nStrategy: withI18n(),
+    sequenceStrategy: withSequence(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
   const { dumpJson } = await readNoydbBundle(bytes)
