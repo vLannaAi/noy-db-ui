@@ -24,3 +24,4 @@ pnpm-debug.log*
 
 # ─── Local-only AI configs (not published) ─────────────────────────
 CLAUDE.md
+.playwright-mcp/
