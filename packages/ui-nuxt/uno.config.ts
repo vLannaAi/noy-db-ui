@@ -36,6 +36,12 @@ export default defineConfig({
     'i-lucide-chevrons-down',   // traverse: last
     'i-lucide-history',         // change-history panel header
     'i-lucide-arrow-right',     // change-history: from → to
+    'i-lucide-disc-3',          // related-list summary: record count
+    'i-lucide-star',            // related-list summary: avg rating
+    'i-lucide-paperclip',       // attachments gallery header
+    'i-lucide-upload',          // attachments: add
+    'i-lucide-trash-2',         // attachments: delete
+    'i-lucide-file',            // attachments: non-image tile
   ],
   theme: {
     colors: {

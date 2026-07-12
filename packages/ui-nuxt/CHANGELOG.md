@@ -34,6 +34,17 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   from `@noy-db/ui`'s `historyRows()`; the panel is **lazy** — it emits `expand` once on first open
   so the host fetches `collection.history(id)` only then, and re-fetches after an edit. Current
   version renders as "Current", the oldest as "Created".
+- **`AttachmentGallery`** — the attachments gallery (Item Release P5): a grid of image thumbnails +
+  file tiles for a record's `att:` blob slots, an upload button and per-item delete with inline
+  confirm. Items come from `attachmentList()`; the component owns the image objectURL lifecycle
+  (built from host-supplied bytes via `loadBytes`, revoked on unmount and when an item disappears).
+  Emits `upload`/`remove` — vault I/O (`blob.put`/`blob.delete`) stays host-side.
+- **`RelatedList`** — a reverse-lookup list with a derived summary (Item Release P6): a StatCard
+  summary strip (from `summaryCards()`) over a compact `CollectionList` (column subset via
+  `relatedColumns()`) of another collection's rows that reference this record. Cell slots forward
+  through to the inner list so enum/entity cells localize as on the full list; emits `rowClick`. The
+  host supplies the rows and summary from `query().where(...).toArray()` + the same query's
+  `aggregate().run()`.
 
 ### Changed
 - **`RecordForm`** delegates its per-field controls to the internal `FieldControl` renderer instead of

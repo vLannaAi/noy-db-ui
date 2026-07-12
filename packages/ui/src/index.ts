@@ -70,6 +70,16 @@ export {
   type HistorySnapshot, type HistoryDiffEntry, type HistoryDiffFn, type HistoryRowsOptions,
 } from './history-view'
 
+// Item family: attachments gallery (P5) + related list with derived summary (P6)
+export {
+  attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX,
+  type AttachmentItem, type BlobSlotInfo,
+} from './attachments'
+export {
+  relatedColumns, summaryCards,
+  type SummaryFieldSpec, type SummaryCard,
+} from './related'
+
 // Traverse family: found-set snapshots + traversal position + path-shaped titles
 export { positionOf, itemAt, type FoundSetItem, type FoundSetSnapshot, type TraversePosition } from './traverse'
 export { useTraverse } from './use-traverse'

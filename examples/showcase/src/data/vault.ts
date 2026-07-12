@@ -1,4 +1,5 @@
 import { createNoydb, readNoydbBundle, withSequence, type Noydb, type Vault } from '@noy-db/hub'
+import { withAggregate } from '@noy-db/hub/aggregate'
 import { withBlobs } from '@noy-db/hub/blobs'
 import { withHistory } from '@noy-db/hub/history'
 import { withI18n } from '@noy-db/hub/i18n'
@@ -26,6 +27,7 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
     historyStrategy: withHistory(),
     i18nStrategy: withI18n(),
     sequenceStrategy: withSequence(),
+    aggregateStrategy: withAggregate(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
   return { db, vault }
@@ -51,6 +53,7 @@ export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Pr
     historyStrategy: withHistory(),
     i18nStrategy: withI18n(),
     sequenceStrategy: withSequence(),
+    aggregateStrategy: withAggregate(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
   const { dumpJson } = await readNoydbBundle(bytes)

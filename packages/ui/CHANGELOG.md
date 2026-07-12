@@ -10,6 +10,16 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`attachmentList(slots)` + `humanSize`/`attachmentSlot`/`ATTACHMENT_PREFIX`** (`attachments.ts`,
+  Item Release P5) — filter a `blob(id).list()` result to the `att:`-prefixed attachment slots (the
+  cover + named slots stay out) and shape each into an `AttachmentItem` (`{ slot, filename, mime,
+  size, humanSize, kind: 'image'|'file', uploadedAt? }`), sorted by upload time. `attachmentSlot(uuid)`
+  mints a new slot name; `humanSize` renders binary units.
+- **`relatedColumns(columns, keys)` + `summaryCards(agg, spec)`** (`related.ts`, Item Release P6) —
+  the reverse-lookup surface: `relatedColumns` picks/orders a column subset for a compact embedded
+  list (unknown keys skipped); `summaryCards` turns an `aggregate().run()` result into StatCard-ready
+  `{ label, value, icon?, color? }[]`, rendering an empty-set `null` (e.g. `avg` over zero rows) as
+  `—` unless the spec's `format` says otherwise.
 - **`historyRows(snapshots, diffFn, fields, opts?)`** (`history-view.ts`) — the change-history
   "what / who / when" view model (Item Release P4). Turns newest-first version snapshots + a diff
   function into display rows `{ version, actor?, iso?, relative?, isCurrent, genesis, changes[] }`;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRecordItem, useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection, historyRows, type HistoryRow, type HistorySnapshot } from '@noy-db/ui'
+import { useRecordItem, useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, type AttachmentItem } from '@noy-db/ui'
 import { diff } from '@noy-db/hub/history'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
@@ -80,6 +80,33 @@ async function onSave(): Promise<void> {
   if (ok && historyRequested.value) await loadHistory()
 }
 
+// Attachments gallery (P5): the record's `att:` blob slots. Session-only (D3) — uploads live in the
+// in-memory vault for the session; the cover slot is filtered out by attachmentList.
+const blobHandle = records.blob(id)
+const attachments = ref<AttachmentItem[]>([])
+const uploadBusy = ref(false)
+async function refreshAttachments(): Promise<void> {
+  attachments.value = attachmentList(await blobHandle.list())
+}
+async function loadAttachmentBytes(slot: string): Promise<Uint8Array | null> {
+  return (await blobHandle.get(slot)) ?? null
+}
+async function onUpload(file: File): Promise<void> {
+  uploadBusy.value = true
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    await blobHandle.put(attachmentSlot(crypto.randomUUID()), bytes, { filename: file.name, ...(file.type ? { mimeType: file.type } : {}) })
+    await refreshAttachments()
+  } finally {
+    uploadBusy.value = false
+  }
+}
+async function onRemoveAttachment(slot: string): Promise<void> {
+  await blobHandle.delete(slot)
+  await refreshAttachments()
+}
+onMounted(refreshAttachments)
+
 // Path-shaped detail title (spec D7): the group-by trail when found grouped, else the natural
 // artist/label ref axis, terminating in the record's own title.
 const segments = computed(() => pathSegments({
@@ -124,6 +151,14 @@ const segments = computed(() => pathSegments({
         @save="onSave"
         @cancel="item.cancel"
         @navigate="(e: { collection: string; id: string }) => navigateTo(`/${e.collection}/${e.id}`)"
+      />
+      <AttachmentGallery
+        class="mt-4"
+        :items="attachments"
+        :load-bytes="loadAttachmentBytes"
+        :busy="uploadBusy"
+        @upload="onUpload"
+        @remove="onRemoveAttachment"
       />
       <RecordHistory
         class="mt-4"
