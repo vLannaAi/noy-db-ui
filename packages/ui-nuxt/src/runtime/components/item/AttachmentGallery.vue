@@ -23,6 +23,9 @@ const emit = defineEmits<{ upload: [File]; remove: [slot: string] }>()
 const urls = ref<Record<string, string>>({})
 const confirming = ref<string | null>(null)
 const fileEl = ref<HTMLInputElement | null>(null)
+// Slots with a loadBytes in flight — the watch can re-fire mid-load, so this guards against a
+// second syncThumbs re-issuing the load and double-creating (then leaking) the objectURL.
+const inFlight = new Set<string>()
 
 async function syncThumbs(): Promise<void> {
   if (import.meta.server) return
@@ -31,9 +34,16 @@ async function syncThumbs(): Promise<void> {
     if (!wanted.has(slot)) { URL.revokeObjectURL(urls.value[slot]!); const next = { ...urls.value }; delete next[slot]; urls.value = next }
   }
   for (const item of props.items) {
-    if (item.kind !== 'image' || urls.value[item.slot]) continue
-    const bytes = await props.loadBytes(item.slot)
-    if (bytes) urls.value = { ...urls.value, [item.slot]: URL.createObjectURL(new Blob([bytes as BlobPart], { type: item.mime })) }
+    if (item.kind !== 'image' || urls.value[item.slot] || inFlight.has(item.slot)) continue
+    inFlight.add(item.slot)
+    let bytes: Uint8Array | null = null
+    try { bytes = await props.loadBytes(item.slot) } catch { bytes = null }
+    inFlight.delete(item.slot)
+    // Post-await: the slot may have been removed, or a URL may already exist — never overwrite
+    // (which would strand the previous URL) and never create for a slot that is gone.
+    const stillWanted = props.items.some((i) => i.slot === item.slot && i.kind === 'image')
+    if (!bytes || !stillWanted || urls.value[item.slot]) continue
+    urls.value = { ...urls.value, [item.slot]: URL.createObjectURL(new Blob([bytes as BlobPart], { type: item.mime })) }
   }
 }
 watch(() => props.items.map((i) => i.slot).join('|'), syncThumbs, { immediate: true })
