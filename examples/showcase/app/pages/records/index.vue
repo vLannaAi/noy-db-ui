@@ -113,7 +113,7 @@ const { recents, remove: removeRecent, clear: clearRecent } = useRecentSearches(
 // Lists (P-D): the hide/patch algebra over named lists. Viewing a list overlays its overrides on
 // the query eval (a smart list) or shows its patch verbatim (a fixed list); the rows become a
 // flat, frozen ('fixed') found set the detail-page traversal walks.
-const { lists, activeId: activeListId, byId: listById, create: createList, remove: removeList, removeItem: removeListItem } = useLists('records')
+const { lists, activeId: activeListId, byId: listById, create: createList, remove: removeList, removeItem: removeListItem, union: unionList, subtract: subtractList, createFromSelection } = useLists('records')
 const activeList = computed(() => (activeListId.value ? listById(activeListId.value) ?? null : null))
 // Returning from a detail with a list still active (the shared id survived navigation): restore the
 // list's query so the eval matches, unless a return anchor already set one (it carries the same query).
@@ -154,6 +154,31 @@ function deleteList(id: string): void {
   if (activeListId.value === id) exitList()
   removeList(id)
 }
+
+// Bulk selection (P-E): a selection set spanning searches; the set-algebra folds it into a list.
+const selectedKeys = ref<string[]>([])
+const selMenuOpen = ref(false)
+const newSelName = ref('')
+function toggleSelect(key: string): void {
+  selectedKeys.value = selectedKeys.value.includes(key)
+    ? selectedKeys.value.filter((k) => k !== key)
+    : [...selectedKeys.value, key]
+}
+function toggleSelectAll(): void {
+  const visible = (list.visibleRows.value as any[]).map((r) => String(r.id))
+  const allSelected = visible.length > 0 && visible.every((k) => selectedKeys.value.includes(k))
+  // Deselect the visible set if all are already in; otherwise add them (union with any cross-search picks).
+  selectedKeys.value = allSelected
+    ? selectedKeys.value.filter((k) => !visible.includes(k))
+    : Array.from(new Set([...selectedKeys.value, ...visible]))
+}
+function clearSelection(): void { selectedKeys.value = [] }
+function newListFromSelection(): void {
+  const l = createFromSelection(newSelName.value || 'Selection', selectedKeys.value)
+  if (l) { newSelName.value = ''; selMenuOpen.value = false; clearSelection(); activateList(l.id) }
+}
+function unionInto(id: string): void { unionList(id, selectedKeys.value); selMenuOpen.value = false; clearSelection() }
+function subtractFrom(id: string): void { subtractList(id, selectedKeys.value); selMenuOpen.value = false; clearSelection() }
 
 // currentSaved: true when the current query matches an already-saved search
 const currentSaved = computed(() => !!findByQuery(saved.value, 'records', query.value.trim()))
@@ -429,6 +454,37 @@ onMounted(() => {
       <button type="button" class="nui-btn-ghost text-nui-muted" @click="needKey = false">{{ t('nl.later', 'Later') }}</button>
       </div>
     </div>
+    <!-- Selection banner (P-E): the bulk set-algebra over a selection spanning searches. -->
+    <div v-if="selectedKeys.length && !activeList" class="flex items-center gap-2 print-hide nui-panel px-3 py-2">
+      <span class="i-lucide-check-check size-4 text-nui-accent" aria-hidden="true" />
+      <span class="text-sm font-medium text-nui-fg tabular-nums">{{ selectedKeys.length }} {{ t('lists.selected', 'selected') }}</span>
+      <div class="flex items-center gap-1.5 ml-auto">
+        <input
+          v-model="newSelName"
+          type="text"
+          :placeholder="t('lists.namePlaceholder', 'List name…')"
+          class="text-sm w-32 px-2 py-1 rounded border border-nui-border bg-nui-bg outline-none focus:border-nui-accent"
+          @keydown.enter.prevent="newListFromSelection"
+        >
+        <button type="button" class="nui-btn-ghost text-xs text-nui-muted hover:text-nui-fg flex items-center gap-1" @click="newListFromSelection">
+          <span class="i-lucide-list-plus size-3.5" aria-hidden="true" /> {{ t('lists.newFromSelection', 'New list') }}
+        </button>
+        <div v-if="lists.length" class="relative">
+          <button type="button" class="nui-btn-ghost text-xs text-nui-muted hover:text-nui-fg" :aria-expanded="selMenuOpen" @click="selMenuOpen = !selMenuOpen">
+            {{ t('lists.addToList', 'Add to list') }} ▾
+          </button>
+          <div v-if="selMenuOpen" class="absolute right-0 top-full mt-1 z-50 nui-panel p-1.5 w-60 space-y-0.5 shadow-lg">
+            <div v-for="l in lists" :key="l.id" class="flex items-center gap-1.5 text-sm px-1 py-0.5">
+              <span class="flex-1 min-w-0 truncate text-nui-fg">{{ l.name }}</span>
+              <button type="button" class="px-1.5 py-0.5 rounded hover:bg-nui-bg-accent text-nui-muted" :title="t('lists.union', 'Add (∪)')" @click="unionInto(l.id)">∪</button>
+              <button type="button" class="px-1.5 py-0.5 rounded hover:bg-nui-bg-accent text-nui-muted" :title="t('lists.subtract', 'Remove (−)')" @click="subtractFrom(l.id)">−</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="nui-btn-ghost text-xs text-nui-muted hover:text-nui-fg" @click="clearSelection">{{ t('lists.clear', 'Clear') }}</button>
+      </div>
+    </div>
+
     <div data-tour="list" class="nui-records-list">
       <CollectionList
         :columns="orderedViewColumns"
@@ -449,7 +505,11 @@ onMounted(() => {
         :hide-keys="colHideKeys"
         :serial-index="true"
         :anchor-key="anchorKey"
+        :selectable="!activeList"
+        :selected-keys="selectedKeys"
         row-noun="records"
+        @toggle-select="toggleSelect"
+        @toggle-select-all="toggleSelectAll"
         @sort="list.onSort"
         @lock-sort="list.onLockSort"
         @filter-change="(p) => list.setColumnFilter(p.key, p.value)"

@@ -115,6 +115,32 @@ export function toggleInList(def: ListDef, id: string, inQuery: boolean, now: nu
   return isInList(def, id, inQuery) ? removeFromList(def, id, now) : addToList(def, id, now)
 }
 
+// ─── Set algebra (traverse P-E): fold a bulk SELECTION into a list ────────────────────────────
+// Each folds the total single-id ops, so the result stays a valid `ListDef` and every combination
+// (union of a fresh selection, subtract of members, intersect down to an overlap) is expressible.
+
+/** Union: add every selected id to the list (∪). */
+export function addAllToList(def: ListDef, ids: readonly string[], now: number): ListDef {
+  return ids.reduce((d, id) => addToList(d, id, now), def)
+}
+
+/** Subtract: remove every selected id from the list (∖). */
+export function removeAllFromList(def: ListDef, ids: readonly string[], now: number): ListDef {
+  return ids.reduce((d, id) => removeFromList(d, id, now), def)
+}
+
+/**
+ * Intersect: keep only members that are also selected (∩) — removes each currently-resolved member
+ * not in `ids`. Needs `evaluatedIds` (the list's query result) to know the live membership.
+ */
+export function intersectListWith(
+  def: ListDef, ids: readonly string[], evaluatedIds: readonly string[], now: number,
+): ListDef {
+  const keep = new Set(ids)
+  const drop = resolveListIds(def, evaluatedIds).filter((m) => !keep.has(m))
+  return drop.reduce((d, id) => removeFromList(d, id, now), def)
+}
+
 /** This entity's lists only. */
 export function listsForEntity(list: readonly ListDef[], entity: string): ListDef[] {
   return list.filter((l) => l.entity === entity)

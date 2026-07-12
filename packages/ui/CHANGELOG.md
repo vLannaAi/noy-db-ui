@@ -18,6 +18,9 @@ And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema 
   : patch`) and idempotent; `toggleInList`/`isInList` (need the live `inQuery`), `listKind`
   (fixed/smart/smart-overridden), plus `makeList`/`sortLists`/`listsForEntity`. Pure — the host owns
   persistence (localStorage today; vault-encrypted/syncable is the endgame).
+- **Bulk set algebra** (traverse P-E) — `addAllToList` (∪), `removeAllFromList` (∖), and
+  `intersectListWith` (∩, keeps only members also selected) fold a whole selection into a list
+  through the same total single-id ops. Create-a-list-from-a-selection is `makeList({ patch: ids })`.
 - **`attachmentList(slots)` + `humanSize`/`attachmentSlot`/`ATTACHMENT_PREFIX`** (`attachments.ts`,
   Item Release P5) — filter a `blob(id).list()` result to the `att:`-prefixed attachment slots (the
   cover + named slots stay out) and shape each into an `AttachmentItem` (`{ slot, filename, mime,

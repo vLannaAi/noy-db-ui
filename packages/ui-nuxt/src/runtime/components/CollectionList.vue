@@ -63,6 +63,10 @@ const props = withDefaults(defineProps<{
   widths?: Record<string, WidthOverride>
   /** A row key to scroll into view + flash-highlight once (e.g. returning from a detail's back()). */
   anchorKey?: string
+  /** Bulk selection (P-E): show a leading checkbox column. Host owns the selection set. */
+  selectable?: boolean
+  /** Selected row keys (rowKey/id) when `selectable`. */
+  selectedKeys?: readonly string[]
 }>(), { serialIndex: true, rowNoun: 'rows' })
 
 // Measure the table container so responsive resolution can drop low-relevance columns as it narrows.
@@ -148,7 +152,18 @@ const foldedColOf = (col: AppColumn): AppColumn | null => {
   const key = layout.value.folds[col.key]
   return key ? props.columns.find((c) => c.key === key) ?? null : null
 }
-const bodyColspan = () => visibleColumns().length + (props.serialIndex ? 1 : 0)
+const selCol = () => (props.selectable ? 1 : 0)
+const bodyColspan = () => visibleColumns().length + (props.serialIndex ? 1 : 0) + selCol()
+
+// Bulk selection (P-E): the host owns the selection set; this component reflects it + emits toggles.
+const keyOf = (r: T): string => (props.rowKey ? props.rowKey(r) : (r.id as string))
+const selectedSet = computed(() => new Set(props.selectedKeys ?? []))
+const dataRowKeys = (): string[] =>
+  isGrouped()
+    ? (props.groupLines ?? []).filter((l) => l.kind !== 'group').map((l) => keyOf((l as { row: T }).row))
+    : props.rows.map(keyOf)
+const allSelected = computed(() => { const ks = dataRowKeys(); return ks.length > 0 && ks.every((k) => selectedSet.value.has(k)) })
+const someSelected = computed(() => !allSelected.value && dataRowKeys().some((k) => selectedSet.value.has(k)))
 
 // Group banners normally show a per-column rollup, with the group value in the (narrow) first cell.
 // When the table is narrow, that first cell clips "Genre: Rock" to an unreadable sliver — so there
@@ -178,6 +193,8 @@ const emit = defineEmits<{
   toggleCollapseAll: []
   'update:widths': [widths: Record<string, WidthOverride>]
   'update:resizing': [on: boolean]
+  toggleSelect: [key: string]
+  toggleSelectAll: []
 }>()
 
 // Resize mode is host-controlled (v-model:resizing) — entered from the column chooser, exited via Done.
@@ -355,6 +372,16 @@ const groupSummary = computed(() => {
         style="top: 0; background: var(--nui-thead-bg, var(--nui-accent)); backdrop-filter: blur(var(--nui-thead-blur, 0px)); -webkit-backdrop-filter: blur(var(--nui-thead-blur, 0px));"
       >
         <tr>
+          <th v-if="selectable" class="px-1.5 py-1.5 font-normal text-center w-px">
+            <input
+              type="checkbox"
+              class="align-middle cursor-pointer"
+              :checked="allSelected"
+              :indeterminate.prop="someSelected"
+              :aria-label="t('nui.list.selectAll', 'Select all')"
+              @change="emit('toggleSelectAll')"
+            >
+          </th>
           <th v-if="showSerial()" class="px-1.5 py-1.5 font-normal text-center w-px" :aria-label="t('nui.list.rowNumber', 'Row number')">
             <slot name="serial-header">#</slot>
           </th>
@@ -401,6 +428,7 @@ const groupSummary = computed(() => {
           </th>
         </tr>
         <tr v-if="hasSubtotalRow()" class="subtotal-row">
+          <td v-if="selectable" class="px-3 py-1.5 w-px" />
           <td v-if="showSerial()" class="px-3 py-1.5 w-px text-center">
             <button
               v-if="isGrouped()"
@@ -504,7 +532,7 @@ const groupSummary = computed(() => {
               </td>
               <template v-else>
                 <td
-                  :colspan="(showSerial() ? 1 : 0) + bannerLeadCols()"
+                  :colspan="selCol() + (showSerial() ? 1 : 0) + bannerLeadCols()"
                   class="px-3 py-2 font-semibold"
                   :style="indentStyle(line.level)"
                 >
@@ -532,6 +560,9 @@ const groupSummary = computed(() => {
               :data-row-key="rowKey ? rowKey(line.row) : (line.row.id as string)"
               @click="!resizeMode && emit('rowClick', line.row)"
             >
+              <td v-if="selectable" class="px-3 py-2 w-px text-center">
+                <input type="checkbox" class="align-middle cursor-pointer" :checked="selectedSet.has(keyOf(line.row))" :aria-label="t('nui.list.selectRow', 'Select row')" @click.stop @change="emit('toggleSelect', keyOf(line.row))">
+              </td>
               <td v-if="showSerial()" class="px-3 py-2 text-right tabular-nums text-nui-muted w-px whitespace-nowrap ps-6">{{ line.serial }}</td>
               <td
                 v-for="col in visibleColumns()"
@@ -557,6 +588,9 @@ const groupSummary = computed(() => {
           :data-row-key="rowKey ? rowKey(row) : (row.id as string)"
           @click="!resizeMode && emit('rowClick', row)"
         >
+          <td v-if="selectable" class="px-3 py-2 w-px text-center">
+            <input type="checkbox" class="align-middle cursor-pointer" :checked="selectedSet.has(keyOf(row))" :aria-label="t('nui.list.selectRow', 'Select row')" @click.stop @change="emit('toggleSelect', keyOf(row))">
+          </td>
           <td v-if="showSerial()" class="px-3 py-2 text-right tabular-nums text-nui-muted w-px whitespace-nowrap">{{ index + 1 }}</td>
           <td
             v-for="col in visibleColumns()"

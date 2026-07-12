@@ -28,6 +28,11 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   first › … › terminal below 448px; group segments emit `back`, entity segments emit `navigate`.
 - **`CollectionList` gains `anchorKey`** — scrolls a row into view and flash-highlights it once,
   e.g. when a detail's `back()` restores the list to where you left it.
+- **`CollectionList` gains bulk selection** (traverse P-E) — an opt-in `selectable` prop adds a
+  leading checkbox column with a header select-all (indeterminate on a partial selection); the host
+  owns the set via `selectedKeys` and the `toggleSelect`/`toggleSelectAll` events. Default off, so
+  every existing usage is byte-identical. Pairs with `@noy-db/ui`'s set-algebra (`addAllToList` /
+  `removeAllFromList` / create-from-selection) to fold a selection into a named list.
 - **`RecordHistory`** — the change-history timeline (Item Release P4): a collapsed panel at the
   detail's foot, newest version first, each row an actor + relative time with an expandable
   field-change list (`from → to`, masking-aware, nested i18n paths labelled `Notes (TH)`). Rows come

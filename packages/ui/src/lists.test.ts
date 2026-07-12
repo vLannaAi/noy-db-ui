@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   makeList, resolveListIds, addToList, removeFromList, toggleInList, isInList,
-  isFixedList, listKind, isValidListName, listsForEntity, sortLists, type ListDef,
+  isFixedList, listKind, isValidListName, listsForEntity, sortLists,
+  addAllToList, removeAllFromList, intersectListWith, type ListDef,
 } from './lists'
 
 const def = (over: Partial<ListDef> = {}): ListDef =>
@@ -89,6 +90,45 @@ describe('isInList / toggleInList', () => {
   it('toggle then toggle restores', () => {
     const off = toggleInList(def(), 'b', true, 9)
     expect(resolveListIds(toggleInList(off, 'b', true, 10), EVAL)).toEqual(['a', 'b', 'c', 'd'])
+  })
+})
+
+describe('set algebra (P-E) — fold a selection into a list', () => {
+  it('union adds every selected id (a fixed list becomes the union)', () => {
+    const fixed = def({ query: '', patch: ['a'] })
+    expect(resolveListIds(addAllToList(fixed, ['b', 'c'], 9), [])).toEqual(['a', 'b', 'c'])
+  })
+  it('union pins every selected id (explicit add, like P-D single-add); resolve dedupes eval members', () => {
+    // both 'a' (already in eval) and 'z' (new) become patch entries — 'a' redundantly, but
+    // resolveListIds keeps 'a' at its eval position (no dup) and appends 'z'.
+    const out = addAllToList(def(), ['a', 'z'], 9)
+    expect(out.patch).toEqual(['a', 'z'])
+    expect(resolveListIds(out, EVAL)).toEqual(['a', 'b', 'c', 'd', 'z'])
+  })
+  it('subtract removes every selected id (hide in-query, unpatch patched)', () => {
+    const l = def({ patch: ['z'] })
+    const out = removeAllFromList(l, ['b', 'z'], 9)  // b in-query → hide; z patched → unpatch
+    expect(out).toMatchObject({ hide: ['b'], patch: [] })
+  })
+  it('intersect keeps only members that are also selected', () => {
+    // list = eval[a,b,c,d]; keep only {b,d} → hide a and c
+    const out = intersectListWith(def(), ['b', 'd'], EVAL, 9)
+    expect(resolveListIds(out, EVAL)).toEqual(['b', 'd'])
+  })
+  it('intersect over a patched list drops unselected patch + hides unselected eval', () => {
+    const l = def({ patch: ['z'] })              // members: a,b,c,d,z
+    const out = intersectListWith(l, ['a', 'z'], EVAL, 9)
+    expect(resolveListIds(out, EVAL)).toEqual(['a', 'z'])
+  })
+  it('folds are idempotent and an empty selection is a no-op', () => {
+    expect(resolveListIds(addAllToList(def(), [], 9), EVAL)).toEqual(['a', 'b', 'c', 'd'])
+    const once = addAllToList(def(), ['z'], 9)
+    expect(resolveListIds(addAllToList(once, ['z'], 10), EVAL)).toEqual(['a', 'b', 'c', 'd', 'z'])
+  })
+  it('create-from-selection is a fixed list of the selected ids', () => {
+    const l = makeList({ entity: 'records', name: 'Picks', patch: ['x', 'y'] }, 1, 'lp')
+    expect(isFixedList(l)).toBe(true)
+    expect(resolveListIds(l, [])).toEqual(['x', 'y'])
   })
 })
 

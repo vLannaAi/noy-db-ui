@@ -1,5 +1,8 @@
 import { ref, computed } from 'vue'
-import { makeList, sortLists, listsForEntity, addToList, removeFromList, isValidListName, type ListDef } from '@noy-db/ui'
+import {
+  makeList, sortLists, listsForEntity, addToList, removeFromList, isValidListName,
+  addAllToList, removeAllFromList, type ListDef,
+} from '@noy-db/ui'
 
 // P-D lists persistence. Lists are DATA (vault-encrypted/syncable is the endgame) — but the
 // showcase vault is session-only (D3), so here they live in localStorage, exactly like saved
@@ -57,6 +60,21 @@ export function useLists(entity: string) {
     const l = byId(id)
     if (l) upsert(removeFromList(l, itemId, Date.now()))
   }
+  // P-E bulk set algebra: fold a whole selection into a list.
+  function union(id: string, ids: readonly string[]): void {
+    const l = byId(id)
+    if (l) upsert(addAllToList(l, ids, Date.now()))
+  }
+  function subtract(id: string, ids: readonly string[]): void {
+    const l = byId(id)
+    if (l) upsert(removeAllFromList(l, ids, Date.now()))
+  }
+  function createFromSelection(name: string, ids: readonly string[]): ListDef | null {
+    if (!isValidListName(name)) return null
+    const def = makeList({ entity, name, patch: [...ids] }, Date.now(), crypto.randomUUID())
+    upsert(def)
+    return def
+  }
 
-  return { lists, activeId, byId, create, remove, addItem, removeItem }
+  return { lists, activeId, byId, create, remove, addItem, removeItem, union, subtract, createFromSelection }
 }

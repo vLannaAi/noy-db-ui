@@ -46,6 +46,7 @@ export default defineConfig({
     'i-lucide-list-plus',       // lists (P-D): detail pin-to-list
     'i-lucide-check',           // lists (P-D): pinned membership
     'i-lucide-plus',            // lists (P-D): add-to-list
+    'i-lucide-check-check',     // bulk selection (P-E): selection banner
   ],
   theme: {
     colors: {
