@@ -21,8 +21,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@unocss/vite": "66.7.3",
     "tsx": "^4.19.0",
     "typescript": "^5.9.0",
+    "unocss": "66.7.3",
     "vitest": "^3.2.0"
   },
   "pnpm": {

@@ -1,8 +1,12 @@
+import UnoCSS from '@unocss/vite'
+
 export default defineNuxtConfig({
   ssr: false,
   modules: ['@noy-db/ui-nuxt/module'],
   noydbUi: { theme: 'system', locale: 'en' },
-  css: ['~/assets/themes.css'],
+  // themes.css (tokens) → the library's pre-compiled utilities (via the module) → our own UnoCSS
+  // output last, so the showcase's utility classes always resolve (see uno.config.ts).
+  css: ['~/assets/themes.css', 'virtual:uno.css'],
   app: {
     head: {
       title: 'noy-db · Vinyl',
@@ -17,6 +21,7 @@ export default defineNuxtConfig({
     },
   },
   vite: {
+    plugins: [UnoCSS()],
     resolve: {
       alias: {
         // Serve @noy-db/ui directly from the workspace dist so `pnpm build` in
