@@ -41,7 +41,12 @@ export default defineConfig({
     'i-lucide-paperclip',       // attachments gallery header
     'i-lucide-upload',          // attachments: add
     'i-lucide-trash-2',         // attachments: delete
-    'i-lucide-file',            // attachments: non-image tile
+    'i-lucide-file',            // attachments: non-image tile (generic)
+    'i-lucide-file-text',       // attachments: pdf / document / text
+    'i-lucide-sheet',           // attachments: spreadsheet
+    'i-lucide-file-archive',    // attachments: archive
+    'i-lucide-file-audio',      // attachments: audio
+    'i-lucide-file-video',      // attachments: video
     'i-lucide-list-checks',     // lists (P-D): menu + active-list banner
     'i-lucide-list-plus',       // lists (P-D): detail pin-to-list
     'i-lucide-check',           // lists (P-D): pinned membership

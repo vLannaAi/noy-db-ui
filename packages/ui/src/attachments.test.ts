@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX, type BlobSlotInfo } from './attachments'
+import { attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX, fileCategory, type BlobSlotInfo } from './attachments'
 
 describe('humanSize', () => {
   it('scales bytes to binary units', () => {
@@ -54,5 +54,26 @@ describe('attachmentList', () => {
   it('treats a filename equal to the slot name as absent (uses the tail)', () => {
     const item = attachmentList([{ name: 'att:xyz', filename: 'att:xyz', size: 10 }])[0]
     expect(item.filename).toBe('xyz')
+  })
+})
+
+describe('fileCategory', () => {
+  it('classifies by MIME first', () => {
+    expect(fileCategory('image/png', 'x.png').category).toBe('image')
+    expect(fileCategory('application/pdf', 'x').category).toBe('pdf')
+    expect(fileCategory('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'budget.xlsx').category).toBe('spreadsheet')
+    expect(fileCategory('audio/mpeg', 'track').category).toBe('audio')
+    expect(fileCategory('video/mp4', 'clip').category).toBe('video')
+  })
+  it('falls back to the extension when MIME is generic', () => {
+    expect(fileCategory('application/octet-stream', 'sheet.csv').category).toBe('spreadsheet')
+    expect(fileCategory('application/octet-stream', 'notes.docx').category).toBe('document')
+    expect(fileCategory('application/octet-stream', 'bundle.zip').category).toBe('archive')
+    expect(fileCategory('application/octet-stream', 'readme.md').category).toBe('text')
+  })
+  it('gives a friendly label and an icon, defaulting to a generic file', () => {
+    expect(fileCategory('application/vnd.ms-excel', 'q.xls')).toMatchObject({ label: 'Spreadsheet', icon: 'i-lucide-sheet' })
+    const unknown = fileCategory('application/x-weird', 'mystery.bin')
+    expect(unknown).toMatchObject({ category: 'file', label: 'File', icon: 'i-lucide-file' })
   })
 })

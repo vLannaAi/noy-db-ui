@@ -14,13 +14,17 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   author (`row.actor`) sits alongside.
 
 ### Changed
-- **`AttachmentGallery` redesigned as a row list + drop-zone** — attachments render as tidy rows
-  (thumbnail · name · type/size · delete-on-hover with an inline confirm) divided by hairlines,
-  instead of nested cards with their own borders/shadows that didn't align. The whole panel accepts
-  dragged files (drop overlay); a slim dashed "Add files" bar sits below the list, and the empty
-  state is a "drop files here, or click to browse" target. The file input is now visually-hidden
-  rather than `display:none` (a `display:none` input's programmatic `.click()` is blocked in some
-  browsers, so "Add" opened nothing), and it takes `multiple` (one `upload` per file).
+- **`AttachmentGallery` redesigned as a metadata row list + drop-zone** — attachments render as tidy
+  rows (thumbnail / type-icon · name · `TYPE · dimensions · size` · upload time · delete-on-hover with
+  an inline confirm) divided by hairlines, instead of nested cards with their own borders/shadows that
+  didn't align. Each non-image gets a category icon + friendly label via `fileCategory` (@noy-db/ui);
+  images show a thumbnail and their pixel dimensions (read client-side off the decoded image, since the
+  blob metadata doesn't carry them); the upload time comes from the blob's `uploadedAt`. A just-added
+  row briefly flashes to confirm the upload landed (attachments save immediately, no separate Save).
+  The whole panel accepts dragged files (drop overlay); a slim dashed "Add files" bar sits below the
+  list, and the empty state is a "drop files here, or click to browse" target. The file input is now
+  visually-hidden rather than `display:none` (a `display:none` input's programmatic `.click()` is
+  blocked in some browsers, so "Add" opened nothing), and it takes `multiple` (one `upload` per file).
 - **`RecordDetail` cards scale to the container width** — the card grid now grows to 3 and then 4
   columns on wider surfaces (≥1160 / ≥1700px) instead of capping at 2, so a wide detail view fills
   the width with more cards per row rather than stretching each one; each card's inner field grid

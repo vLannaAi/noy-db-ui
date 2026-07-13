@@ -75,8 +75,8 @@ export {
 
 // Item family: attachments gallery (P5) + related list with derived summary (P6)
 export {
-  attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX,
-  type AttachmentItem, type BlobSlotInfo,
+  attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX, fileCategory,
+  type AttachmentItem, type BlobSlotInfo, type FileCategory,
 } from './attachments'
 export {
   relatedColumns, summaryCards,

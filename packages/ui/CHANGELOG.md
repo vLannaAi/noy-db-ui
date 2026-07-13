@@ -10,6 +10,10 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`fileCategory(mime, filename)`** (`attachments.ts`) — classify an attachment by MIME (preferred)
+  then extension into a display `{ category, label, icon }` (image / pdf / spreadsheet / document /
+  presentation / archive / audio / video / text / file), so a non-image reads as what it is (a PDF, a
+  spreadsheet, an archive) with a friendly label and a lucide icon rather than a generic blob.
 - **`crop.ts` — square-crop geometry** for a pan/zoom image cropper (cover upload): `coverScale`
   (base scale where an image just covers a frame), `clampOffset` (keep the frame covered while
   panning), `cropRect(view)` → `{ sx, sy, sw, sh }` (the source rectangle to feed

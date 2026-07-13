@@ -5,8 +5,8 @@
 // `attachmentList()` (@noy-db/ui); this component owns the objectURL lifecycle for image thumbs
 // (revoked on unmount and when an item disappears). Vault I/O stays with the host via `upload`/
 // `remove` (one `upload` per file, so a multi-file pick/drop emits several).
-import { ref, watch, onUnmounted } from 'vue'
-import type { AttachmentItem } from '@noy-db/ui'
+import { ref, computed, watch, onUnmounted } from 'vue'
+import { fileCategory, type AttachmentItem } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
 
 const { t } = useNuiI18n()
@@ -22,6 +22,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ upload: [File]; remove: [slot: string] }>()
 
 const urls = ref<Record<string, string>>({})
+const dims = ref<Record<string, string>>({}) // slot → "W×H" for images (computed client-side)
 const confirming = ref<string | null>(null)
 const fileEl = ref<HTMLInputElement | null>(null)
 // Slots with a loadBytes in flight — the watch can re-fire mid-load, so this guards against a
@@ -32,7 +33,11 @@ async function syncThumbs(): Promise<void> {
   if (import.meta.server) return
   const wanted = new Set(props.items.filter((i) => i.kind === 'image').map((i) => i.slot))
   for (const slot of Object.keys(urls.value)) {
-    if (!wanted.has(slot)) { URL.revokeObjectURL(urls.value[slot]!); const next = { ...urls.value }; delete next[slot]; urls.value = next }
+    if (!wanted.has(slot)) {
+      URL.revokeObjectURL(urls.value[slot]!)
+      const next = { ...urls.value }; delete next[slot]; urls.value = next
+      if (dims.value[slot]) { const d = { ...dims.value }; delete d[slot]; dims.value = d }
+    }
   }
   for (const item of props.items) {
     if (item.kind !== 'image' || urls.value[item.slot] || inFlight.has(item.slot)) continue
@@ -44,7 +49,13 @@ async function syncThumbs(): Promise<void> {
     // (which would strand the previous URL) and never create for a slot that is gone.
     const stillWanted = props.items.some((i) => i.slot === item.slot && i.kind === 'image')
     if (!bytes || !stillWanted || urls.value[item.slot]) continue
-    urls.value = { ...urls.value, [item.slot]: URL.createObjectURL(new Blob([bytes as BlobPart], { type: item.mime })) }
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: item.mime }))
+    urls.value = { ...urls.value, [item.slot]: url }
+    // Pixel dimensions aren't in the blob metadata (a cloud pipeline would populate them), so read
+    // them off the decoded image — cheap, and only for the thumbnail we already built.
+    const probe = new Image()
+    probe.onload = () => { dims.value = { ...dims.value, [item.slot]: `${probe.naturalWidth}×${probe.naturalHeight}` } }
+    probe.src = url
   }
 }
 watch(() => props.items.map((i) => i.slot).join('|'), syncThumbs, { immediate: true })
@@ -53,7 +64,9 @@ onUnmounted(() => { for (const u of Object.values(urls.value)) URL.revokeObjectU
 function pick(): void { fileEl.value?.click() }
 function sendFiles(list: FileList | null | undefined): void {
   if (!list) return
-  for (const f of Array.from(list)) emit('upload', f)
+  const files = Array.from(list)
+  expecting += files.length
+  for (const f of files) emit('upload', f)
 }
 function onFile(e: Event): void {
   const input = e.target as HTMLInputElement
@@ -77,6 +90,64 @@ function ext(filename: string): string {
   const i = filename.lastIndexOf('.')
   return i > 0 && i < filename.length - 1 ? filename.slice(i + 1).toUpperCase() : ''
 }
+
+// Upload-confirmation flash: attachments save on drop/pick (no separate Save), so the newly-added
+// row briefly highlights to confirm it landed. Only slots that appear after a user-initiated
+// upload flash — never the ones already present when the panel first loads.
+const justAdded = ref<Set<string>>(new Set())
+let prevSlots = new Set<string>()
+let expecting = 0
+watch(() => props.items.map((i) => i.slot).join('|'), () => {
+  for (const slot of props.items.map((i) => i.slot)) {
+    if (!prevSlots.has(slot) && expecting > 0) {
+      expecting -= 1
+      justAdded.value = new Set(justAdded.value).add(slot)
+      setTimeout(() => { const n = new Set(justAdded.value); n.delete(slot); justAdded.value = n }, 1800)
+    }
+  }
+  prevSlots = new Set(props.items.map((i) => i.slot))
+})
+
+// Upload time — a friendly relative for the row, the exact stamp in the tooltip.
+function relTime(iso?: string): string {
+  if (!iso) return ''
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return ''
+  const s = Math.max(0, Math.round((Date.now() - then) / 1000))
+  if (s < 45) return t('nui.time.justNow', 'just now')
+  if (s < 3600) return `${Math.round(s / 60)}m`
+  if (s < 86400) return `${Math.round(s / 3600)}h`
+  const d = new Date(iso); const p = (n: number): string => String(n).padStart(2, '0')
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())}`
+}
+function fullStamp(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso); if (Number.isNaN(d.getTime())) return ''
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+// Enriched view rows: category (icon + friendly label), a "TYPE · dims · size" subline (dims for
+// images only), the upload time, and the just-added flash flag.
+const rows = computed(() => props.items.map((item) => {
+  const cat = fileCategory(item.mime, item.filename)
+  const isImage = cat.category === 'image'
+  const parts: string[] = []
+  if (isImage) {
+    const e = ext(item.filename); if (e) parts.push(e)
+    if (dims.value[item.slot]) parts.push(dims.value[item.slot]!)
+  } else {
+    parts.push(cat.label)
+  }
+  parts.push(item.humanSize)
+  return {
+    item, icon: cat.icon, isImage,
+    sub: parts.join(' · '),
+    rel: relTime(item.uploadedAt),
+    full: fullStamp(item.uploadedAt),
+    added: justAdded.value.has(item.slot),
+  }
+}))
 </script>
 
 <template>
@@ -94,29 +165,32 @@ function ext(filename: string): string {
       <span v-if="items.length" class="text-[10px] text-nui-subtle tabular-nums">{{ items.length }}</span>
     </div>
 
-    <!-- A tidy row per file: thumbnail, name + type/size, delete on hover. -->
-    <ul v-if="items.length" class="att-list">
-      <li v-for="item in items" :key="item.slot" class="att-row">
+    <!-- A tidy row per file: thumbnail/type icon, name + type·dimensions·size, upload time, delete. -->
+    <ul v-if="rows.length" class="att-list">
+      <li v-for="row in rows" :key="row.item.slot" class="att-row" :class="{ 'att-added': row.added }">
         <span class="att-thumb">
-          <img v-if="item.kind === 'image' && urls[item.slot]" :src="urls[item.slot]" :alt="item.filename" >
-          <span v-else-if="item.kind === 'image'" class="i-lucide-image size-4 animate-pulse" aria-hidden="true" />
-          <span v-else class="i-lucide-file size-4" aria-hidden="true" />
+          <img v-if="row.isImage && urls[row.item.slot]" :src="urls[row.item.slot]" :alt="row.item.filename" >
+          <span v-else-if="row.isImage" class="i-lucide-image size-4 animate-pulse" aria-hidden="true" />
+          <span v-else :class="row.icon" class="size-4" aria-hidden="true" />
         </span>
         <span class="att-meta">
-          <span class="att-name" :title="item.filename">{{ item.filename }}</span>
-          <span class="att-sub">{{ ext(item.filename) ? ext(item.filename) + ' · ' : '' }}{{ item.humanSize }}</span>
+          <span class="att-name" :title="row.item.filename">{{ row.item.filename }}</span>
+          <span class="att-sub">{{ row.sub }}</span>
         </span>
 
-        <span v-if="confirming === item.slot" class="att-confirm">
-          <button type="button" class="del" @click="confirming = null; emit('remove', item.slot)">{{ t('nui.delete', 'Delete') }}</button>
+        <span v-if="confirming === row.item.slot" class="att-confirm">
+          <button type="button" class="del" @click="confirming = null; emit('remove', row.item.slot)">{{ t('nui.delete', 'Delete') }}</button>
           <button type="button" class="cancel" @click="confirming = null">{{ t('nui.cancel', 'Cancel') }}</button>
         </span>
-        <button
-          v-else type="button" class="att-del"
-          :aria-label="t('nui.delete', 'Delete')" @click="confirming = item.slot"
-        >
-          <span class="i-lucide-trash-2 size-3.5" aria-hidden="true" />
-        </button>
+        <template v-else>
+          <time v-if="row.rel" class="att-time" :datetime="row.item.uploadedAt" :title="row.full">{{ row.rel }}</time>
+          <button
+            type="button" class="att-del"
+            :aria-label="t('nui.delete', 'Delete')" @click="confirming = row.item.slot"
+          >
+            <span class="i-lucide-trash-2 size-3.5" aria-hidden="true" />
+          </button>
+        </template>
       </li>
     </ul>
 
@@ -170,6 +244,16 @@ function ext(filename: string): string {
 }
 .att-row:hover .att-del, .att-del:focus-visible { opacity: 1; }
 .att-del:hover { color: var(--nui-danger); background: color-mix(in oklab, var(--nui-danger) 10%, transparent); }
+
+.att-time { flex: 0 0 auto; font-size: 0.68rem; color: var(--nui-subtle); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Just-uploaded confirmation: a brief accent wash that fades (attachments save immediately). */
+.att-added { animation: att-flash 1.8s ease-out; border-radius: var(--radius-control, 6px); }
+@keyframes att-flash {
+  0% { background: color-mix(in oklab, var(--nui-accent) 20%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .att-added { animation: none; } }
 
 .att-confirm { flex: 0 0 auto; display: flex; align-items: center; gap: 0.35rem; }
 .att-confirm button { font-size: 0.72rem; padding: 0.22rem 0.55rem; border-radius: var(--radius-control, 5px); cursor: pointer; border: 0; }

@@ -45,6 +45,38 @@ export function attachmentSlot(uuid: string): string {
   return `${ATTACHMENT_PREFIX}${uuid}`
 }
 
+/** Display classification for an attachment — drives the row icon + a friendly type label. */
+export interface FileCategory {
+  readonly category: 'image' | 'pdf' | 'spreadsheet' | 'document' | 'presentation' | 'archive' | 'audio' | 'video' | 'text' | 'file'
+  /** Friendly type name, e.g. `PDF document`, `Spreadsheet`. */
+  readonly label: string
+  /** Lucide icon class for the tile (only a fallback for images, which show a thumbnail). */
+  readonly icon: string
+}
+
+/**
+ * Classify an attachment by MIME type (preferred) then filename extension into a display category,
+ * with a friendly label and an icon — so a non-image (a PDF, a spreadsheet, an archive) reads as
+ * what it is instead of a generic blob. The hub MIME-sniffs by magic bytes, so `mime` is reliable
+ * even when the browser gave no `file.type`.
+ */
+export function fileCategory(mime: string, filename: string): FileCategory {
+  const m = mime.toLowerCase()
+  const ext = (filename.split('.').pop() ?? '').toLowerCase()
+  const is = (...exts: string[]): boolean => exts.includes(ext)
+
+  if (m.startsWith('image/')) return { category: 'image', label: 'Image', icon: 'i-lucide-image' }
+  if (m.startsWith('audio/') || is('mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a')) return { category: 'audio', label: 'Audio', icon: 'i-lucide-file-audio' }
+  if (m.startsWith('video/') || is('mp4', 'mov', 'mkv', 'avi', 'webm')) return { category: 'video', label: 'Video', icon: 'i-lucide-file-video' }
+  if (m === 'application/pdf' || is('pdf')) return { category: 'pdf', label: 'PDF document', icon: 'i-lucide-file-text' }
+  if (m.includes('spreadsheet') || m === 'application/vnd.ms-excel' || m === 'text/csv' || is('xlsx', 'xls', 'csv', 'ods')) return { category: 'spreadsheet', label: 'Spreadsheet', icon: 'i-lucide-sheet' }
+  if (m.includes('presentation') || is('ppt', 'pptx', 'odp')) return { category: 'presentation', label: 'Presentation', icon: 'i-lucide-file-text' }
+  if (m.includes('word') || m === 'application/msword' || is('doc', 'docx', 'odt', 'rtf', 'pages')) return { category: 'document', label: 'Document', icon: 'i-lucide-file-text' }
+  if (m.includes('zip') || m.includes('compressed') || m.includes('tar') || is('zip', 'tar', 'gz', 'rar', '7z')) return { category: 'archive', label: 'Archive', icon: 'i-lucide-file-archive' }
+  if (m.startsWith('text/') || is('txt', 'md', 'json', 'xml', 'yaml', 'yml')) return { category: 'text', label: 'Text file', icon: 'i-lucide-file-text' }
+  return { category: 'file', label: 'File', icon: 'i-lucide-file' }
+}
+
 /**
  * Filter a `blob(id).list()` result to the attachment slots (`att:` prefix) and shape each into an
  * `AttachmentItem`. Non-attachment slots (the cover, any named slot) are dropped. Sorted by upload
