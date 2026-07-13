@@ -12,6 +12,8 @@ export default defineConfig({
     presetIcons({ scale: 1.1, warn: true }),
   ],
   transformers: [transformerVariantGroup(), transformerDirectives()],
+  // `i-lucide` (no icon name) is a false positive from SlotPath's `[class^='i-lucide']` selector.
+  blocklist: ['i-lucide'],
   theme: {
     colors: {
       'nui-fg': 'var(--nui-fg)',
