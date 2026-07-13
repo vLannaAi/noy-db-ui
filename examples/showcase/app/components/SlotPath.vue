@@ -189,13 +189,12 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => {
         </div>
         <div class="slot-window">
           <button type="button" class="slot-drum-hit" :aria-label="`Choose ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
-            <span class="slot-payline" aria-hidden="true" />
             <div class="slot-strip" :style="stripStyle(reel)">
               <div
                 v-for="(v, vi) in reel.values" :key="v.id"
                 class="slot-cell"
                 :class="{ current: vi === reel.index, near: Math.abs(vi - reel.index) === 1 }"
-              >{{ v.name }}</div>
+              ><span class="slot-cell-text">{{ v.name }}</span></div>
             </div>
           </button>
         </div>
@@ -211,34 +210,32 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => {
 </template>
 
 <style scoped>
-/* Headline + byline: the Title drum spans the top; Artist and Label share the row beneath. Flat,
-   accent-tinted, translucent — no skeuomorphic inset (theme-uniform; Speed reads as flat glass). */
+/* Headline + byline: the Title drum spans the top; Artist and Label share the row beneath. The
+   panel and the "locked" highlight are theme-specific (see the per-palette blocks below) — the same
+   selector reads as a different kind of record label in each theme. This base is the calm fallback. */
 .slot-console {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
     'title title'
     'artist label';
-  gap: 0.35rem 1.25rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: 14px;
-  background:
-    linear-gradient(135deg,
-      color-mix(in oklab, var(--nui-accent) 9%, var(--nui-bg)),
-      color-mix(in oklab, var(--nui-accent) 3%, var(--nui-bg)));
-  border: 1px solid color-mix(in oklab, var(--nui-accent) 22%, var(--nui-border));
+  gap: 0.3rem 1.25rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius, 10px);
+  background: var(--nui-bg-accent);
+  border: var(--border-w, 1px) solid var(--nui-border);
 }
 .reel-title { grid-area: title; }
 .reel-artist { grid-area: artist; }
 .reel-label { grid-area: label; }
 /* A hairline between the headline and its byline. */
-.reel-artist, .reel-label { padding-top: 0.4rem; border-top: 1px solid color-mix(in oklab, var(--nui-accent) 14%, var(--nui-border)); }
+.reel-artist, .reel-label { padding-top: 0.4rem; border-top: 1px solid var(--nui-border); }
 
 .slot-reel { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .slot-eyebrow {
-  font-family: 'Space Mono', ui-monospace, monospace;
-  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: color-mix(in oklab, var(--nui-accent) 60%, var(--nui-muted)); margin: 0 0 2px 1px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--nui-muted); margin: 0 0 2px 1px;
 }
 
 .slot-body { display: flex; align-items: stretch; gap: 6px; }
@@ -258,25 +255,59 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => {
 }
 .no-anim .slot-strip { transition: none; }
 .slot-cell {
-  position: relative; z-index: 1; height: var(--rh); line-height: var(--rh);
-  font-family: 'Saira', system-ui, sans-serif; font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px;
-  color: var(--nui-subtle); opacity: 0.42;
-  transform: scale(0.86); transform-origin: left center;
-  transition: color 200ms, opacity 200ms, transform 200ms;
+  position: relative; z-index: 1; height: var(--rh);
+  display: flex; align-items: center; padding: 0 4px;
+  opacity: 0.42; transform: scale(0.86); transform-origin: left center;
+  transition: opacity 200ms, transform 200ms;
 }
 .slot-cell.near { opacity: 0.6; }
-.slot-cell.current { color: var(--nui-fg); opacity: 1; transform: scale(1); }
-/* headline type scale */
-.reel-title .slot-cell { font-size: 21px; font-weight: 600; }
-.reel-title .slot-cell.current { font-weight: 700; letter-spacing: -0.01em; }
-.reel-artist .slot-cell, .reel-label .slot-cell { font-size: 14px; }
-.reel-artist .slot-cell.current, .reel-label .slot-cell.current { font-weight: 600; }
+.slot-cell.current { opacity: 1; transform: scale(1); }
 
-/* the payline — a flat translucent accent band behind the locked row (no bracket rules) */
-.slot-payline {
-  position: absolute; z-index: 0; left: 0; right: 0; top: var(--rh); height: var(--rh); border-radius: 7px;
-  background: color-mix(in oklab, var(--nui-accent) 15%, transparent); pointer-events: none;
+.slot-cell-text {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-body, system-ui, sans-serif); font-weight: 500;
+  color: var(--nui-subtle); line-height: 1.15;
+  transition: color 200ms, background-color 200ms;
+}
+.slot-cell.current .slot-cell-text { color: var(--nui-fg); }
+/* Headline type scale — in the theme's own display voice (Anton / Saira / Syne / DM Sans). */
+.reel-title .slot-cell-text {
+  font-size: 21px;
+  font-family: var(--font-display, 'Saira', sans-serif);
+  font-weight: var(--display-weight, 700);
+  text-transform: var(--display-transform, none);
+  letter-spacing: var(--display-spacing, -0.01em);
+}
+.reel-artist .slot-cell-text, .reel-label .slot-cell-text { font-size: 14px; }
+.reel-artist .slot-cell.current .slot-cell-text,
+.reel-label .slot-cell.current .slot-cell-text { font-weight: 600; }
+
+/* ─── SPEED — the cleanest: no fill, a hairline panel, a thin accent tick + a bold crimson value. */
+[data-palette='speed'] .slot-console { background: transparent; border: 1px solid var(--nui-border); }
+[data-palette='speed'] .slot-cell.current { box-shadow: inset 2px 0 0 var(--nui-accent); }
+[data-palette='speed'] .slot-cell.current .slot-cell-text { color: var(--nui-accent); }
+
+/* ─── BLUE NOTE — a solid royal-blue knockout block hugging the value (Reid-Miles poster). */
+[data-palette='bluenote'] .slot-cell.current .slot-cell-text {
+  background: var(--nui-accent); color: var(--nui-accent-fg);
+  padding: 1px 8px; border-radius: var(--radius-control, 2px);
+}
+
+/* ─── HI-FI — an amber readout: a glowing LED at the left + a baseline rail (a stereo faceplate). */
+[data-palette='hifi'] .slot-cell.current { box-shadow: inset 0 -2px 0 color-mix(in oklab, var(--nui-accent) 50%, transparent); }
+[data-palette='hifi'] .slot-cell.current .slot-cell-text { color: var(--nui-accent); padding-left: 15px; position: relative; }
+[data-palette='hifi'] .slot-cell.current .slot-cell-text::before {
+  content: ''; position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+  width: 6px; height: 6px; border-radius: 50%; background: var(--nui-accent);
+  box-shadow: 0 0 5px color-mix(in oklab, var(--nui-accent) 75%, transparent);
+}
+
+/* ─── WHITE LABEL — a stamped hot-pink block: hard 2px rule + offset shadow, zero radius. */
+[data-palette='whitelabel'] .slot-console { background: var(--nui-bg); box-shadow: 4px 4px 0 var(--nui-fg); }
+[data-palette='whitelabel'] .slot-cell.current .slot-cell-text {
+  background: var(--nui-accent); color: var(--nui-accent-fg);
+  padding: 0 6px; border: 2px solid var(--nui-fg); border-radius: 0;
+  box-shadow: 2px 2px 0 var(--nui-fg);
 }
 
 .slot-spinner { flex: 0 0 22px; display: flex; flex-direction: column; justify-content: space-between; padding: 1px 0; }
@@ -301,8 +332,8 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => {
 }
 .slot-menu-item {
   display: block; width: 100%; text-align: left; white-space: nowrap;
-  font-family: 'Saira', system-ui, sans-serif; font-size: 14px;
-  padding: 4px 8px; border-radius: 5px; background: none; border: 0; cursor: pointer; color: var(--nui-fg);
+  font-family: var(--font-body, system-ui, sans-serif); font-size: 14px;
+  padding: 4px 8px; border-radius: var(--radius-control, 5px); background: none; border: 0; cursor: pointer; color: var(--nui-fg);
 }
 .slot-menu-item:hover { background: var(--nui-bg-accent); }
 .slot-menu-item.on { color: var(--nui-accent); font-weight: 600; }
