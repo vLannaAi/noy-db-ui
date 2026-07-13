@@ -76,7 +76,7 @@ export {
 // Item family: attachments gallery (P5) + related list with derived summary (P6)
 export {
   attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX, fileCategory,
-  type AttachmentItem, type BlobSlotInfo, type FileCategory,
+  type AttachmentItem, type BlobSlotInfo, type FileCategory, type FileCategoryKind,
 } from './attachments'
 export { parseExif, type ExifData } from './exif'
 export {

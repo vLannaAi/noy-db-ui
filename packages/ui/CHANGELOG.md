@@ -17,9 +17,11 @@ And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema 
   `iloc`). Offline by design — the metadata lives inside the decrypted bytes (a zero-knowledge vault
   has no server-side metadata bag), and any malformed read yields `null` rather than throwing.
 - **`fileCategory(mime, filename)`** (`attachments.ts`) — classify an attachment by MIME (preferred)
-  then extension into a display `{ category, label, icon }` (image / pdf / spreadsheet / document /
-  presentation / archive / audio / video / text / file), so a non-image reads as what it is (a PDF, a
-  spreadsheet, an archive) with a friendly label and a lucide icon rather than a generic blob.
+  then extension into a display `{ category, label, icon }` across ~20 common kinds (image, pdf,
+  document, spreadsheet, presentation, archive, audio, video, code, json, markup, text, font, ebook,
+  calendar, contact, disk, database, certificate, application, + a generic fallback), so a non-image
+  reads as what it is with a friendly label and a distinct lucide icon rather than a generic blob.
+  Exports the `FileCategoryKind` union.
 - **`crop.ts` — square-crop geometry** for a pan/zoom image cropper (cover upload): `coverScale`
   (base scale where an image just covers a frame), `clampOffset` (keep the frame covered while
   panning), `cropRect(view)` → `{ sx, sy, sw, sh }` (the source rectangle to feed

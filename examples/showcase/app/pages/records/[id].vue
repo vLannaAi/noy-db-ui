@@ -6,6 +6,7 @@ import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useLists } from '../../composables/useLists'
 import { buildRecordsView } from '../../lib/collectionView'
 import { saveCoverBytes } from '../../lib/cover'
+import { seedDocuments } from '../../lib/documents'
 import { VAULT_USER } from '../../../src/data/vault'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
@@ -163,7 +164,7 @@ async function onRemoveAttachment(slot: string): Promise<void> {
   await blobHandle.delete(slot)
   await refreshAttachments()
 }
-onMounted(refreshAttachments)
+onMounted(async () => { await seedDocuments(vault.value!, id); await refreshAttachments() })
 
 // Change cover: pick an image → crop/zoom in a modal → store the resized PNG as the cover blob →
 // bump coverVersion so <CoverImage> remounts and shows it (session-only per D3).

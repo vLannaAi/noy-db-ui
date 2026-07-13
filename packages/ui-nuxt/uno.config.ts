@@ -41,12 +41,25 @@ export default defineConfig({
     'i-lucide-paperclip',       // attachments gallery header
     'i-lucide-upload',          // attachments: add
     'i-lucide-trash-2',         // attachments: delete
-    'i-lucide-file',            // attachments: non-image tile (generic)
-    'i-lucide-file-text',       // attachments: pdf / document / text
-    'i-lucide-sheet',           // attachments: spreadsheet
-    'i-lucide-file-archive',    // attachments: archive
-    'i-lucide-file-audio',      // attachments: audio
-    'i-lucide-file-video',      // attachments: video
+    // attachments: fileCategory() type icons (top-~20 kinds) — keep in sync with attachments.ts RULES
+    'i-lucide-file',            // generic
+    'i-lucide-file-image',      // image (thumbnail fallback)
+    'i-lucide-file-text',       // pdf / text
+    'i-lucide-file-type',       // document (word/odt/rtf)
+    'i-lucide-file-spreadsheet',// spreadsheet
+    'i-lucide-presentation',    // presentation
+    'i-lucide-file-archive',    // archive
+    'i-lucide-file-code',       // code
+    'i-lucide-file-json',       // json
+    'i-lucide-code-xml',        // markup (html/xml)
+    'i-lucide-database',        // database (sql/sqlite)
+    'i-lucide-book-open',       // e-book
+    'i-lucide-contact',         // contact (vcf)
+    'i-lucide-disc',            // disk image (dmg/iso)
+    'i-lucide-file-key',        // certificate / key
+    'i-lucide-file-cog',        // application / executable
+    'i-lucide-file-audio',      // audio
+    'i-lucide-film',            // video
     'i-lucide-list-checks',     // lists (P-D): menu + active-list banner
     'i-lucide-list-plus',       // lists (P-D): detail pin-to-list
     'i-lucide-check',           // lists (P-D): pinned membership

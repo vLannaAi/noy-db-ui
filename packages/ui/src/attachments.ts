@@ -47,35 +47,61 @@ export function attachmentSlot(uuid: string): string {
   return `${ATTACHMENT_PREFIX}${uuid}`
 }
 
+/** One of the ~20 recognised attachment kinds (`file` is the catch-all). */
+export type FileCategoryKind =
+  | 'image' | 'video' | 'audio' | 'pdf' | 'document' | 'spreadsheet' | 'presentation'
+  | 'archive' | 'code' | 'json' | 'markup' | 'text' | 'font' | 'ebook' | 'calendar'
+  | 'contact' | 'disk' | 'database' | 'certificate' | 'application' | 'file'
+
 /** Display classification for an attachment — drives the row icon + a friendly type label. */
 export interface FileCategory {
-  readonly category: 'image' | 'pdf' | 'spreadsheet' | 'document' | 'presentation' | 'archive' | 'audio' | 'video' | 'text' | 'file'
+  readonly category: FileCategoryKind
   /** Friendly type name, e.g. `PDF document`, `Spreadsheet`. */
   readonly label: string
   /** Lucide icon class for the tile (only a fallback for images, which show a thumbnail). */
   readonly icon: string
 }
 
+// Ordered rules — first match wins (MIME preferred, then extension). The broad `image/`, `audio/`,
+// `video/`, `text/` MIME prefixes sit AFTER the specific rules they'd otherwise swallow (csv → sheet,
+// html → markup, code → code).
+interface Rule { readonly category: FileCategoryKind; readonly label: string; readonly icon: string; readonly mime?: RegExp; readonly ext: readonly string[] }
+const RULES: readonly Rule[] = [
+  { category: 'image', label: 'Image', icon: 'i-lucide-file-image', mime: /^image\//, ext: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'tiff', 'heic', 'heif', 'avif'] },
+  { category: 'pdf', label: 'PDF document', icon: 'i-lucide-file-text', mime: /\/pdf$/, ext: ['pdf'] },
+  { category: 'spreadsheet', label: 'Spreadsheet', icon: 'i-lucide-file-spreadsheet', mime: /spreadsheet|ms-excel|csv/, ext: ['xlsx', 'xls', 'ods', 'csv', 'tsv', 'numbers'] },
+  { category: 'presentation', label: 'Presentation', icon: 'i-lucide-presentation', mime: /presentation|powerpoint/, ext: ['pptx', 'ppt', 'odp', 'key'] },
+  { category: 'document', label: 'Document', icon: 'i-lucide-file-type', mime: /msword|wordprocessing|opendocument\.text|\/rtf/, ext: ['docx', 'doc', 'odt', 'rtf', 'pages'] },
+  // E-book before archive: EPUB is a zip container (`application/epub+zip`) that must not read as an archive.
+  { category: 'ebook', label: 'E-book', icon: 'i-lucide-book-open', mime: /epub/, ext: ['epub', 'mobi', 'azw', 'azw3'] },
+  { category: 'archive', label: 'Archive', icon: 'i-lucide-file-archive', mime: /zip|compressed|tar|x-7z|x-rar/, ext: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'] },
+  { category: 'json', label: 'JSON', icon: 'i-lucide-file-json', mime: /\/json$/, ext: ['json', 'jsonl', 'geojson'] },
+  { category: 'markup', label: 'Markup', icon: 'i-lucide-code-xml', mime: /html|\/xml$|\+xml/, ext: ['html', 'htm', 'xml', 'xhtml'] },
+  { category: 'code', label: 'Code', icon: 'i-lucide-file-code', mime: /javascript|typescript|x-python|x-sh/, ext: ['js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'vue', 'py', 'rb', 'php', 'java', 'kt', 'swift', 'c', 'h', 'cpp', 'cs', 'go', 'rs', 'css', 'scss', 'sh', 'yml', 'yaml', 'toml'] },
+  { category: 'database', label: 'Database', icon: 'i-lucide-database', ext: ['sql', 'db', 'sqlite', 'sqlite3'] },
+  { category: 'font', label: 'Font', icon: 'i-lucide-type', mime: /^font\//, ext: ['ttf', 'otf', 'woff', 'woff2', 'eot'] },
+  { category: 'calendar', label: 'Calendar', icon: 'i-lucide-calendar', mime: /calendar/, ext: ['ics'] },
+  { category: 'contact', label: 'Contact', icon: 'i-lucide-contact', mime: /vcard/, ext: ['vcf'] },
+  { category: 'certificate', label: 'Certificate', icon: 'i-lucide-file-key', ext: ['pem', 'key', 'crt', 'cert', 'cer', 'p12', 'pfx', 'asc', 'gpg'] },
+  { category: 'disk', label: 'Disk image', icon: 'i-lucide-disc', ext: ['dmg', 'iso', 'img'] },
+  { category: 'application', label: 'Application', icon: 'i-lucide-file-cog', ext: ['exe', 'msi', 'app', 'bin', 'apk', 'deb', 'rpm'] },
+  { category: 'audio', label: 'Audio', icon: 'i-lucide-file-audio', mime: /^audio\//, ext: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'aiff'] },
+  { category: 'video', label: 'Video', icon: 'i-lucide-film', mime: /^video\//, ext: ['mp4', 'mov', 'mkv', 'webm', 'avi', 'm4v'] },
+  { category: 'text', label: 'Text file', icon: 'i-lucide-file-text', mime: /^text\//, ext: ['txt', 'md', 'markdown', 'log', 'text'] },
+]
+
 /**
  * Classify an attachment by MIME type (preferred) then filename extension into a display category,
- * with a friendly label and an icon — so a non-image (a PDF, a spreadsheet, an archive) reads as
- * what it is instead of a generic blob. The hub MIME-sniffs by magic bytes, so `mime` is reliable
- * even when the browser gave no `file.type`.
+ * with a friendly label and an icon — so a non-image (a PDF, a spreadsheet, an archive, a font…)
+ * reads as what it is instead of a generic blob. The hub MIME-sniffs by magic bytes, so `mime` is
+ * reliable even when the browser gave no `file.type`.
  */
 export function fileCategory(mime: string, filename: string): FileCategory {
   const m = mime.toLowerCase()
   const ext = (filename.split('.').pop() ?? '').toLowerCase()
-  const is = (...exts: string[]): boolean => exts.includes(ext)
-
-  if (m.startsWith('image/')) return { category: 'image', label: 'Image', icon: 'i-lucide-image' }
-  if (m.startsWith('audio/') || is('mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a')) return { category: 'audio', label: 'Audio', icon: 'i-lucide-file-audio' }
-  if (m.startsWith('video/') || is('mp4', 'mov', 'mkv', 'avi', 'webm')) return { category: 'video', label: 'Video', icon: 'i-lucide-file-video' }
-  if (m === 'application/pdf' || is('pdf')) return { category: 'pdf', label: 'PDF document', icon: 'i-lucide-file-text' }
-  if (m.includes('spreadsheet') || m === 'application/vnd.ms-excel' || m === 'text/csv' || is('xlsx', 'xls', 'csv', 'ods')) return { category: 'spreadsheet', label: 'Spreadsheet', icon: 'i-lucide-sheet' }
-  if (m.includes('presentation') || is('ppt', 'pptx', 'odp')) return { category: 'presentation', label: 'Presentation', icon: 'i-lucide-file-text' }
-  if (m.includes('word') || m === 'application/msword' || is('doc', 'docx', 'odt', 'rtf', 'pages')) return { category: 'document', label: 'Document', icon: 'i-lucide-file-text' }
-  if (m.includes('zip') || m.includes('compressed') || m.includes('tar') || is('zip', 'tar', 'gz', 'rar', '7z')) return { category: 'archive', label: 'Archive', icon: 'i-lucide-file-archive' }
-  if (m.startsWith('text/') || is('txt', 'md', 'json', 'xml', 'yaml', 'yml')) return { category: 'text', label: 'Text file', icon: 'i-lucide-file-text' }
+  for (const r of RULES) {
+    if ((r.mime && r.mime.test(m)) || r.ext.includes(ext)) return { category: r.category, label: r.label, icon: r.icon }
+  }
   return { category: 'file', label: 'File', icon: 'i-lucide-file' }
 }
 
