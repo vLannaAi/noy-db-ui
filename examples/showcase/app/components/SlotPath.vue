@@ -127,19 +127,7 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
       <div class="slot-reel" :class="{ wide: reel.key === 'title' }">
         <span class="slot-eyebrow">{{ reel.eyebrow }}</span>
         <div class="slot-body">
-          <div class="slot-window">
-            <button type="button" class="slot-drum-hit" :aria-label="`Jump ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
-              <div class="slot-strip" :style="stripStyle(reel)">
-                <div
-                  v-for="(v, vi) in reel.values" :key="v.id"
-                  class="slot-cell"
-                  :class="{ current: vi === reel.index, near: Math.abs(vi - reel.index) === 1 }"
-                >{{ v.name }}</div>
-              </div>
-              <span class="slot-payline" aria-hidden="true" />
-            </button>
-          </div>
-          <!-- Spinner column — always visible, disabled at the ends (no overlap with the drum text). -->
+          <!-- Spinner column on the LEFT, under the label — always visible, disabled at the ends. -->
           <div class="slot-spinner">
             <button
               type="button" class="slot-chev"
@@ -151,6 +139,18 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
               :disabled="reel.index >= reel.values.length - 1 || spinning"
               aria-label="Next" @click="step(reel.key, 1)"
             ><span class="i-lucide-chevron-down" aria-hidden="true" /></button>
+          </div>
+          <div class="slot-window">
+            <button type="button" class="slot-drum-hit" :aria-label="`Jump ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
+              <div class="slot-strip" :style="stripStyle(reel)">
+                <div
+                  v-for="(v, vi) in reel.values" :key="v.id"
+                  class="slot-cell"
+                  :class="{ current: vi === reel.index, near: Math.abs(vi - reel.index) === 1 }"
+                >{{ v.name }}</div>
+              </div>
+              <span class="slot-payline" aria-hidden="true" />
+            </button>
           </div>
         </div>
 
