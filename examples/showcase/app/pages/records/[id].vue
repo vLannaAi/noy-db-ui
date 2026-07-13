@@ -75,11 +75,25 @@ const fields = computed(() => described.fields.map((f) => {
   return l === f.key ? f : { ...f, label: l }
 }))
 
-// ref-select options: entity pickers fed by the target collections (localized names)
-const artistRows = await vault.value!.collection('artists').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
-const labelRows = await vault.value!.collection('labels').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
-// Every record (localized title + its label/artist) drives the slot-machine selector's three drums.
-const recordRows = await records.list({ locale: locale.value, fallback: 'any' }) as { id: string; title: string; labelId: string; artistId: string }[]
+// Localized reference data — feeds the drum selector AND the edit-mode ref pickers. The names are
+// resolved by the hub at read time, so a locale switch must refetch (else the drums stay in the old
+// language). Kept in refs and reloaded on `locale` change.
+const artistRows = ref<{ id: string; name: string }[]>([])
+const labelRows = ref<{ id: string; name: string }[]>([])
+const recordRows = ref<{ id: string; title: string; labelId: string; artistId: string }[]>([])
+async function loadRefData(loc: string): Promise<void> {
+  const [artists, labels, recs] = await Promise.all([
+    vault.value!.collection('artists').list({ locale: loc, fallback: 'any' }),
+    vault.value!.collection('labels').list({ locale: loc, fallback: 'any' }),
+    records.list({ locale: loc, fallback: 'any' }),
+  ])
+  artistRows.value = artists as { id: string; name: string }[]
+  labelRows.value = labels as { id: string; name: string }[]
+  recordRows.value = recs as { id: string; title: string; labelId: string; artistId: string }[]
+}
+await loadRefData(locale.value)
+watch(locale, loadRefData)
+
 // Drum captions in the active language.
 const slotCaptions = computed(() => ({
   label: fieldLabel('records', 'labelId'),
@@ -88,8 +102,8 @@ const slotCaptions = computed(() => ({
 }))
 
 const options = computed(() => ({
-  artistId: artistRows.map((a) => ({ value: a.id, label: a.name })),
-  labelId: labelRows.map((l) => ({ value: l.id, label: l.name })),
+  artistId: artistRows.value.map((a) => ({ value: a.id, label: a.name })),
+  labelId: labelRows.value.map((l) => ({ value: l.id, label: l.name })),
   genre: GENRES.map((v) => ({ value: v, label: enumLabel('genre', v) })),
   format: FORMATS.map((v) => ({ value: v, label: enumLabel('format', v) })),
   condition: CONDITIONS.map((v) => ({ value: v, label: enumLabel('condition', v) })),
@@ -184,96 +198,112 @@ function toggleList(l: { id: string; patch: string[] }): void {
 </script>
 
 <template>
-  <article v-if="item.record.value" class="p-4 space-y-6">
-    <TraverseBar
-      v-if="snapshot"
-      :snapshot="snapshot" :position="traverse.position.value"
-      :skimming="traverse.skimming.value" :editing="item.editing.value"
-      @go="traverse.go" @go-to="traverse.goTo" @first="traverse.first" @last="traverse.last" @back="goBack"
-    />
-    <NuxtLink v-else to="/records" class="text-sm text-nui-accent hover:underline">← records</NuxtLink>
-    <div class="record-layout" :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
-      <!-- Cover rail (sticky on wide screens — stays with you as the details scroll). -->
-      <div class="record-rail">
-        <figure class="record-cover">
-          <CoverImage :key="coverVersion" :id="id" />
-          <button
-            v-if="!item.editing.value"
-            type="button"
-            class="record-cover-change"
-            @click="pickCover"
-          >
-            <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
-          </button>
-          <input ref="coverFileEl" type="file" accept="image/*" class="hidden" @change="onCoverFile">
-        </figure>
-        <!-- Lists (P-D): pin/unpin this record to a named list (the patch operation). -->
-        <div v-if="recordLists.length" class="relative">
-          <button
-            type="button"
-            class="nui-btn-ghost text-xs w-full justify-center flex items-center gap-1 text-nui-muted hover:text-nui-fg border border-nui-border rounded py-1.5"
-            :aria-expanded="listMenuOpen"
-            @click="listMenuOpen = !listMenuOpen"
-          >
-            <span class="i-lucide-list-plus size-3.5" aria-hidden="true" /> Add to list
-          </button>
-          <div v-if="listMenuOpen" class="absolute left-0 right-0 top-full mt-1 z-50 nui-panel p-1.5 space-y-0.5 shadow-lg">
-            <button
-              v-for="l in recordLists"
-              :key="l.id"
-              type="button"
-              class="w-full text-left text-sm px-2 py-1 rounded hover:bg-nui-bg-accent flex items-center gap-2"
-              @click="toggleList(l)"
-            >
-              <span class="size-4 shrink-0 flex items-center justify-center" :class="isPinned(l) ? 'text-nui-accent' : 'text-nui-subtle'">
-                <span :class="isPinned(l) ? 'i-lucide-check' : 'i-lucide-plus'" class="size-3.5" aria-hidden="true" />
-              </span>
-              <span class="truncate text-nui-fg">{{ l.name }}</span>
-            </button>
-          </div>
-        </div>
+  <article v-if="item.record.value" class="p-4">
+    <div class="record-wrap space-y-5">
+      <TraverseBar
+        v-if="snapshot"
+        :snapshot="snapshot" :position="traverse.position.value"
+        :skimming="traverse.skimming.value" :editing="item.editing.value"
+        @go="traverse.go" @go-to="traverse.goTo" @first="traverse.first" @last="traverse.last" @back="goBack"
+      />
+      <NuxtLink v-else to="/records" class="text-sm text-nui-accent hover:underline">← records</NuxtLink>
+
+      <!-- Save/Cancel anchored top-right of the window while editing, so they never scroll away. -->
+      <div v-if="item.editing.value" class="edit-dock">
+        <span class="edit-dock-tag"><span class="edit-dock-dot" aria-hidden="true" /> Editing</span>
+        <button type="button" class="edit-dock-btn ghost" :disabled="item.submitting.value" @click="item.cancel">Cancel</button>
+        <button type="button" class="edit-dock-btn solid" :disabled="item.submitting.value" @click="onSave">
+          {{ item.submitting.value ? 'Saving…' : 'Save' }}
+        </button>
       </div>
 
-      <!-- Main column: the selector (identity + navigation), then the full record. -->
-      <div class="record-main">
-        <SlotPath
-          :records="recordRows"
-          :labels="labelRows"
-          :artists="artistRows"
-          :current-id="id"
-          :captions="slotCaptions"
-          @navigate="(rid) => navigateTo(withQ(rid))"
+      <div :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
+        <!-- Masthead: cover art + the identity navigator (Title headline · Artist · Label). -->
+        <header class="masthead">
+          <div class="record-cover">
+            <CoverImage :key="coverVersion" :id="id" />
+            <button
+              v-if="!item.editing.value"
+              type="button"
+              class="record-cover-change"
+              @click="pickCover"
+            >
+              <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
+            </button>
+            <input ref="coverFileEl" type="file" accept="image/*" class="hidden" @change="onCoverFile">
+          </div>
+
+          <div class="masthead-nav">
+            <SlotPath
+              :records="recordRows"
+              :labels="labelRows"
+              :artists="artistRows"
+              :current-id="id"
+              :captions="slotCaptions"
+              @navigate="(rid) => navigateTo(withQ(rid))"
+            />
+          </div>
+
+          <!-- Themed action cluster — the edit affordance is a single icon (flat in Speed, filled
+               elsewhere); the list pin sits beside it. -->
+          <div v-if="!item.editing.value" class="masthead-actions">
+            <button type="button" class="icon-btn" aria-label="Edit record" title="Edit" @click="item.enterEdit">
+              <span class="i-lucide-pencil size-4" aria-hidden="true" />
+            </button>
+            <div v-if="recordLists.length" class="relative">
+              <button
+                type="button" class="icon-btn ghost"
+                aria-label="Add to list" title="Add to list"
+                :aria-expanded="listMenuOpen" @click="listMenuOpen = !listMenuOpen"
+              >
+                <span class="i-lucide-list-plus size-4" aria-hidden="true" />
+              </button>
+              <div v-if="listMenuOpen" class="absolute right-0 top-full mt-1 z-50 nui-panel p-1.5 w-52 space-y-0.5 shadow-lg">
+                <button
+                  v-for="l in recordLists"
+                  :key="l.id"
+                  type="button"
+                  class="w-full text-left text-sm px-2 py-1 rounded hover:bg-nui-bg-accent flex items-center gap-2"
+                  @click="toggleList(l)"
+                >
+                  <span class="size-4 shrink-0 flex items-center justify-center" :class="isPinned(l) ? 'text-nui-accent' : 'text-nui-subtle'">
+                    <span :class="isPinned(l) ? 'i-lucide-check' : 'i-lucide-plus'" class="size-3.5" aria-hidden="true" />
+                  </span>
+                  <span class="truncate text-nui-fg">{{ l.name }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <RecordDetail
+          class="mt-5"
+          :record="item.record.value"
+          :fields="fields"
+          :controls="false"
+          :editing="item.editing.value"
+          :draft="item.draft.value"
+          :errors="item.errors.value"
+          :error-banner="item.errorBanner.value"
+          :options="options"
+          :submitting="item.submitting.value"
+          :route-for="(c: string, i: string) => `/${c}/${i}`"
+          @navigate="(e: { collection: string; id: string }) => navigateTo(`/${e.collection}/${e.id}`)"
         />
-      <RecordDetail
-        :record="item.record.value"
-        :fields="fields"
-        editable
-        :editing="item.editing.value"
-        :draft="item.draft.value"
-        :errors="item.errors.value"
-        :error-banner="item.errorBanner.value"
-        :options="options"
-        :submitting="item.submitting.value"
-        :route-for="(c: string, i: string) => `/${c}/${i}`"
-        @edit="item.enterEdit"
-        @save="onSave"
-        @cancel="item.cancel"
-        @navigate="(e: { collection: string; id: string }) => navigateTo(`/${e.collection}/${e.id}`)"
-      />
-      <AttachmentGallery
-        class="mt-4"
-        :items="attachments"
-        :load-bytes="loadAttachmentBytes"
-        :busy="uploadBusy"
-        @upload="onUpload"
-        @remove="onRemoveAttachment"
-      />
-      <RecordHistory
-        class="mt-4"
-        :rows="historyData"
-        :loading="historyLoading"
-        @expand="loadHistory"
-      />
+        <AttachmentGallery
+          class="mt-4"
+          :items="attachments"
+          :load-bytes="loadAttachmentBytes"
+          :busy="uploadBusy"
+          @upload="onUpload"
+          @remove="onRemoveAttachment"
+        />
+        <RecordHistory
+          class="mt-4"
+          :rows="historyData"
+          :loading="historyLoading"
+          @expand="loadHistory"
+        />
       </div>
     </div>
   </article>
@@ -289,21 +319,23 @@ function toggleList(l: { id: string; patch: string[] }): void {
 </template>
 
 <style scoped>
-/* Magazine layout: a cover rail (sticky on wide screens) beside the flowing detail column. The
-   rail stays with you while the record scrolls; on narrow screens the rail unpins and stacks. */
-.record-layout {
-  display: grid;
-  grid-template-columns: minmax(200px, 260px) 1fr;
-  gap: 1.5rem;
-  align-items: start;
+/* Keep the reading measure sane — on ultra-wide the cards would otherwise stretch into sparse,
+   over-long rows. Everything (masthead + cards) lives inside this centered column. */
+.record-wrap { max-width: 1180px; margin-inline: auto; }
+
+/* The masthead: a record "plate" — cover art on the left, the identity navigator (Title headline
+   with an Artist · Label byline) filling the middle, the action icons top-right. */
+.masthead { display: flex; align-items: flex-start; gap: 1.25rem; position: relative; }
+.record-cover { position: relative; flex: 0 0 auto; width: 176px; margin: 0; }
+.masthead-nav { flex: 1 1 auto; min-width: 0; }
+.masthead-actions { flex: 0 0 auto; display: flex; gap: 0.5rem; }
+
+@media (max-width: 640px) {
+  .masthead { flex-direction: column; align-items: stretch; gap: 0.9rem; }
+  .record-cover { width: 160px; align-self: flex-start; }
+  .masthead-actions { position: absolute; top: 0; right: 0; }
 }
-.record-rail { display: flex; flex-direction: column; gap: 0.75rem; position: sticky; top: 1rem; }
-.record-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-@media (max-width: 720px) {
-  .record-layout { grid-template-columns: 1fr; gap: 1rem; }
-  .record-rail { position: static; }
-}
-.record-cover { position: relative; margin: 0; }
+
 .record-cover-change {
   position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
   display: flex; align-items: center; gap: 0.25rem;
@@ -315,4 +347,59 @@ function toggleList(l: { id: string; patch: string[] }): void {
 }
 .record-cover:hover .record-cover-change,
 .record-cover-change:focus-visible { opacity: 1; }
+
+/* Icon action button — filled accent by default; the Speed theme restyles it flat (see below), so
+   the same control reads differently per palette. */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 9px; flex: 0 0 auto;
+  background: var(--nui-accent); color: var(--nui-accent-fg);
+  border: 1px solid transparent; cursor: pointer;
+  transition: filter 150ms, background 150ms, color 150ms, border-color 150ms;
+}
+.icon-btn:hover { filter: brightness(1.08); }
+.icon-btn:focus-visible { outline: 2px solid var(--nui-accent); outline-offset: 2px; }
+.icon-btn.ghost { background: transparent; color: var(--nui-muted); border-color: var(--nui-border); }
+.icon-btn.ghost:hover { color: var(--nui-fg); background: var(--nui-bg-accent); filter: none; }
+
+/* Speed = flat glass, not a filled chip. */
+[data-palette='speed'] .icon-btn {
+  background: color-mix(in oklab, var(--nui-accent) 10%, transparent);
+  color: var(--nui-accent);
+  border-color: color-mix(in oklab, var(--nui-accent) 40%, var(--nui-border));
+}
+[data-palette='speed'] .icon-btn:hover { background: color-mix(in oklab, var(--nui-accent) 18%, transparent); filter: none; }
+[data-palette='speed'] .icon-btn.ghost { background: transparent; color: var(--nui-muted); border-color: var(--nui-border); }
+
+/* Edit action dock — pinned to the top-right of the window so Save/Cancel are always reachable
+   through a long form, independent of the page scroll. */
+.edit-dock {
+  position: fixed; top: 0.85rem; right: 1rem; z-index: 50;
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.8rem; border-radius: 11px;
+  background: color-mix(in oklab, var(--nui-bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in oklab, var(--nui-accent) 26%, var(--nui-border));
+  box-shadow: 0 6px 20px color-mix(in oklab, black 18%, transparent);
+}
+.edit-dock-tag {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.72rem; letter-spacing: 0.02em; color: var(--nui-muted);
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+.edit-dock-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--nui-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--nui-accent) 22%, transparent);
+}
+.edit-dock-btn {
+  font-size: 0.8rem; padding: 0.35rem 0.85rem; border-radius: 8px; cursor: pointer;
+  border: 1px solid transparent; transition: filter 150ms, background 150ms, color 150ms;
+}
+.edit-dock-btn:disabled { opacity: 0.5; cursor: default; }
+.edit-dock-btn.ghost { background: transparent; color: var(--nui-muted); border-color: var(--nui-border); }
+.edit-dock-btn.ghost:hover:not(:disabled) { color: var(--nui-fg); background: var(--nui-bg-accent); }
+.edit-dock-btn.solid { background: var(--nui-accent); color: var(--nui-accent-fg); }
+.edit-dock-btn.solid:hover:not(:disabled) { filter: brightness(1.08); }
+
+@media (max-width: 640px) { .edit-dock { top: 0.6rem; right: 0.6rem; } }
 </style>

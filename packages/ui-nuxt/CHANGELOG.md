@@ -9,6 +9,10 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 traversal — a sticky stepper bar and a path-shaped detail title.
 
 ### Added
+- **`RecordDetail` gains a `controls` prop** (default `true`) — set `false` to suppress the built-in
+  edit/save/cancel action row so the host can own those controls (e.g. an edit icon in a masthead plus
+  a sticky save/cancel bar). The cells still morph into inputs on `editing`; only the action row is
+  withheld.
 - **`FieldControl`** (internal) — the single widget renderer for a `FieldInput`
   (text/textarea/number+unit/date/select/checkbox/i18n-text), with error and constraint-hint lines
   underneath. Shared by `RecordForm` and `RecordDetail`'s edit mode so both surfaces stay

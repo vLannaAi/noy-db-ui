@@ -42,7 +42,10 @@ const props = withDefaults(defineProps<{
   submitting?: boolean
   /** Non-field failure message (generic banner over the cards). */
   errorBanner?: string | null
-}>(), { reveal: false, editable: false, editing: false, submitting: false })
+  /** Render the built-in edit/save/cancel action row. Set `false` to own those controls in the host
+   *  (e.g. an edit icon in a masthead + a sticky save/cancel bar); the cells still morph on `editing`. */
+  controls?: boolean
+}>(), { reveal: false, editable: false, editing: false, submitting: false, controls: true })
 
 const emit = defineEmits<{ edit: []; save: []; cancel: []; navigate: [{ collection: string; id: string }] }>()
 
@@ -81,7 +84,7 @@ function onLink(c: DetailCell, e: MouseEvent): void {
 
 <template>
   <div ref="host" class="nui-detail space-y-4" :data-nui-size="size">
-    <div v-if="editable || editing" class="flex items-center justify-end gap-2">
+    <div v-if="controls && (editable || editing)" class="flex items-center justify-end gap-2">
       <template v-if="editing">
         <button type="button" class="nui-btn-ghost px-3 py-1.5" :disabled="submitting" @click="emit('cancel')">{{ t('nui.cancel', 'Cancel') }}</button>
         <button type="button" class="nui-btn bg-nui-accent text-nui-accent-fg px-3 py-1.5" :disabled="submitting" @click="emit('save')">
