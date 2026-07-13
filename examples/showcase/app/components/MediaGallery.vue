@@ -49,7 +49,7 @@ async function sync(): Promise<void> {
   }
 }
 watch(() => props.items.map((i) => i.slot).join('|'), sync, { immediate: true })
-onUnmounted(() => { for (const u of Object.values(urls.value)) URL.revokeObjectURL(u) })
+onUnmounted(() => { for (const u of Object.values(urls.value)) URL.revokeObjectURL(u); if (typeof window !== 'undefined') window.removeEventListener('keydown', onKey) })
 
 function setMeta(slot: string, m: { w?: number; h?: number; dur?: number }): void { meta.value = { ...meta.value, [slot]: { ...(meta.value[slot] ?? {}), ...m } } }
 function onImgMeta(slot: string, e: Event): void { const i = e.target as HTMLImageElement; setMeta(slot, { w: i.naturalWidth, h: i.naturalHeight }) }
@@ -57,6 +57,25 @@ function onVideoMeta(slot: string, e: Event): void { const v = e.target as HTMLV
 function fmtDur(s?: number): string { if (!s || !Number.isFinite(s)) return ''; const m = Math.floor(s / 60); return `${m}:${String(Math.round(s % 60)).padStart(2, '0')}` }
 
 const lightboxRow = computed(() => rows.value.find((r) => r.item.slot === lightbox.value) ?? null)
+
+// Step through the media in the lightbox (wraps). Arrow keys mirror the on-screen arrows.
+function step(delta: number): void {
+  if (!lightbox.value || rows.value.length < 2) return
+  const i = rows.value.findIndex((r) => r.item.slot === lightbox.value)
+  if (i < 0) return
+  const n = rows.value.length
+  lightbox.value = rows.value[(i + delta + n) % n]!.item.slot
+}
+function onKey(e: KeyboardEvent): void {
+  if (e.key === 'ArrowLeft') step(-1)
+  else if (e.key === 'ArrowRight') step(1)
+  else if (e.key === 'Escape') lightbox.value = null
+}
+watch(lightbox, (open) => {
+  if (typeof window === 'undefined') return
+  if (open) window.addEventListener('keydown', onKey)
+  else window.removeEventListener('keydown', onKey)
+})
 
 function pick(): void { fileEl.value?.click() }
 function sendFiles(list: FileList | null | undefined): void { if (list) for (const f of Array.from(list)) emit('upload', f) }
@@ -134,7 +153,9 @@ function onDrop(e: DragEvent): void { depth = 0; dragging.value = false; if (!pr
     <!-- Lightbox -->
     <div v-if="lightboxRow" class="mg-lightbox" @click.self="lightbox = null">
       <button type="button" class="mg-close" aria-label="Close" @click="lightbox = null">✕</button>
-      <video v-if="lightboxRow.isVideo" :src="urls[lightboxRow.item.slot]" controls autoplay playsinline class="mg-lightbox-media" />
+      <button v-if="rows.length > 1" type="button" class="mg-nav prev" aria-label="Previous" @click.stop="step(-1)"><span class="i-lucide-chevron-left size-6" aria-hidden="true" /></button>
+      <button v-if="rows.length > 1" type="button" class="mg-nav next" aria-label="Next" @click.stop="step(1)"><span class="i-lucide-chevron-right size-6" aria-hidden="true" /></button>
+      <video v-if="lightboxRow.isVideo" :key="lightboxRow.item.slot" :src="urls[lightboxRow.item.slot]" controls autoplay playsinline class="mg-lightbox-media" />
       <img v-else :src="urls[lightboxRow.item.slot]" :alt="lightboxRow.item.filename" class="mg-lightbox-media" >
     </div>
   </section>
@@ -194,4 +215,9 @@ function onDrop(e: DragEvent): void { depth = 0; dragging.value = false; if (!pr
 .mg-lightbox-media { max-width: 90vw; max-height: 85vh; border-radius: 6px; box-shadow: 0 12px 48px rgba(0,0,0,0.5); }
 .mg-close { position: fixed; top: 1rem; right: 1.25rem; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.12); color: #fff; border: 0; font-size: 1.2rem; cursor: pointer; }
 .mg-close:hover { background: rgba(255,255,255,0.22); }
+.mg-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.12); color: #fff; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mg-nav:hover { background: rgba(255,255,255,0.22); }
+.mg-nav.prev { left: 1.25rem; }
+.mg-nav.next { right: 1.25rem; }
+@media (max-width: 560px) { .mg-nav { width: 38px; height: 38px; } .mg-nav.prev { left: 0.4rem; } .mg-nav.next { right: 0.4rem; } }
 </style>
