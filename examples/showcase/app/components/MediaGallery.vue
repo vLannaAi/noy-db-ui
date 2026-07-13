@@ -57,6 +57,7 @@ function onVideoMeta(slot: string, e: Event): void { const v = e.target as HTMLV
 function fmtDur(s?: number): string { if (!s || !Number.isFinite(s)) return ''; const m = Math.floor(s / 60); return `${m}:${String(Math.round(s % 60)).padStart(2, '0')}` }
 
 const lightboxRow = computed(() => rows.value.find((r) => r.item.slot === lightbox.value) ?? null)
+const lightboxIndex = computed(() => rows.value.findIndex((r) => r.item.slot === lightbox.value))
 
 // Step through the media in the lightbox (wraps). Arrow keys mirror the on-screen arrows.
 function step(delta: number): void {
@@ -157,6 +158,10 @@ function onDrop(e: DragEvent): void { depth = 0; dragging.value = false; if (!pr
       <button v-if="rows.length > 1" type="button" class="mg-nav next" aria-label="Next" @click.stop="step(1)"><span class="i-lucide-chevron-right size-6" aria-hidden="true" /></button>
       <video v-if="lightboxRow.isVideo" :key="lightboxRow.item.slot" :src="urls[lightboxRow.item.slot]" controls autoplay playsinline class="mg-lightbox-media" />
       <img v-else :src="urls[lightboxRow.item.slot]" :alt="lightboxRow.item.filename" class="mg-lightbox-media" >
+      <div class="mg-caption" @click.stop>
+        <span class="mg-caption-name" :title="lightboxRow.item.filename">{{ lightboxRow.item.filename }}</span>
+        <span class="mg-caption-meta">{{ lightboxRow.sub }}<template v-if="rows.length > 1"> · {{ lightboxIndex + 1 }} / {{ rows.length }}</template></span>
+      </div>
     </div>
   </section>
 </template>
@@ -220,4 +225,12 @@ function onDrop(e: DragEvent): void { depth = 0; dragging.value = false; if (!pr
 .mg-nav.prev { left: 1.25rem; }
 .mg-nav.next { right: 1.25rem; }
 @media (max-width: 560px) { .mg-nav { width: 38px; height: 38px; } .mg-nav.prev { left: 0.4rem; } .mg-nav.next { right: 0.4rem; } }
+.mg-caption {
+  position: fixed; left: 50%; bottom: 1.1rem; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  max-width: 88vw; padding: 0.35rem 0.75rem; border-radius: 8px; text-align: center;
+  background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.mg-caption-name { max-width: 84vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; font-weight: 600; color: #fff; }
+.mg-caption-meta { font-size: 0.72rem; color: rgba(255, 255, 255, 0.7); font-variant-numeric: tabular-nums; }
 </style>
