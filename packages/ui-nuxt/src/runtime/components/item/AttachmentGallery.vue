@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// Item family — the attachments gallery (Item Release P5). A grid of a record's blob attachments
-// (`att:` slots): image thumbnails and file tiles, an upload button, and per-item delete with an
-// inline confirm. The item view models come from `attachmentList()` (@noy-db/ui); this component
-// owns the objectURL lifecycle for image thumbs (built from host-supplied bytes, revoked on unmount
-// and when an item disappears). Vault I/O stays with the host via the `upload`/`remove` events.
+// Item family — the attachments gallery (Item Release P5). A record's blob attachments (`att:`
+// slots) as image thumbnails / file tiles, with an upload affordance that is BOTH a drop-zone
+// (drag files onto the panel) and a click-to-browse. The item view models come from
+// `attachmentList()` (@noy-db/ui); this component owns the objectURL lifecycle for image thumbs
+// (revoked on unmount and when an item disappears). Vault I/O stays with the host via `upload`/
+// `remove` (one `upload` per file, so a multi-file pick/drop emits several).
 import { ref, watch, onUnmounted } from 'vue'
 import type { AttachmentItem } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
@@ -14,7 +15,7 @@ const props = withDefaults(defineProps<{
   items: AttachmentItem[]
   /** Host vault read used to build image thumbnails (e.g. `slot => blob(id).get(slot)`). */
   loadBytes: (slot: string) => Promise<Uint8Array | null>
-  /** An upload is in flight — disables the add button. */
+  /** An upload is in flight — disables the add affordance. */
   busy?: boolean
 }>(), { items: () => [], busy: false })
 
@@ -50,34 +51,50 @@ watch(() => props.items.map((i) => i.slot).join('|'), syncThumbs, { immediate: t
 onUnmounted(() => { for (const u of Object.values(urls.value)) URL.revokeObjectURL(u) })
 
 function pick(): void { fileEl.value?.click() }
+function sendFiles(list: FileList | null | undefined): void {
+  if (!list) return
+  for (const f of Array.from(list)) emit('upload', f)
+}
 function onFile(e: Event): void {
   const input = e.target as HTMLInputElement
-  const f = input.files?.[0]
-  if (f) emit('upload', f)
+  sendFiles(input.files)
   input.value = '' // allow re-selecting the same file
+}
+
+// Drag-and-drop: the whole panel is a drop target. A depth counter keeps the highlight steady while
+// the cursor crosses child elements (each fires its own dragenter/dragleave).
+const dragging = ref(false)
+let dragDepth = 0
+function onDragEnter(): void { dragDepth += 1; dragging.value = true }
+function onDragLeave(): void { dragDepth = Math.max(0, dragDepth - 1); if (dragDepth === 0) dragging.value = false }
+function onDrop(e: DragEvent): void {
+  dragDepth = 0; dragging.value = false
+  if (!props.busy) sendFiles(e.dataTransfer?.files)
 }
 </script>
 
 <template>
-  <section class="nui-panel nui-card space-y-3">
+  <section
+    class="nui-panel nui-card space-y-3 att-panel"
+    :class="{ 'att-dragging': dragging }"
+    @dragenter.prevent="onDragEnter"
+    @dragover.prevent
+    @dragleave.prevent="onDragLeave"
+    @drop.prevent="onDrop"
+  >
     <div class="flex items-center gap-2">
       <span class="i-lucide-paperclip size-4 text-nui-muted" aria-hidden="true" />
       <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted">{{ t('nui.attachments.title', 'Attachments') }}</h3>
       <span v-if="items.length" class="text-[10px] text-nui-subtle tabular-nums">{{ items.length }}</span>
-      <button
-        type="button"
-        class="nui-btn-ghost text-xs ml-auto flex items-center gap-1 text-nui-muted hover:text-nui-fg"
-        :disabled="busy"
-        @click="pick"
-      >
-        <span class="i-lucide-upload size-3.5" aria-hidden="true" />
-        {{ busy ? t('nui.attachments.uploading', 'Uploading…') : t('nui.attachments.add', 'Add') }}
-      </button>
-      <input ref="fileEl" type="file" class="hidden" @change="onFile" >
     </div>
 
-    <p v-if="!items.length" class="text-sm text-nui-subtle">{{ t('nui.attachments.empty', 'No attachments yet.') }}</p>
+    <!-- Empty state IS the drop-zone: drop files, or click to browse. -->
+    <button v-if="!items.length" type="button" class="att-zone" :disabled="busy" @click="pick">
+      <span class="i-lucide-upload size-5 text-nui-subtle" aria-hidden="true" />
+      <span class="att-zone-title">{{ busy ? t('nui.attachments.uploading', 'Uploading…') : t('nui.attachments.drop', 'Drop files here, or click to browse') }}</span>
+    </button>
 
+    <!-- Populated: the tiles, with a dashed add-tile that keeps click-to-browse (and drop) available. -->
     <ul v-else class="grid gap-3 grid-cols-[repeat(auto-fill,minmax(7rem,1fr))]">
       <li v-for="item in items" :key="item.slot" class="group nui-panel overflow-hidden flex flex-col">
         <div class="relative aspect-square bg-nui-bg-accent flex items-center justify-center">
@@ -107,10 +124,57 @@ function onFile(e: Event): void {
           <p class="text-[10px] text-nui-subtle tabular-nums">{{ item.humanSize }}</p>
         </div>
       </li>
+      <li>
+        <button type="button" class="att-add-tile" :disabled="busy" @click="pick">
+          <span class="i-lucide-upload size-5" aria-hidden="true" />
+          <span class="text-[11px]">{{ busy ? t('nui.attachments.uploading', 'Uploading…') : t('nui.attachments.add', 'Add') }}</span>
+        </button>
+      </li>
     </ul>
+
+    <!-- Rendered but visually hidden (NOT display:none, so a programmatic click reliably opens the
+         file dialog across browsers). `multiple` so a pick can add several at once. -->
+    <input
+      ref="fileEl" type="file" multiple @change="onFile"
+      style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0"
+    >
+
+    <div v-if="dragging" class="att-overlay" aria-hidden="true">
+      <span class="i-lucide-upload size-5" aria-hidden="true" />
+      {{ t('nui.attachments.dropNow', 'Drop to upload') }}
+    </div>
   </section>
 </template>
 
 <style scoped>
 .nui-card { padding: var(--nui-card-px, 1rem); }
+.att-panel { position: relative; }
+.att-dragging { outline: 2px dashed var(--nui-accent); outline-offset: -3px; }
+
+/* Empty-state drop-zone and the add-tile share the dashed, click-to-browse language. */
+.att-zone {
+  width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 1.4rem 1rem; border: 1.5px dashed var(--nui-border); border-radius: var(--radius, 8px);
+  background: transparent; color: var(--nui-muted); cursor: pointer;
+  transition: border-color 150ms, background 150ms, color 150ms;
+}
+.att-zone-title { font-size: 0.8rem; }
+.att-add-tile {
+  width: 100%; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
+  border: 1.5px dashed var(--nui-border); border-radius: var(--radius, 8px);
+  background: transparent; color: var(--nui-muted); cursor: pointer;
+  transition: border-color 150ms, color 150ms;
+}
+.att-zone:hover:not(:disabled), .att-add-tile:hover:not(:disabled) {
+  border-color: var(--nui-accent); color: var(--nui-fg);
+  background: color-mix(in oklab, var(--nui-accent) 5%, transparent);
+}
+.att-zone:disabled, .att-add-tile:disabled { opacity: 0.5; cursor: default; }
+
+.att-overlay {
+  position: absolute; inset: 0; z-index: 5; border-radius: inherit; pointer-events: none;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  background: color-mix(in oklab, var(--nui-accent) 12%, var(--nui-bg));
+  color: var(--nui-accent); font-size: 0.85rem; font-weight: 600;
+}
 </style>

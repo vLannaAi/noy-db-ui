@@ -14,6 +14,11 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   author (`row.actor`) sits alongside.
 
 ### Changed
+- **`AttachmentGallery` is now a drop-zone** — the whole panel accepts dragged files (with a drop
+  overlay), and the empty state is a dashed "drop files here, or click to browse" target; a dashed
+  add-tile keeps the same affordance once there are attachments. The file input is now
+  visually-hidden rather than `display:none` (a `display:none` input's programmatic `.click()` is
+  blocked in some browsers, so "Add" opened nothing), and it takes `multiple` (one `upload` per file).
 - **`RecordDetail` cards scale to the container width** — the card grid now grows to 3 and then 4
   columns on wider surfaces (≥1160 / ≥1700px) instead of capping at 2, so a wide detail view fills
   the width with more cards per row rather than stretching each one; each card's inner field grid

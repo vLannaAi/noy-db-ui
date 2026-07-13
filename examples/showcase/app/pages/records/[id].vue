@@ -291,20 +291,22 @@ function toggleList(l: { id: string; patch: string[] }): void {
           :route-for="(c: string, i: string) => `/${c}/${i}`"
           @navigate="(e: { collection: string; id: string }) => navigateTo(`/${e.collection}/${e.id}`)"
         />
-        <AttachmentGallery
-          class="mt-4"
-          :items="attachments"
-          :load-bytes="loadAttachmentBytes"
-          :busy="uploadBusy"
-          @upload="onUpload"
-          @remove="onRemoveAttachment"
-        />
-        <RecordHistory
-          class="mt-4"
-          :rows="historyData"
-          :loading="historyLoading"
-          @expand="loadHistory"
-        />
+        <!-- Secondary sections: attachments is a compact widget, so it shares the row with the
+             history log instead of stretching full-width. Stacks on narrow screens. -->
+        <div class="record-secondary">
+          <AttachmentGallery
+            :items="attachments"
+            :load-bytes="loadAttachmentBytes"
+            :busy="uploadBusy"
+            @upload="onUpload"
+            @remove="onRemoveAttachment"
+          />
+          <RecordHistory
+            :rows="historyData"
+            :loading="historyLoading"
+            @expand="loadHistory"
+          />
+        </div>
       </div>
     </div>
   </article>
@@ -324,6 +326,13 @@ function toggleList(l: { id: string; patch: string[] }): void {
    RecordDetail's responsive grid), so wide screens fit more cards per row. A generous cap keeps
    ultra-wide (4K) from over-spreading. */
 .record-wrap { max-width: 2200px; margin-inline: auto; }
+
+/* Attachments (a compact widget) shares a row with the history log rather than spanning full width. */
+.record-secondary {
+  display: grid; gap: 1rem; margin-top: 1rem; align-items: start;
+  grid-template-columns: minmax(0, 26rem) 1fr;
+}
+@media (max-width: 900px) { .record-secondary { grid-template-columns: 1fr; } }
 
 /* The masthead: a record "plate" — cover art on the left, the identity navigator (Title headline
    with an Artist · Label byline) filling the middle, the action icons top-right. */
