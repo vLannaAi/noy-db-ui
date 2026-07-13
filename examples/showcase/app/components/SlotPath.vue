@@ -1,8 +1,10 @@
 <script setup lang="ts">
-// The record-detail path (Label › Artist › Title) reimagined as a jukebox selection console: three
-// drums you dial. Turning a drum navigates the collection's own hierarchy — pick a Label and the
-// Artist + Title drums spin and lock left-to-right with a spring kickback (a slot machine settling).
-// Chevrons step; clicking a drum opens a jump menu. Domain nav, not a breadcrumb.
+// The record's Label · Artist · Title path as a jukebox selector — three linked drums over ONE
+// global order (records sorted by label, then artist, then title). Each drum steps at its own
+// grain, but they share the sequence: roll the Title drum past a segment's edge and it carries on
+// into the next artist (or label), pulling those drums along — a double-chevron marks the crossing.
+// So the Title drum alone can scrub the whole collection; the coarser drums jump by segment.
+// Flat + accent-tinted (theme-uniform); the linked roll settles with a spring kickback.
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 
 interface Rec { id: string; title: string; labelId: string; artistId: string }
@@ -13,22 +15,33 @@ const props = defineProps<{
   labels: Named[]
   artists: Named[]
   currentId: string
+  /** Localized drum captions, e.g. { label: 'Label' | 'ค่ายเพลง', … }. */
+  captions: { label: string; artist: string; title: string }
 }>()
 const emit = defineEmits<{ navigate: [id: string] }>()
 
-const ROW = 26          // row height (px)
-const SETTLE = 640      // total cascade settle before navigating (ms)
-const SPIN = 4          // rows a cascaded drum rolls through before locking
+const ROW = 26
+const SETTLE = 640
+const SPIN = 4
+type ReelKey = 'label' | 'artist' | 'title'
+const REEL_ORDER: ReelKey[] = ['label', 'artist', 'title']
 
-// The record the drums currently show. Diverges from props.currentId only during a spin — we animate
-// to the target locally, then emit navigate; the fresh page mounts at the settled position (no jump).
 const displayId = ref(props.currentId)
 watch(() => props.currentId, (id) => { displayId.value = id })
 
-const byName = (a: Named, b: Named) => a.name.localeCompare(b.name)
-const cur = computed(() => props.records.find((r) => r.id === displayId.value) ?? props.records[0])
+const labelName = (id: string): string => props.labels.find((l) => l.id === id)?.name ?? id
+const artistName = (id: string): string => props.artists.find((a) => a.id === id)?.name ?? id
+const recOf = (id: string): Rec | undefined => props.records.find((r) => r.id === id)
+const cur = computed(() => recOf(displayId.value) ?? props.records[0])
 
-// Drum value lists — cascading: artists that press on the current label, records by that pairing.
+// THE global order — every drum navigates this one sequence.
+const sorted = computed<Rec[]>(() => [...props.records].sort((a, b) =>
+  labelName(a.labelId).localeCompare(labelName(b.labelId))
+  || artistName(a.artistId).localeCompare(artistName(b.artistId))
+  || a.title.localeCompare(b.title)))
+const giOf = (id: string): number => sorted.value.findIndex((r) => r.id === id)
+
+const byName = (a: Named, b: Named): number => a.name.localeCompare(b.name)
 const labelVals = computed<Named[]>(() => [...props.labels].sort(byName))
 const artistVals = computed<Named[]>(() => {
   const L = cur.value?.labelId
@@ -37,84 +50,107 @@ const artistVals = computed<Named[]>(() => {
 })
 const titleVals = computed<Named[]>(() => {
   const c = cur.value
-  return props.records
-    .filter((r) => r.labelId === c?.labelId && r.artistId === c?.artistId)
-    .map((r) => ({ id: r.id, name: r.title }))
-    .sort(byName)
+  return props.records.filter((r) => r.labelId === c?.labelId && r.artistId === c?.artistId)
+    .map((r) => ({ id: r.id, name: r.title })).sort(byName)
 })
 
-type ReelKey = 'label' | 'artist' | 'title'
 const reels = computed(() => [
-  { key: 'label' as ReelKey, eyebrow: 'Label', values: labelVals.value, index: labelVals.value.findIndex((v) => v.id === cur.value?.labelId) },
-  { key: 'artist' as ReelKey, eyebrow: 'Artist', values: artistVals.value, index: artistVals.value.findIndex((v) => v.id === cur.value?.artistId) },
-  { key: 'title' as ReelKey, eyebrow: 'Title', values: titleVals.value, index: titleVals.value.findIndex((v) => v.id === displayId.value) },
+  { key: 'label' as ReelKey, eyebrow: props.captions.label, values: labelVals.value, index: labelVals.value.findIndex((v) => v.id === cur.value?.labelId) },
+  { key: 'artist' as ReelKey, eyebrow: props.captions.artist, values: artistVals.value, index: artistVals.value.findIndex((v) => v.id === cur.value?.artistId) },
+  { key: 'title' as ReelKey, eyebrow: props.captions.title, values: titleVals.value, index: titleVals.value.findIndex((v) => v.id === displayId.value) },
 ])
 
-// Per-drum stagger: the actuated drum locks first, drums to its right follow (left-to-right lock).
+// Same-segment predicate for a drum's grain.
+function sameSeg(key: ReelKey, a: Rec, b: Rec): boolean {
+  if (key === 'title') return a.id === b.id
+  if (key === 'artist') return a.artistId === b.artistId && a.labelId === b.labelId
+  return a.labelId === b.labelId
+}
+/** The record a step lands on — the adjacent record at the drum's grain, in the GLOBAL order. */
+function neighbor(key: ReelKey, dir: 1 | -1): string | null {
+  const s = sorted.value
+  const gi = giOf(displayId.value)
+  const c = s[gi]
+  if (!c) return null
+  if (key === 'title') return s[gi + dir]?.id ?? null
+  if (dir === 1) {
+    for (let j = gi + 1; j < s.length; j++) if (!sameSeg(key, s[j], c)) return s[j].id
+    return null
+  }
+  let st = gi
+  while (st > 0 && sameSeg(key, s[st - 1], c)) st--
+  if (st === 0) return null
+  const prev = s[st - 1]
+  let ps = st - 1
+  while (ps > 0 && sameSeg(key, s[ps - 1], prev)) ps--
+  return s[ps].id
+}
+/** Does a step at `key` cross a COARSER boundary (so it pulls the drums to the left)? */
+function crosses(key: ReelKey, dir: 1 | -1): boolean {
+  const t = neighbor(key, dir)
+  const c = cur.value
+  const tr = t ? recOf(t) : undefined
+  if (!t || !tr || !c) return false
+  if (key === 'title') return tr.artistId !== c.artistId || tr.labelId !== c.labelId
+  if (key === 'artist') return tr.labelId !== c.labelId
+  return false
+}
+
+// animation state
 const delays = ref<Record<ReelKey, number>>({ label: 0, artist: 0, title: 0 })
-// Extra rows a drum starts offset by, so it rolls IN (spins) instead of just sliding; cleared a
-// frame later with the transition on, so the target scrolls up into the payline.
 const spinRows = ref<Record<ReelKey, number>>({ label: 0, artist: 0, title: 0 })
 const noAnim = ref(false)
 const spinning = ref(false)
 let navTimer: ReturnType<typeof setTimeout> | null = null
 
-/** The record to land on when a drum turns to `targetIndex` — cascades to the first child. */
-function resolveTarget(key: ReelKey, targetIndex: number): string | null {
+/** The first record of a label/artist/title value the jump menu picks. */
+function resolveJump(key: ReelKey, valueId: string): string | null {
+  if (key === 'title') return valueId
   const c = cur.value
   if (!c) return null
-  if (key === 'title') return titleVals.value[targetIndex]?.id ?? null
-  if (key === 'artist') {
-    const A = artistVals.value[targetIndex]?.id
-    if (!A) return null
-    const first = [...props.records].filter((r) => r.labelId === c.labelId && r.artistId === A).sort((a, b) => a.title.localeCompare(b.title))[0]
-    return first?.id ?? null
-  }
-  // label
-  const L = labelVals.value[targetIndex]?.id
-  if (!L) return null
-  const artistIds = new Set(props.records.filter((r) => r.labelId === L).map((r) => r.artistId))
+  const pick = (rs: Rec[]) => [...rs].sort((a, b) => a.title.localeCompare(b.title))[0]?.id ?? null
+  if (key === 'artist') return pick(props.records.filter((r) => r.labelId === c.labelId && r.artistId === valueId))
+  const artistIds = new Set(props.records.filter((r) => r.labelId === valueId).map((r) => r.artistId))
   const firstArtist = props.artists.filter((a) => artistIds.has(a.id)).sort(byName)[0]?.id
-  const first = [...props.records].filter((r) => r.labelId === L && r.artistId === firstArtist).sort((a, b) => a.title.localeCompare(b.title))[0]
-  return first?.id ?? null
+  return pick(props.records.filter((r) => r.labelId === valueId && r.artistId === firstArtist))
 }
 
-const REEL_ORDER: ReelKey[] = ['label', 'artist', 'title']
-async function turn(key: ReelKey, targetIndex: number): Promise<void> {
-  const from = REEL_ORDER.indexOf(key)
-  const target = resolveTarget(key, targetIndex)
+async function go(key: ReelKey, target: string | null, actuatedCross: boolean): Promise<void> {
   if (!target || target === displayId.value) return
   menuFor.value = null
-  // The actuated drum steps; drums to its right spin in, locking left-to-right (staggered delay).
-  delays.value = {
-    label: Math.max(0, (0 - from)) * 90,
-    artist: Math.max(0, (1 - from)) * 90,
-    title: Math.max(0, (2 - from)) * 90,
+  const from = REEL_ORDER.indexOf(key)
+  const o = cur.value!
+  const n = recOf(target)!
+  const changed: Record<ReelKey, boolean> = {
+    label: o.labelId !== n.labelId,
+    artist: o.labelId !== n.labelId || o.artistId !== n.artistId,
+    title: true,
   }
-  const kick = (i: number): number => (i > from ? SPIN : 0)
-  spinRows.value = { label: kick(0), artist: kick(1), title: kick(2) }
+  // Distance-based stagger: the actuated drum leads; linked drums roll after, in that direction.
+  delays.value = { label: Math.abs(0 - from) * 90, artist: Math.abs(1 - from) * 90, title: Math.abs(2 - from) * 90 }
+  const spin = (k: ReelKey): number => {
+    if (!changed[k]) return 0
+    if (k === key && !actuatedCross) return 0 // a plain in-segment step just rolls ±1
+    return SPIN
+  }
+  spinRows.value = { label: spin('label'), artist: spin('artist'), title: spin('title') }
   noAnim.value = true
   spinning.value = true
-  displayId.value = target // recompute drums; strips jump to target+spin with no transition…
+  displayId.value = target
   await nextTick()
-  requestAnimationFrame(() => { noAnim.value = false; spinRows.value = { label: 0, artist: 0, title: 0 } }) // …then roll to target
+  requestAnimationFrame(() => { noAnim.value = false; spinRows.value = { label: 0, artist: 0, title: 0 } })
   if (navTimer) clearTimeout(navTimer)
   navTimer = setTimeout(() => { spinning.value = false; emit('navigate', target) }, SETTLE)
 }
+function step(key: ReelKey, dir: 1 | -1): void { go(key, neighbor(key, dir), crosses(key, dir)) }
+function jump(key: ReelKey, valueId: string): void { go(key, resolveJump(key, valueId), true) }
 
-function step(key: ReelKey, dir: 1 | -1): void {
-  const reel = reels.value.find((r) => r.key === key)!
-  turn(key, Math.min(reel.values.length - 1, Math.max(0, reel.index + dir)))
-}
-
-// Jump menu (click a drum to pick any value).
 const menuFor = ref<ReelKey | null>(null)
 function toggleMenu(key: ReelKey): void { menuFor.value = menuFor.value === key ? null : key }
 
 onBeforeUnmount(() => { if (navTimer) clearTimeout(navTimer) })
 
 const stripStyle = (reel: { key: ReelKey; index: number }) => ({
-  // centre the index row on the payline; +spinRows offsets the start so the drum rolls in
   transform: `translateY(${ROW - (reel.index + spinRows.value[reel.key]) * ROW}px)`,
   transitionDelay: `${delays.value[reel.key]}ms`,
 })
@@ -127,21 +163,21 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
       <div class="slot-reel" :class="{ wide: reel.key === 'title' }">
         <span class="slot-eyebrow">{{ reel.eyebrow }}</span>
         <div class="slot-body">
-          <!-- Spinner column on the LEFT, under the label — always visible, disabled at the ends. -->
           <div class="slot-spinner">
             <button
-              type="button" class="slot-chev"
-              :disabled="reel.index <= 0 || spinning"
-              aria-label="Previous" @click="step(reel.key, -1)"
-            ><span class="i-lucide-chevron-up" aria-hidden="true" /></button>
+              type="button" class="slot-chev" :class="{ cross: crosses(reel.key, -1) }"
+              :disabled="!neighbor(reel.key, -1) || spinning"
+              :aria-label="crosses(reel.key, -1) ? 'Previous segment' : 'Previous'" @click="step(reel.key, -1)"
+            ><span :class="crosses(reel.key, -1) ? 'i-lucide-chevrons-up' : 'i-lucide-chevron-up'" aria-hidden="true" /></button>
             <button
-              type="button" class="slot-chev"
-              :disabled="reel.index >= reel.values.length - 1 || spinning"
-              aria-label="Next" @click="step(reel.key, 1)"
-            ><span class="i-lucide-chevron-down" aria-hidden="true" /></button>
+              type="button" class="slot-chev" :class="{ cross: crosses(reel.key, 1) }"
+              :disabled="!neighbor(reel.key, 1) || spinning"
+              :aria-label="crosses(reel.key, 1) ? 'Next segment' : 'Next'" @click="step(reel.key, 1)"
+            ><span :class="crosses(reel.key, 1) ? 'i-lucide-chevrons-down' : 'i-lucide-chevron-down'" aria-hidden="true" /></button>
           </div>
           <div class="slot-window">
-            <button type="button" class="slot-drum-hit" :aria-label="`Jump ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
+            <button type="button" class="slot-drum-hit" :aria-label="`Choose ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
+              <span class="slot-payline" aria-hidden="true" />
               <div class="slot-strip" :style="stripStyle(reel)">
                 <div
                   v-for="(v, vi) in reel.values" :key="v.id"
@@ -149,15 +185,13 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
                   :class="{ current: vi === reel.index, near: Math.abs(vi - reel.index) === 1 }"
                 >{{ v.name }}</div>
               </div>
-              <span class="slot-payline" aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        <!-- Jump menu (outside the masked window so it isn't clipped/faded) -->
         <ul v-if="menuFor === reel.key" class="slot-menu">
-          <li v-for="(v, vi) in reel.values" :key="v.id">
-            <button type="button" class="slot-menu-item" :class="{ on: vi === reel.index }" @click="turn(reel.key, vi)">{{ v.name }}</button>
+          <li v-for="v in reel.values" :key="v.id">
+            <button type="button" class="slot-menu-item" :class="{ on: v.id === reel.values[reel.index]?.id }" @click="jump(reel.key, v.id)">{{ v.name }}</button>
           </li>
         </ul>
       </div>
@@ -166,95 +200,74 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
 </template>
 
 <style scoped>
-/* A recessed machined face — the drums sit in it like a jukebox selection console. */
+/* Flat, accent-tinted, translucent — no skeuomorphic inset (theme-uniform; Speed reads as flat glass). */
 .slot-console {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: 12px;
+  display: flex; align-items: stretch; gap: 0;
+  padding: 0.5rem 0.75rem; border-radius: 14px;
   background:
-    linear-gradient(180deg, color-mix(in oklab, var(--nui-bg) 92%, black 8%), var(--nui-bg));
-  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--nui-fg) 8%, transparent),
-              inset 0 -1px 2px color-mix(in oklab, black 18%, transparent),
-              0 1px 0 color-mix(in oklab, var(--nui-fg) 6%, transparent);
-  border: 1px solid var(--nui-border);
-  /* no overflow:hidden — the jump menu must escape; the drum windows clip themselves. */
+    linear-gradient(135deg,
+      color-mix(in oklab, var(--nui-accent) 9%, var(--nui-bg)),
+      color-mix(in oklab, var(--nui-accent) 3%, var(--nui-bg)));
+  border: 1px solid color-mix(in oklab, var(--nui-accent) 22%, var(--nui-border));
 }
 .slot-sep {
-  width: 1px;
-  align-self: center;
-  height: 2.6rem;
-  margin: 0 0.6rem;
-  background: linear-gradient(180deg, transparent, var(--nui-border) 20%, var(--nui-border) 80%, transparent);
+  width: 1px; align-self: center; height: 2.4rem; margin: 0 0.6rem;
+  background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--nui-accent) 30%, var(--nui-border)) 50%, transparent);
 }
-.slot-reel { position: relative; display: flex; flex-direction: column; min-width: 6.5rem; flex: 1 1 0; }
-.slot-reel.wide { flex: 1.6 1 0; min-width: 9rem; }
+.slot-reel { position: relative; display: flex; flex-direction: column; min-width: 6rem; flex: 1 1 0; }
+.slot-reel.wide { flex: 1.7 1 0; min-width: 8rem; }
 .slot-eyebrow {
   font-family: 'Space Mono', ui-monospace, monospace;
-  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--nui-subtle); margin: 0 0 2px 2px;
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--nui-accent) 60%, var(--nui-muted)); margin: 0 0 3px 1px;
 }
 
-/* window + spinner column sit side by side so the arrows never overlap the drum text */
 .slot-body { display: flex; align-items: stretch; gap: 6px; }
 
-/* The drum window: 3 rows tall, the middle on the payline, edges fading like a spinning cylinder. */
 .slot-window {
-  position: relative; flex: 1 1 auto; min-width: 0;
-  height: 78px; /* 3 * 26 */
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 34%, #000 66%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 34%, #000 66%, transparent);
+  position: relative; flex: 1 1 auto; min-width: 0; height: 78px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 32%, #000 68%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 32%, #000 68%, transparent);
 }
 .slot-drum-hit {
   position: relative; display: block; width: 100%; height: 100%;
   overflow: hidden; cursor: pointer; background: none; border: 0; padding: 0; text-align: left;
 }
 .slot-strip {
-  position: absolute; top: 0; left: 0; right: 0; /* pin to the top so translateY is exact (no auto-centring of a short strip) */
-  will-change: transform;
-  /* the spring kickback — overshoots the lock then settles */
+  position: absolute; top: 0; left: 0; right: 0; will-change: transform;
   transition: transform 460ms cubic-bezier(0.2, 1.5, 0.35, 1);
 }
 .no-anim .slot-strip { transition: none; }
 .slot-cell {
-  height: 26px; line-height: 26px;
-  font-family: 'Saira', system-ui, sans-serif;
-  font-size: 15px; font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  color: var(--nui-subtle);
+  position: relative; z-index: 1; height: 26px; line-height: 26px;
+  font-family: 'Saira', system-ui, sans-serif; font-size: 15px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px;
+  color: var(--nui-subtle); opacity: 0.42;
   transform: scale(0.86); transform-origin: left center;
   transition: color 200ms, opacity 200ms, transform 200ms;
-  opacity: 0.4;
 }
-.slot-cell.near { opacity: 0.6; }
-.slot-cell.current {
-  color: var(--nui-fg); opacity: 1; transform: scale(1);
-  font-weight: 600;
-}
+.slot-cell.near { opacity: 0.62; }
+.slot-cell.current { color: var(--nui-fg); opacity: 1; transform: scale(1); font-weight: 600; }
 .slot-reel.wide .slot-cell.current { font-weight: 700; }
 
-/* the payline — two accent ticks bracketing the locked row */
+/* the payline — a flat translucent accent band behind the locked row (no bracket rules) */
 .slot-payline {
-  position: absolute; left: 0; right: 0; top: 26px; height: 26px; pointer-events: none;
-  border-top: 1px solid color-mix(in oklab, var(--nui-accent) 55%, transparent);
-  border-bottom: 1px solid color-mix(in oklab, var(--nui-accent) 55%, transparent);
+  position: absolute; z-index: 0; left: 0; right: 0; top: 26px; height: 26px; border-radius: 7px;
+  background: color-mix(in oklab, var(--nui-accent) 15%, transparent); pointer-events: none;
 }
 
-/* the spinner: a narrow column of ▲ / ▼ beside the drum, always visible */
-.slot-spinner {
-  flex: 0 0 22px; display: flex; flex-direction: column; justify-content: space-between;
-  padding: 1px 0;
-}
+.slot-spinner { flex: 0 0 22px; display: flex; flex-direction: column; justify-content: space-between; padding: 1px 0; }
 .slot-chev {
-  flex: 1 1 0; display: flex; align-items: center; justify-content: center;
-  width: 22px; min-height: 0;
+  flex: 1 1 0; display: flex; align-items: center; justify-content: center; width: 22px; min-height: 0;
   color: var(--nui-muted); background: none; border: 0; cursor: pointer; border-radius: 5px;
-  opacity: 0.6; transition: opacity 150ms, color 150ms, background 150ms;
+  opacity: 0.55; transition: opacity 150ms, color 150ms, background 150ms;
 }
-.slot-chev:hover:not(:disabled) { color: var(--nui-accent); opacity: 1; background: var(--nui-bg-accent); }
+.slot-chev:hover:not(:disabled) { color: var(--nui-accent); opacity: 1; background: color-mix(in oklab, var(--nui-accent) 12%, transparent); }
 .slot-chev:focus-visible { opacity: 1; outline: 2px solid var(--nui-accent); outline-offset: -1px; }
-.slot-chev:disabled { opacity: 0.18; cursor: default; }
+.slot-chev:disabled { opacity: 0.16; cursor: default; }
+/* a cross-segment step pulls other drums — mark it in the accent */
+.slot-chev.cross { color: var(--nui-accent); opacity: 0.9; }
+.slot-chev.cross:hover:not(:disabled) { opacity: 1; }
 .slot-chev [class^='i-lucide'] { width: 15px; height: 15px; }
 
 .slot-menu {
@@ -271,7 +284,5 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
 .slot-menu-item:hover { background: var(--nui-bg-accent); }
 .slot-menu-item.on { color: var(--nui-accent); font-weight: 600; }
 
-@media (prefers-reduced-motion: reduce) {
-  .slot-strip { transition-duration: 1ms; }
-}
+@media (prefers-reduced-motion: reduce) { .slot-strip { transition-duration: 1ms; } }
 </style>

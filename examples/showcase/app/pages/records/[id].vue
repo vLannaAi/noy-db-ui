@@ -80,6 +80,13 @@ const artistRows = await vault.value!.collection('artists').list({ locale: local
 const labelRows = await vault.value!.collection('labels').list({ locale: locale.value, fallback: 'any' }) as { id: string; name: string }[]
 // Every record (localized title + its label/artist) drives the slot-machine selector's three drums.
 const recordRows = await records.list({ locale: locale.value, fallback: 'any' }) as { id: string; title: string; labelId: string; artistId: string }[]
+// Drum captions in the active language.
+const slotCaptions = computed(() => ({
+  label: fieldLabel('records', 'labelId'),
+  artist: fieldLabel('records', 'artistId'),
+  title: fieldLabel('records', 'title'),
+}))
+
 const options = computed(() => ({
   artistId: artistRows.map((a) => ({ value: a.id, label: a.name })),
   labelId: labelRows.map((l) => ({ value: l.id, label: l.name })),
@@ -185,51 +192,58 @@ function toggleList(l: { id: string; patch: string[] }): void {
       @go="traverse.go" @go-to="traverse.goTo" @first="traverse.first" @last="traverse.last" @back="goBack"
     />
     <NuxtLink v-else to="/records" class="text-sm text-nui-accent hover:underline">← records</NuxtLink>
-    <SlotPath
-      :records="recordRows"
-      :labels="labelRows"
-      :artists="artistRows"
-      :current-id="id"
-      @navigate="(rid) => navigateTo(withQ(rid))"
-    />
-    <div :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
-      <!-- Lists (P-D): pin/unpin this record to a named list (the patch operation). -->
-      <div v-if="recordLists.length" class="relative flex justify-end mb-2">
-        <button
-          type="button"
-          class="nui-btn-ghost text-xs flex items-center gap-1 text-nui-muted hover:text-nui-fg"
-          :aria-expanded="listMenuOpen"
-          @click="listMenuOpen = !listMenuOpen"
-        >
-          <span class="i-lucide-list-plus size-3.5" aria-hidden="true" /> Lists
-        </button>
-        <div v-if="listMenuOpen" class="absolute right-0 top-full mt-1 z-50 nui-panel p-1.5 w-56 space-y-0.5 shadow-lg">
+    <div class="record-layout" :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
+      <!-- Cover rail (sticky on wide screens — stays with you as the details scroll). -->
+      <div class="record-rail">
+        <figure class="record-cover">
+          <CoverImage :key="coverVersion" :id="id" />
           <button
-            v-for="l in recordLists"
-            :key="l.id"
+            v-if="!item.editing.value"
             type="button"
-            class="w-full text-left text-sm px-2 py-1 rounded hover:bg-nui-bg-accent flex items-center gap-2"
-            @click="toggleList(l)"
+            class="record-cover-change"
+            @click="pickCover"
           >
-            <span class="size-4 shrink-0 flex items-center justify-center" :class="isPinned(l) ? 'text-nui-accent' : 'text-nui-subtle'">
-              <span :class="isPinned(l) ? 'i-lucide-check' : 'i-lucide-plus'" class="size-3.5" aria-hidden="true" />
-            </span>
-            <span class="truncate text-nui-fg">{{ l.name }}</span>
+            <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
           </button>
+          <input ref="coverFileEl" type="file" accept="image/*" class="hidden" @change="onCoverFile">
+        </figure>
+        <!-- Lists (P-D): pin/unpin this record to a named list (the patch operation). -->
+        <div v-if="recordLists.length" class="relative">
+          <button
+            type="button"
+            class="nui-btn-ghost text-xs w-full justify-center flex items-center gap-1 text-nui-muted hover:text-nui-fg border border-nui-border rounded py-1.5"
+            :aria-expanded="listMenuOpen"
+            @click="listMenuOpen = !listMenuOpen"
+          >
+            <span class="i-lucide-list-plus size-3.5" aria-hidden="true" /> Add to list
+          </button>
+          <div v-if="listMenuOpen" class="absolute left-0 right-0 top-full mt-1 z-50 nui-panel p-1.5 space-y-0.5 shadow-lg">
+            <button
+              v-for="l in recordLists"
+              :key="l.id"
+              type="button"
+              class="w-full text-left text-sm px-2 py-1 rounded hover:bg-nui-bg-accent flex items-center gap-2"
+              @click="toggleList(l)"
+            >
+              <span class="size-4 shrink-0 flex items-center justify-center" :class="isPinned(l) ? 'text-nui-accent' : 'text-nui-subtle'">
+                <span :class="isPinned(l) ? 'i-lucide-check' : 'i-lucide-plus'" class="size-3.5" aria-hidden="true" />
+              </span>
+              <span class="truncate text-nui-fg">{{ l.name }}</span>
+            </button>
+          </div>
         </div>
       </div>
-      <div class="relative inline-block">
-        <CoverImage :key="coverVersion" :id="id" />
-        <button
-          v-if="!item.editing.value"
-          type="button"
-          class="absolute bottom-2 right-2 nui-btn bg-nui-bg/85 text-nui-fg text-xs px-2 py-1 flex items-center gap-1 shadow"
-          @click="pickCover"
-        >
-          <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
-        </button>
-        <input ref="coverFileEl" type="file" accept="image/*" class="hidden" @change="onCoverFile">
-      </div>
+
+      <!-- Main column: the selector (identity + navigation), then the full record. -->
+      <div class="record-main">
+        <SlotPath
+          :records="recordRows"
+          :labels="labelRows"
+          :artists="artistRows"
+          :current-id="id"
+          :captions="slotCaptions"
+          @navigate="(rid) => navigateTo(withQ(rid))"
+        />
       <RecordDetail
         :record="item.record.value"
         :fields="fields"
@@ -260,6 +274,7 @@ function toggleList(l: { id: string; patch: string[] }): void {
         :loading="historyLoading"
         @expand="loadHistory"
       />
+      </div>
     </div>
   </article>
   <p v-else class="p-4">Not found.</p>
@@ -272,3 +287,32 @@ function toggleList(l: { id: string; patch: string[] }): void {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Magazine layout: a cover rail (sticky on wide screens) beside the flowing detail column. The
+   rail stays with you while the record scrolls; on narrow screens the rail unpins and stacks. */
+.record-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+.record-rail { display: flex; flex-direction: column; gap: 0.75rem; position: sticky; top: 1rem; }
+.record-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+@media (max-width: 720px) {
+  .record-layout { grid-template-columns: 1fr; gap: 1rem; }
+  .record-rail { position: static; }
+}
+.record-cover { position: relative; margin: 0; }
+.record-cover-change {
+  position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
+  display: flex; align-items: center; gap: 0.25rem;
+  font-size: 0.72rem; line-height: 1; padding: 0.3rem 0.55rem; border-radius: 7px;
+  background: color-mix(in oklab, var(--nui-bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  color: var(--nui-fg); border: 1px solid var(--nui-border); cursor: pointer;
+  opacity: 0; transition: opacity 150ms;
+}
+.record-cover:hover .record-cover-change,
+.record-cover-change:focus-visible { opacity: 1; }
+</style>
