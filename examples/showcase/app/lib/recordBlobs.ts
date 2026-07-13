@@ -53,7 +53,7 @@ export async function seedRecordBlobs(vault: Vault, recordId: string): Promise<v
     { name: 'sleeve-front.png', mime: 'image/png', bytes: await makeImage(1000, 667, 210, 'Sleeve — front') },
     { name: 'sleeve-back.png', mime: 'image/png', bytes: await makeImage(1000, 667, 28, 'Sleeve — back') },
     { name: 'label-detail.png', mime: 'image/png', bytes: await makeImage(760, 760, 140, 'Label detail') },
-    { name: 'live-set.webm', mime: 'video/webm', bytes: await fetchBytes('/media/live-set.webm') },
+    { name: 'live-set.mp4', mime: 'video/mp4', bytes: await fetchBytes('/media/live-set.mp4') },
   ]
   for (const m of media) await blob.put(attachmentSlot(`demo-${m.name}`), m.bytes, { filename: m.name, mimeType: m.mime })
 
