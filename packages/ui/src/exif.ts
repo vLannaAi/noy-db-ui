@@ -250,7 +250,7 @@ function extractFromTiff(b: Uint8Array, tiff: number): ExifData | null {
   const et = ratOf(exif, 0x829a); if (et !== undefined) out.exposure = et > 0 && et < 1 ? `1/${Math.round(1 / et)}s` : `${+et.toFixed(1)}s`
   const fn = ratOf(exif, 0x829d); if (fn !== undefined) out.fNumber = `f/${+fn.toFixed(1)}`
   const iso = shortOf(exif, 0x8827); if (iso) out.iso = iso
-  const fl = ratOf(exif, 0x920a); if (fl !== undefined) out.focalLength = `${Math.round(fl)}mm`
+  const fl = ratOf(exif, 0x920a); if (fl !== undefined) out.focalLength = `${fl < 10 ? +fl.toFixed(1) : Math.round(fl)}mm`
 
   const latRef = asciiOf(gps, 0x0001); const lat = ratsOf(gps, 0x0002)
   const lngRef = asciiOf(gps, 0x0003); const lng = ratsOf(gps, 0x0004)
