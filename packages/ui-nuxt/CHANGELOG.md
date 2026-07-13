@@ -12,6 +12,12 @@ traversal — a sticky stepper bar and a path-shaped detail title.
 - **`RecordHistory` shows the exact timestamp** — each row now renders the full `YYYY-MM-DD HH:MM`
   next to the relative time ("2 days ago · 2026-07-11 14:32") instead of hiding it in a tooltip; the
   author (`row.actor`) sits alongside.
+
+### Changed
+- **`RecordDetail` cards scale to the container width** — the card grid now grows to 3 and then 4
+  columns on wider surfaces (≥1160 / ≥1700px) instead of capping at 2, so a wide detail view fills
+  the width with more cards per row rather than stretching each one; each card's inner field grid
+  drops to one column when the card itself gets narrow.
 - **`RecordDetail` gains a `controls` prop** (default `true`) — set `false` to suppress the built-in
   edit/save/cancel action row so the host can own those controls (e.g. an edit icon in a masthead plus
   a sticky save/cancel bar). The cells still morph into inputs on `editing`; only the action row is

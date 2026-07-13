@@ -52,6 +52,15 @@ const emit = defineEmits<{ edit: []; save: []; cancel: []; navigate: [{ collecti
 const host = ref<HTMLElement | null>(null)
 const { width, size } = useContainerSize(host)
 
+// Card columns scale with the container: a wider surface fits MORE cards per row rather than
+// stretching each one into a sparse, over-long block.
+const cols = computed(() =>
+  width.value >= 1700 ? 4
+    : width.value >= 1160 ? 3
+      : width.value >= 900 ? 2
+        : 1,
+)
+
 const shown = computed(() => detailFields(props.fields))
 const byKey = computed(() => new Map(shown.value.map((f) => [f.key, f])))
 
@@ -97,11 +106,11 @@ function onLink(c: DetailCell, e: MouseEvent): void {
     </div>
     <p v-if="editing && errorBanner" class="text-[11px] text-nui-danger">{{ errorBanner }}</p>
 
-    <div class="grid gap-4" :class="width >= 992 ? 'grid-cols-2' : 'grid-cols-1'">
+    <div class="grid gap-4" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
       <section v-for="card in cards" :key="card.title" class="nui-panel nui-card">
         <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">{{ card.title }}</h3>
-        <dl class="grid gap-x-6 gap-y-3" :class="width < 448 ? 'grid-cols-1' : 'grid-cols-2'">
-          <div v-for="c in card.cells" :key="c.cell.key" class="min-w-0" :class="editing && c.input.kind === 'textarea' && width >= 448 ? 'col-span-2' : ''">
+        <dl class="grid gap-x-6 gap-y-3" :class="width / cols < 420 ? 'grid-cols-1' : 'grid-cols-2'">
+          <div v-for="c in card.cells" :key="c.cell.key" class="min-w-0" :class="editing && c.input.kind === 'textarea' && width / cols >= 420 ? 'col-span-2' : ''">
             <dt class="text-xs text-nui-muted flex items-center gap-1">
               {{ c.cell.label }}
               <span v-if="editing && c.hint.required && c.canEdit" class="text-nui-danger" aria-hidden="true">*</span>

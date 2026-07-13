@@ -279,7 +279,6 @@ function toggleList(l: { id: string; patch: string[] }): void {
         </header>
 
         <RecordDetail
-          class="mt-5"
           :record="item.record.value"
           :fields="fields"
           :controls="false"
@@ -321,13 +320,14 @@ function toggleList(l: { id: string; patch: string[] }): void {
 </template>
 
 <style scoped>
-/* Keep the reading measure sane — on ultra-wide the cards would otherwise stretch into sparse,
-   over-long rows. Everything (masthead + cards) lives inside this centered column. */
-.record-wrap { max-width: 1180px; margin-inline: auto; }
+/* Use the full content width on large screens — the cards add columns rather than stretching (see
+   RecordDetail's responsive grid), so wide screens fit more cards per row. A generous cap keeps
+   ultra-wide (4K) from over-spreading. */
+.record-wrap { max-width: 2200px; margin-inline: auto; }
 
 /* The masthead: a record "plate" — cover art on the left, the identity navigator (Title headline
    with an Artist · Label byline) filling the middle, the action icons top-right. */
-.masthead { display: flex; align-items: flex-start; gap: 1.25rem; position: relative; }
+.masthead { display: flex; align-items: flex-start; gap: 1.25rem; position: relative; margin-bottom: 2rem; }
 .record-cover { position: relative; flex: 0 0 auto; width: 176px; margin: 0; }
 .masthead-nav { flex: 1 1 auto; min-width: 0; }
 .masthead-actions { flex: 0 0 auto; display: flex; gap: 0.5rem; }
