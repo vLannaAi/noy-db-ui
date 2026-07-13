@@ -78,6 +78,7 @@ export {
   attachmentList, humanSize, attachmentSlot, ATTACHMENT_PREFIX, fileCategory,
   type AttachmentItem, type BlobSlotInfo, type FileCategory,
 } from './attachments'
+export { parseExif, type ExifData } from './exif'
 export {
   relatedColumns, summaryCards,
   type SummaryFieldSpec, type SummaryCard,

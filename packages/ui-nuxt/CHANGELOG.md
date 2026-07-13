@@ -21,6 +21,9 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   images show a thumbnail and their pixel dimensions (read client-side off the decoded image, since the
   blob metadata doesn't carry them); the upload time comes from the blob's `uploadedAt`. A just-added
   row briefly flashes to confirm the upload landed (attachments save immediately, no separate Save).
+  Each row expands to a metadata detail (type · exact size · dimensions · uploaded-when/by), and for
+  photos a full **EXIF** block via `parseExif` (@noy-db/ui) — camera, lens, capture time, exposure /
+  f-number / ISO / focal length, orientation, and GPS with an OpenStreetMap link.
   The whole panel accepts dragged files (drop overlay); a slim dashed "Add files" bar sits below the
   list, and the empty state is a "drop files here, or click to browse" target. The file input is now
   visually-hidden rather than `display:none` (a `display:none` input's programmatic `.click()` is

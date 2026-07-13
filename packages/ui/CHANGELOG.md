@@ -10,6 +10,11 @@ traversal — frozen query-derivable snapshots, path-shaped titles, and the skim
 And: the hub's native via-lookup surface (≥0.3.0-pre.9) flows into the schema and read paths.
 
 ### Added
+- **`parseExif(bytes)`** (`exif.ts`) — a dependency-free EXIF reader for JPEG attachments: pulls
+  orientation, camera make/model, lens, capture time, exposure / f-number / ISO / focal length, and
+  GPS (as signed decimal degrees) straight from the file's APP1/TIFF block. Offline by design — the
+  metadata lives inside the decrypted bytes (a zero-knowledge vault has no server-side metadata bag),
+  and any malformed read yields `null` rather than throwing.
 - **`fileCategory(mime, filename)`** (`attachments.ts`) — classify an attachment by MIME (preferred)
   then extension into a display `{ category, label, icon }` (image / pdf / spreadsheet / document /
   presentation / archive / audio / video / text / file), so a non-image reads as what it is (a PDF, a

@@ -15,6 +15,7 @@ export interface BlobSlotInfo {
   readonly size?: number
   readonly mimeType?: string
   readonly uploadedAt?: string
+  readonly uploadedBy?: string
 }
 
 export interface AttachmentItem {
@@ -27,6 +28,7 @@ export interface AttachmentItem {
   readonly humanSize: string
   readonly kind: 'image' | 'file'
   readonly uploadedAt?: string
+  readonly uploadedBy?: string
 }
 
 /** `1234` → `1.2 KB`. Binary units, one decimal above KB. */
@@ -96,6 +98,7 @@ export function attachmentList(slots: readonly BlobSlotInfo[]): AttachmentItem[]
         humanSize: humanSize(size),
         kind: mime.startsWith('image/') ? 'image' : 'file',
         ...(s.uploadedAt !== undefined ? { uploadedAt: s.uploadedAt } : {}),
+        ...(s.uploadedBy !== undefined ? { uploadedBy: s.uploadedBy } : {}),
       } satisfies AttachmentItem
     })
     .sort((a, b) => (a.uploadedAt ?? '').localeCompare(b.uploadedAt ?? ''))

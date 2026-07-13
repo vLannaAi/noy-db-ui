@@ -6,7 +6,7 @@
 // (revoked on unmount and when an item disappears). Vault I/O stays with the host via `upload`/
 // `remove` (one `upload` per file, so a multi-file pick/drop emits several).
 import { ref, computed, watch, onUnmounted } from 'vue'
-import { fileCategory, type AttachmentItem } from '@noy-db/ui'
+import { fileCategory, parseExif, type AttachmentItem, type ExifData } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
 
 const { t } = useNuiI18n()
@@ -23,7 +23,9 @@ const emit = defineEmits<{ upload: [File]; remove: [slot: string] }>()
 
 const urls = ref<Record<string, string>>({})
 const dims = ref<Record<string, string>>({}) // slot → "W×H" for images (computed client-side)
+const exif = ref<Record<string, ExifData>>({}) // slot → parsed EXIF (from the decrypted bytes)
 const confirming = ref<string | null>(null)
+const expanded = ref<string | null>(null)      // slot whose metadata detail is open
 const fileEl = ref<HTMLInputElement | null>(null)
 // Slots with a loadBytes in flight — the watch can re-fire mid-load, so this guards against a
 // second syncThumbs re-issuing the load and double-creating (then leaking) the objectURL.
@@ -37,6 +39,7 @@ async function syncThumbs(): Promise<void> {
       URL.revokeObjectURL(urls.value[slot]!)
       const next = { ...urls.value }; delete next[slot]; urls.value = next
       if (dims.value[slot]) { const d = { ...dims.value }; delete d[slot]; dims.value = d }
+      if (exif.value[slot]) { const x = { ...exif.value }; delete x[slot]; exif.value = x }
     }
   }
   for (const item of props.items) {
@@ -56,6 +59,9 @@ async function syncThumbs(): Promise<void> {
     const probe = new Image()
     probe.onload = () => { dims.value = { ...dims.value, [item.slot]: `${probe.naturalWidth}×${probe.naturalHeight}` } }
     probe.src = url
+    // EXIF lives inside the (decrypted) bytes — parse it here rather than expecting a server bag.
+    const x = parseExif(bytes)
+    if (x) exif.value = { ...exif.value, [item.slot]: x }
   }
 }
 watch(() => props.items.map((i) => i.slot).join('|'), syncThumbs, { immediate: true })
@@ -127,15 +133,28 @@ function fullStamp(iso?: string): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
+function toggle(slot: string): void { expanded.value = expanded.value === slot ? null : slot }
+
+// A camera-settings one-liner (exposure · f/N · ISO · focal), any part optional.
+function settingsLine(x: ExifData): string {
+  return [x.exposure, x.fNumber, x.iso ? `ISO ${x.iso}` : '', x.focalLength].filter(Boolean).join(' · ')
+}
+// An OpenStreetMap link for a GPS fix (user-clicked; nothing is fetched automatically).
+function mapUrl(g: { lat: number; lng: number }): string {
+  return `https://www.openstreetmap.org/?mlat=${g.lat}&mlon=${g.lng}#map=14/${g.lat}/${g.lng}`
+}
+
 // Enriched view rows: category (icon + friendly label), a "TYPE · dims · size" subline (dims for
-// images only), the upload time, and the just-added flash flag.
+// images only), the upload time, the just-added flash flag, and the expandable metadata detail.
 const rows = computed(() => props.items.map((item) => {
   const cat = fileCategory(item.mime, item.filename)
   const isImage = cat.category === 'image'
+  const px = dims.value[item.slot]
+  const x = exif.value[item.slot]
   const parts: string[] = []
   if (isImage) {
     const e = ext(item.filename); if (e) parts.push(e)
-    if (dims.value[item.slot]) parts.push(dims.value[item.slot]!)
+    if (px) parts.push(px)
   } else {
     parts.push(cat.label)
   }
@@ -146,6 +165,18 @@ const rows = computed(() => props.items.map((item) => {
     rel: relTime(item.uploadedAt),
     full: fullStamp(item.uploadedAt),
     added: justAdded.value.has(item.slot),
+    open: expanded.value === item.slot,
+    detail: {
+      typeLabel: `${cat.label}${item.mime ? ` · ${item.mime}` : ''}`,
+      bytes: `${item.size.toLocaleString('en-US')} bytes`,
+      dims: px ? `${px} px` : '',
+      by: item.uploadedBy ?? '',
+      exif: x,
+      settings: x ? settingsLine(x) : '',
+      camera: x ? [x.make, x.model].filter(Boolean).join(' ') : '',
+      map: x?.gps ? mapUrl(x.gps) : '',
+      coords: x?.gps ? `${x.gps.lat.toFixed(5)}, ${x.gps.lng.toFixed(5)}` : '',
+    },
   }
 }))
 </script>
@@ -165,32 +196,56 @@ const rows = computed(() => props.items.map((item) => {
       <span v-if="items.length" class="text-[10px] text-nui-subtle tabular-nums">{{ items.length }}</span>
     </div>
 
-    <!-- A tidy row per file: thumbnail/type icon, name + type·dimensions·size, upload time, delete. -->
+    <!-- A tidy row per file: thumbnail/type icon, name + type·dimensions·size, upload time, delete.
+         The name area toggles an expandable detail (full metadata + EXIF for photos). -->
     <ul v-if="rows.length" class="att-list">
-      <li v-for="row in rows" :key="row.item.slot" class="att-row" :class="{ 'att-added': row.added }">
-        <span class="att-thumb">
-          <img v-if="row.isImage && urls[row.item.slot]" :src="urls[row.item.slot]" :alt="row.item.filename" >
-          <span v-else-if="row.isImage" class="i-lucide-image size-4 animate-pulse" aria-hidden="true" />
-          <span v-else :class="row.icon" class="size-4" aria-hidden="true" />
-        </span>
-        <span class="att-meta">
-          <span class="att-name" :title="row.item.filename">{{ row.item.filename }}</span>
-          <span class="att-sub">{{ row.sub }}</span>
-        </span>
-
-        <span v-if="confirming === row.item.slot" class="att-confirm">
-          <button type="button" class="del" @click="confirming = null; emit('remove', row.item.slot)">{{ t('nui.delete', 'Delete') }}</button>
-          <button type="button" class="cancel" @click="confirming = null">{{ t('nui.cancel', 'Cancel') }}</button>
-        </span>
-        <template v-else>
-          <time v-if="row.rel" class="att-time" :datetime="row.item.uploadedAt" :title="row.full">{{ row.rel }}</time>
-          <button
-            type="button" class="att-del"
-            :aria-label="t('nui.delete', 'Delete')" @click="confirming = row.item.slot"
-          >
-            <span class="i-lucide-trash-2 size-3.5" aria-hidden="true" />
+      <li v-for="row in rows" :key="row.item.slot" class="att-item">
+        <div class="att-row" :class="{ 'att-added': row.added }">
+          <button type="button" class="att-open" :aria-expanded="row.open" @click="toggle(row.item.slot)">
+            <span class="att-thumb">
+              <img v-if="row.isImage && urls[row.item.slot]" :src="urls[row.item.slot]" :alt="row.item.filename" >
+              <span v-else-if="row.isImage" class="i-lucide-image size-4 animate-pulse" aria-hidden="true" />
+              <span v-else :class="row.icon" class="size-4" aria-hidden="true" />
+            </span>
+            <span class="att-meta">
+              <span class="att-name" :title="row.item.filename">{{ row.item.filename }}</span>
+              <span class="att-sub">{{ row.sub }}</span>
+            </span>
+            <span class="i-lucide-chevron-down att-chev size-3.5" :class="{ open: row.open }" aria-hidden="true" />
           </button>
-        </template>
+
+          <span v-if="confirming === row.item.slot" class="att-confirm">
+            <button type="button" class="del" @click="confirming = null; emit('remove', row.item.slot)">{{ t('nui.delete', 'Delete') }}</button>
+            <button type="button" class="cancel" @click="confirming = null">{{ t('nui.cancel', 'Cancel') }}</button>
+          </span>
+          <template v-else>
+            <time v-if="row.rel" class="att-time" :datetime="row.item.uploadedAt" :title="row.full">{{ row.rel }}</time>
+            <button
+              type="button" class="att-del"
+              :aria-label="t('nui.delete', 'Delete')" @click="confirming = row.item.slot"
+            >
+              <span class="i-lucide-trash-2 size-3.5" aria-hidden="true" />
+            </button>
+          </template>
+        </div>
+
+        <dl v-if="row.open" class="att-detail">
+          <div><dt>{{ t('nui.attachments.meta.type', 'Type') }}</dt><dd>{{ row.detail.typeLabel }}</dd></div>
+          <div><dt>{{ t('nui.attachments.meta.size', 'Size') }}</dt><dd>{{ row.detail.bytes }}</dd></div>
+          <div v-if="row.detail.dims"><dt>{{ t('nui.attachments.meta.dimensions', 'Dimensions') }}</dt><dd>{{ row.detail.dims }}</dd></div>
+          <div v-if="row.full"><dt>{{ t('nui.attachments.meta.uploaded', 'Uploaded') }}</dt><dd>{{ row.full }}<template v-if="row.detail.by"> · {{ row.detail.by }}</template></dd></div>
+          <template v-if="row.detail.exif">
+            <div v-if="row.detail.camera"><dt>{{ t('nui.attachments.meta.camera', 'Camera') }}</dt><dd>{{ row.detail.camera }}</dd></div>
+            <div v-if="row.detail.exif.lens"><dt>{{ t('nui.attachments.meta.lens', 'Lens') }}</dt><dd>{{ row.detail.exif.lens }}</dd></div>
+            <div v-if="row.detail.exif.takenAt"><dt>{{ t('nui.attachments.meta.taken', 'Taken') }}</dt><dd>{{ row.detail.exif.takenAt }}</dd></div>
+            <div v-if="row.detail.settings"><dt>{{ t('nui.attachments.meta.settings', 'Settings') }}</dt><dd>{{ row.detail.settings }}</dd></div>
+            <div v-if="row.detail.exif.orientation"><dt>{{ t('nui.attachments.meta.orientation', 'Orientation') }}</dt><dd>{{ row.detail.exif.orientation }}</dd></div>
+            <div v-if="row.detail.map" class="att-detail-wide">
+              <dt>{{ t('nui.attachments.meta.location', 'Location') }}</dt>
+              <dd>{{ row.detail.coords }} · <a :href="row.detail.map" target="_blank" rel="noopener noreferrer" class="att-map">{{ t('nui.attachments.meta.map', 'Map') }}</a></dd>
+            </div>
+          </template>
+        </dl>
       </li>
     </ul>
 
@@ -225,8 +280,13 @@ const rows = computed(() => props.items.map((item) => {
 
 /* One clean row per attachment — hairline dividers, no nested card/shadow. */
 .att-list { list-style: none; margin: 0.6rem 0 0; padding: 0; }
-.att-list > li + li { border-top: 1px solid var(--nui-border); }
-.att-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.5rem 0; }
+.att-list > .att-item + .att-item { border-top: 1px solid var(--nui-border); }
+.att-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0; }
+/* The thumbnail + name area is the click target that toggles the metadata detail. */
+.att-open {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 0.7rem;
+  background: none; border: 0; padding: 0; cursor: pointer; text-align: left;
+}
 .att-thumb {
   flex: 0 0 auto; width: 38px; height: 38px; border-radius: var(--radius-control, 6px);
   overflow: hidden; background: var(--nui-bg-accent); color: var(--nui-subtle);
@@ -236,6 +296,22 @@ const rows = computed(() => props.items.map((item) => {
 .att-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .att-name { font-size: 0.82rem; color: var(--nui-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .att-sub { font-size: 0.7rem; color: var(--nui-subtle); font-variant-numeric: tabular-nums; margin-top: 1px; }
+.att-chev { flex: 0 0 auto; color: var(--nui-subtle); transition: transform 160ms; }
+.att-chev.open { transform: rotate(180deg); }
+.att-open:hover .att-name { color: var(--nui-accent); }
+.att-open:hover .att-chev { color: var(--nui-accent); }
+
+/* Expandable metadata detail — a compact two-column definition list under the row. */
+.att-detail {
+  display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.75rem;
+  margin: 0.1rem 0 0.6rem 47px; padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-control, 6px); background: var(--nui-bg-accent);
+}
+.att-detail > div { display: contents; }
+.att-detail dt { font-size: 0.68rem; color: var(--nui-subtle); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.att-detail dd { font-size: 0.75rem; color: var(--nui-fg); margin: 0; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.att-map { color: var(--nui-accent); }
+.att-map:hover { text-decoration: underline; }
 
 .att-del {
   flex: 0 0 auto; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
