@@ -126,29 +126,32 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
       <span v-if="ri > 0" class="slot-sep" aria-hidden="true" />
       <div class="slot-reel" :class="{ wide: reel.key === 'title' }">
         <span class="slot-eyebrow">{{ reel.eyebrow }}</span>
-        <div class="slot-window">
-          <button
-            type="button" class="slot-chev slot-chev-up"
-            :disabled="reel.index <= 0 || spinning"
-            aria-label="Previous" @click="step(reel.key, -1)"
-          ><span class="i-lucide-chevron-up" aria-hidden="true" /></button>
-
-          <button type="button" class="slot-drum-hit" :aria-label="`Jump ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
-            <div class="slot-strip" :style="stripStyle(reel)">
-              <div
-                v-for="(v, vi) in reel.values" :key="v.id"
-                class="slot-cell"
-                :class="{ current: vi === reel.index, near: Math.abs(vi - reel.index) === 1 }"
-              >{{ v.name }}</div>
-            </div>
-            <span class="slot-payline" aria-hidden="true" />
-          </button>
-
-          <button
-            type="button" class="slot-chev slot-chev-down"
-            :disabled="reel.index >= reel.values.length - 1 || spinning"
-            aria-label="Next" @click="step(reel.key, 1)"
-          ><span class="i-lucide-chevron-down" aria-hidden="true" /></button>
+        <div class="slot-body">
+          <div class="slot-window">
+            <button type="button" class="slot-drum-hit" :aria-label="`Jump ${reel.eyebrow}`" @click="toggleMenu(reel.key)">
+              <div class="slot-strip" :style="stripStyle(reel)">
+                <div
+                  v-for="(v, vi) in reel.values" :key="v.id"
+                  class="slot-cell"
+                  :class="{ current: vi === reel.index, near: Math.abs(vi - reel.index) === 1 }"
+                >{{ v.name }}</div>
+              </div>
+              <span class="slot-payline" aria-hidden="true" />
+            </button>
+          </div>
+          <!-- Spinner column — always visible, disabled at the ends (no overlap with the drum text). -->
+          <div class="slot-spinner">
+            <button
+              type="button" class="slot-chev"
+              :disabled="reel.index <= 0 || spinning"
+              aria-label="Previous" @click="step(reel.key, -1)"
+            ><span class="i-lucide-chevron-up" aria-hidden="true" /></button>
+            <button
+              type="button" class="slot-chev"
+              :disabled="reel.index >= reel.values.length - 1 || spinning"
+              aria-label="Next" @click="step(reel.key, 1)"
+            ><span class="i-lucide-chevron-down" aria-hidden="true" /></button>
+          </div>
         </div>
 
         <!-- Jump menu (outside the masked window so it isn't clipped/faded) -->
@@ -193,9 +196,12 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
   color: var(--nui-subtle); margin: 0 0 2px 2px;
 }
 
-/* The drum window: 5 rows tall, the middle on the payline, edges fading like a spinning cylinder. */
+/* window + spinner column sit side by side so the arrows never overlap the drum text */
+.slot-body { display: flex; align-items: stretch; gap: 6px; }
+
+/* The drum window: 3 rows tall, the middle on the payline, edges fading like a spinning cylinder. */
 .slot-window {
-  position: relative;
+  position: relative; flex: 1 1 auto; min-width: 0;
   height: 78px; /* 3 * 26 */
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 34%, #000 66%, transparent);
   mask-image: linear-gradient(180deg, transparent, #000 34%, #000 66%, transparent);
@@ -235,18 +241,20 @@ const stripStyle = (reel: { key: ReelKey; index: number }) => ({
   border-bottom: 1px solid color-mix(in oklab, var(--nui-accent) 55%, transparent);
 }
 
-.slot-chev {
-  position: absolute; left: 50%; transform: translateX(-50%); z-index: 3;
-  width: 26px; height: 18px; display: flex; align-items: center; justify-content: center;
-  color: var(--nui-muted); background: none; border: 0; cursor: pointer;
-  opacity: 0.28; transition: opacity 150ms, color 150ms; /* faintly present so the drum reads as dial-able */
+/* the spinner: a narrow column of ▲ / ▼ beside the drum, always visible */
+.slot-spinner {
+  flex: 0 0 22px; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 1px 0;
 }
-.slot-chev-up { top: -2px; }
-.slot-chev-down { bottom: -2px; }
-.slot-window:hover .slot-chev,
-.slot-chev:focus-visible { opacity: 1; }
-.slot-chev:hover { color: var(--nui-accent); }
-.slot-chev:disabled { opacity: 0 !important; cursor: default; }
+.slot-chev {
+  flex: 1 1 0; display: flex; align-items: center; justify-content: center;
+  width: 22px; min-height: 0;
+  color: var(--nui-muted); background: none; border: 0; cursor: pointer; border-radius: 5px;
+  opacity: 0.6; transition: opacity 150ms, color 150ms, background 150ms;
+}
+.slot-chev:hover:not(:disabled) { color: var(--nui-accent); opacity: 1; background: var(--nui-bg-accent); }
+.slot-chev:focus-visible { opacity: 1; outline: 2px solid var(--nui-accent); outline-offset: -1px; }
+.slot-chev:disabled { opacity: 0.18; cursor: default; }
 .slot-chev [class^='i-lucide'] { width: 15px; height: 15px; }
 
 .slot-menu {
