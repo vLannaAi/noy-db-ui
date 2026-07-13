@@ -314,10 +314,10 @@ function toggleList(l: { id: string; patch: string[] }): void {
   <p v-else class="p-4">Not found.</p>
 
   <!-- Cover crop/resize modal -->
-  <div v-if="cropSrc" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" @click.self="closeCrop">
-    <div class="nui-panel p-4 w-full max-w-sm">
+  <div v-if="cropSrc" class="crop-overlay" @click.self="closeCrop">
+    <div class="crop-dialog nui-panel p-4">
       <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted mb-3">Change cover</h3>
-      <ImageCropper :src="cropSrc" @confirm="onCropConfirm" @cancel="closeCrop" />
+      <ImageCropper :src="cropSrc" confirm-label="Save cover" @confirm="onCropConfirm" @cancel="closeCrop" />
     </div>
   </div>
 </template>
@@ -365,6 +365,10 @@ function toggleList(l: { id: string; patch: string[] }): void {
 }
 .record-cover:hover .record-cover-change,
 .record-cover-change:focus-visible { opacity: 1; }
+
+/* Modal overlay — `inset-0` / `bg-black/50` aren't in ui-nuxt's pre-compiled CSS, so style it here. */
+.crop-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.crop-dialog { width: 100%; max-width: 24rem; }
 
 /* Icon action button — filled accent by default; the Speed theme restyles it flat (see below), so
    the same control reads differently per palette. */

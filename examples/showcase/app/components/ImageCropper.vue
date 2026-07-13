@@ -12,7 +12,11 @@ const props = withDefaults(defineProps<{
   frame?: number
   /** Output square size (px). */
   output?: number
-}>(), { frame: 288, output: 512 })
+  /** Crop shape — `circle` outputs a round PNG with transparent corners (a profile photo). */
+  shape?: 'square' | 'circle'
+  /** Confirm-button label. */
+  confirmLabel?: string
+}>(), { frame: 288, output: 512, shape: 'square', confirmLabel: 'Save' })
 
 const emit = defineEmits<{ confirm: [bytes: Uint8Array]; cancel: [] }>()
 
@@ -69,6 +73,13 @@ async function confirm(): Promise<void> {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.drawImage(el, sx, sy, sw, sh, 0, 0, props.output, props.output)
+    if (props.shape === 'circle') {
+      // Keep only the inscribed circle — transparent corners, a round profile photo.
+      ctx.globalCompositeOperation = 'destination-in'
+      ctx.beginPath()
+      ctx.arc(props.output / 2, props.output / 2, props.output / 2, 0, Math.PI * 2)
+      ctx.fill()
+    }
     const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'))
     if (blob) emit('confirm', new Uint8Array(await blob.arrayBuffer()))
   } finally {
@@ -95,7 +106,12 @@ async function confirm(): Promise<void> {
         @load="onLoad"
         :style="{ position: 'absolute', left: `${offsetX}px`, top: `${offsetY}px`, width: `${disp.w}px`, height: `${disp.h}px`, maxWidth: 'none' }"
       >
-      <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 0 1px var(--nui-border)" />
+      <div
+        class="absolute pointer-events-none"
+        :style="`inset:0; ${shape === 'circle'
+          ? 'border-radius:50%; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.55)'
+          : 'box-shadow: inset 0 0 0 1px var(--nui-border)'}`"
+      />
     </div>
 
     <div class="flex items-center gap-2">
@@ -107,7 +123,7 @@ async function confirm(): Promise<void> {
     <div class="flex justify-end gap-2">
       <button type="button" class="nui-btn-ghost px-3 py-1.5" @click="emit('cancel')">Cancel</button>
       <button type="button" class="nui-btn bg-nui-accent text-nui-accent-fg px-3 py-1.5" :disabled="!ready || busy" @click="confirm">
-        {{ busy ? '…' : 'Save cover' }}
+        {{ busy ? '…' : confirmLabel }}
       </button>
     </div>
   </div>
