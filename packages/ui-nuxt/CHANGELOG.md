@@ -23,7 +23,8 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   row briefly flashes to confirm the upload landed (attachments save immediately, no separate Save).
   Each row expands to a metadata detail (type · exact size · dimensions · uploaded-when/by), and for
   photos a full **EXIF** block via `parseExif` (@noy-db/ui) — camera, lens, capture time, exposure /
-  f-number / ISO / focal length, orientation, and GPS with an OpenStreetMap link.
+  f-number / ISO / focal length, orientation, and GPS with an OpenStreetMap link — for JPEG, PNG, and
+  HEIC. A thumbnail the browser can't decode (e.g. HEIC in Chrome) falls back to the type icon.
   The whole panel accepts dragged files (drop overlay); a slim dashed "Add files" bar sits below the
   list, and the empty state is a "drop files here, or click to browse" target. The file input is now
   visually-hidden rather than `display:none` (a `display:none` input's programmatic `.click()` is

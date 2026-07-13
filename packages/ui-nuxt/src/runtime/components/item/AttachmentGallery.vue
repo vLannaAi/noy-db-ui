@@ -24,6 +24,8 @@ const emit = defineEmits<{ upload: [File]; remove: [slot: string] }>()
 const urls = ref<Record<string, string>>({})
 const dims = ref<Record<string, string>>({}) // slot → "W×H" for images (computed client-side)
 const exif = ref<Record<string, ExifData>>({}) // slot → parsed EXIF (from the decrypted bytes)
+const failed = ref<Set<string>>(new Set())     // slots whose thumbnail couldn't decode (e.g. HEIC in Chrome)
+function onImgError(slot: string): void { if (!failed.value.has(slot)) failed.value = new Set(failed.value).add(slot) }
 const confirming = ref<string | null>(null)
 const expanded = ref<string | null>(null)      // slot whose metadata detail is open
 const fileEl = ref<HTMLInputElement | null>(null)
@@ -40,6 +42,7 @@ async function syncThumbs(): Promise<void> {
       const next = { ...urls.value }; delete next[slot]; urls.value = next
       if (dims.value[slot]) { const d = { ...dims.value }; delete d[slot]; dims.value = d }
       if (exif.value[slot]) { const x = { ...exif.value }; delete x[slot]; exif.value = x }
+      if (failed.value.has(slot)) { const f = new Set(failed.value); f.delete(slot); failed.value = f }
     }
   }
   for (const item of props.items) {
@@ -203,8 +206,11 @@ const rows = computed(() => props.items.map((item) => {
         <div class="att-row" :class="{ 'att-added': row.added }">
           <button type="button" class="att-open" :aria-expanded="row.open" @click="toggle(row.item.slot)">
             <span class="att-thumb">
-              <img v-if="row.isImage && urls[row.item.slot]" :src="urls[row.item.slot]" :alt="row.item.filename" >
-              <span v-else-if="row.isImage" class="i-lucide-image size-4 animate-pulse" aria-hidden="true" />
+              <img
+                v-if="row.isImage && urls[row.item.slot] && !failed.has(row.item.slot)"
+                :src="urls[row.item.slot]" :alt="row.item.filename" @error="onImgError(row.item.slot)"
+              >
+              <span v-else-if="row.isImage && !failed.has(row.item.slot)" class="i-lucide-image size-4 animate-pulse" aria-hidden="true" />
               <span v-else :class="row.icon" class="size-4" aria-hidden="true" />
             </span>
             <span class="att-meta">
