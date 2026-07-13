@@ -21,6 +21,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "1.2.114",
     "@unocss/vite": "66.7.3",
     "tsx": "^4.19.0",
     "typescript": "^5.9.0",
