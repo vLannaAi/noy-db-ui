@@ -11,6 +11,8 @@ export const LANGS = ['en', 'th'] as const
 /** Blob field declared on the `records` collection, and the slot under it that holds the cover PNG. */
 export const COVER_FIELD = 'cover'
 export const COVER_SLOT = 'art'
+/** The session userId — the author stamped on writes (and shown in the change history). */
+export const VAULT_USER = 'viewer'
 
 /**
  * Create a fresh in-memory, encrypted vault with blobs + i18n enabled.
@@ -21,7 +23,7 @@ export const COVER_SLOT = 'art'
 export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Vault }> {
   const db = await createNoydb({
     store: memory(),
-    user: 'viewer',
+    user: VAULT_USER,
     secret,
     blobStrategy: withBlobs(),
     historyStrategy: withHistory(),
@@ -47,7 +49,7 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
 export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Promise<Vault> {
   const db = await createNoydb({
     store: memory(),
-    user: 'viewer',
+    user: VAULT_USER,
     secret,
     blobStrategy: withBlobs(),
     historyStrategy: withHistory(),

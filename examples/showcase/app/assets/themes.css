@@ -310,6 +310,11 @@
   --nui-badge-info-fg: #38bdf8;
 }
 
+/* ─── SPEED — component tweaks ─────────────────────────────────────────────── */
+/* Flat detail cards: on Speed the surface is clean, so the panel shadow comes off (the hairline
+   border alone separates them). */
+:root[data-palette="speed"] .nui-card { box-shadow: none; }
+
 /* ─── GLOBAL SHELL STYLES ─────────────────────────────────────────────────── */
 /* All values come from CSS variables — no hardcoded colors/fonts/radius.      */
 

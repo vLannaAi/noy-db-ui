@@ -6,6 +6,7 @@ import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useLists } from '../../composables/useLists'
 import { buildRecordsView } from '../../lib/collectionView'
 import { saveCoverBytes } from '../../lib/cover'
+import { VAULT_USER } from '../../../src/data/vault'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
 interface RawHistoryEntry { version: number; timestamp: string; userId: string; record: Record<string, unknown> }
@@ -111,7 +112,8 @@ const options = computed(() => ({
 
 // Change-history panel (P4): lazy — fetch versions only when the panel first expands, and refresh
 // after a successful edit. history() returns prior versions (raw records); the live record is
-// prepended as the current snapshot (no archived actor/timestamp — it renders as "Current").
+// prepended as the current snapshot — stamped with the session author, but no timestamp (an absent
+// timestamp is what marks it "Current").
 const historyData = ref<HistoryRow[]>([])
 const historyLoading = ref(false)
 const historyRequested = ref(false)
@@ -123,7 +125,7 @@ async function loadHistory(): Promise<void> {
     const entries = (await (records as { history(id: string): Promise<RawHistoryEntry[]> }).history(id))
     const snapshots: HistorySnapshot[] = []
     const current = item.record.value as Record<string, unknown> | null
-    if (current) snapshots.push({ version: (entries[0]?.version ?? 0) + 1, record: current })
+    if (current) snapshots.push({ version: (entries[0]?.version ?? 0) + 1, actor: VAULT_USER, record: current })
     for (const e of entries) snapshots.push({ version: e.version, timestamp: e.timestamp, actor: e.userId, record: e.record })
     historyData.value = historyRows(snapshots, (a, b) => diff(a, b), fields.value, { now: Date.now() })
   } finally {
@@ -329,6 +331,12 @@ function toggleList(l: { id: string; patch: string[] }): void {
 .record-cover { position: relative; flex: 0 0 auto; width: 176px; margin: 0; }
 .masthead-nav { flex: 1 1 auto; min-width: 0; }
 .masthead-actions { flex: 0 0 auto; display: flex; gap: 0.5rem; }
+
+/* Speed mirrors the plate: the drum navigator leads from the left, the cover art anchors the right
+   (the edit icon stays in its top-right corner). */
+[data-palette='speed'] .masthead-nav { order: 0; }
+[data-palette='speed'] .record-cover { order: 1; }
+[data-palette='speed'] .masthead-actions { order: 2; }
 
 @media (max-width: 640px) {
   .masthead { flex-direction: column; align-items: stretch; gap: 0.9rem; }

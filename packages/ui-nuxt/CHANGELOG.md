@@ -9,6 +9,9 @@ All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 traversal — a sticky stepper bar and a path-shaped detail title.
 
 ### Added
+- **`RecordHistory` shows the exact timestamp** — each row now renders the full `YYYY-MM-DD HH:MM`
+  next to the relative time ("2 days ago · 2026-07-11 14:32") instead of hiding it in a tooltip; the
+  author (`row.actor`) sits alongside.
 - **`RecordDetail` gains a `controls` prop** (default `true`) — set `false` to suppress the built-in
   edit/save/cancel action row so the host can own those controls (e.g. an edit icon in a masthead plus
   a sticky save/cancel bar). The cells still morph into inputs on `editing`; only the action row is

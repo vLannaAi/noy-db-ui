@@ -50,6 +50,15 @@ function headline(row: HistoryRow): string {
   if (row.isCurrent) return t('nui.history.current', 'Current version')
   return t('nui.history.version', `Version ${row.version}`).replace('{v}', String(row.version))
 }
+// The archived timestamp as a fixed, locale-neutral `YYYY-MM-DD HH:MM` — shown in full next to the
+// relative time (which stays for at-a-glance), so "2 days ago" also carries its exact moment.
+function fullStamp(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
 </script>
 
 <template>
@@ -86,7 +95,8 @@ function headline(row: HistoryRow): string {
           <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5">
             <span class="text-sm font-medium text-nui-fg">{{ headline(row) }}</span>
             <span v-if="row.actor" class="text-xs text-nui-muted">{{ row.actor }}</span>
-            <time v-if="row.relative" :datetime="row.iso" :title="row.iso" class="text-xs text-nui-subtle tabular-nums">{{ row.relative }}</time>
+            <time v-if="row.relative" :datetime="row.iso" class="text-xs text-nui-subtle tabular-nums">{{ row.relative }}</time>
+            <span v-if="fullStamp(row.iso)" class="text-xs text-nui-subtle tabular-nums">· {{ fullStamp(row.iso) }}</span>
             <button
               v-if="row.changes.length"
               type="button"
