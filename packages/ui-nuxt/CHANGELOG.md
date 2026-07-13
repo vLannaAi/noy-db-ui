@@ -14,6 +14,8 @@ traversal — a sticky stepper bar and a path-shaped detail title.
   author (`row.actor`) sits alongside.
 
 ### Changed
+- **`AttachmentGallery` gains a `title` prop** — overrides the panel heading (default: the localized
+  "Attachments"), e.g. `title="Documents"` when it holds only non-media files.
 - **`AttachmentGallery` redesigned as a metadata row list + drop-zone** — attachments render as tidy
   rows (thumbnail / type-icon · name · `TYPE · dimensions · size` · upload time · delete-on-hover with
   an inline confirm) divided by hairlines, instead of nested cards with their own borders/shadows that

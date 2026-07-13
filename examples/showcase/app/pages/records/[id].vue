@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useRecordItem, useFoundSet, captureFoundSet, setReturnAnchor, useTraverse, rememberDirection, recallDirection, useCollectionList, narrate, foundSetItems as buildFoundSetItems, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, type AttachmentItem } from '@noy-db/ui'
+import { useRecordItem, useFoundSet, captureFoundSet, setReturnAnchor, useTraverse, rememberDirection, recallDirection, useCollectionList, narrate, foundSetItems as buildFoundSetItems, historyRows, type HistoryRow, type HistorySnapshot, attachmentList, attachmentSlot, fileCategory, type AttachmentItem } from '@noy-db/ui'
 import { diff } from '@noy-db/hub/history'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { useLists } from '../../composables/useLists'
 import { buildRecordsView } from '../../lib/collectionView'
 import { saveCoverBytes } from '../../lib/cover'
-import { seedDocuments } from '../../lib/documents'
+import { seedRecordBlobs } from '../../lib/recordBlobs'
 import { VAULT_USER } from '../../../src/data/vault'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
@@ -147,6 +147,11 @@ const uploadBusy = ref(false)
 async function refreshAttachments(): Promise<void> {
   attachments.value = attachmentList(await blobHandle.list())
 }
+// Split the record's blobs by kind: images + video render in the Media gallery, everything else
+// (paperwork) in the Documents list.
+const isMedia = (i: AttachmentItem): boolean => ['image', 'video'].includes(fileCategory(i.mime, i.filename).category)
+const mediaItems = computed(() => attachments.value.filter(isMedia))
+const documentItems = computed(() => attachments.value.filter((i) => !isMedia(i)))
 async function loadAttachmentBytes(slot: string): Promise<Uint8Array | null> {
   return (await blobHandle.get(slot)) ?? null
 }
@@ -164,7 +169,7 @@ async function onRemoveAttachment(slot: string): Promise<void> {
   await blobHandle.delete(slot)
   await refreshAttachments()
 }
-onMounted(async () => { await seedDocuments(vault.value!, id); await refreshAttachments() })
+onMounted(async () => { await seedRecordBlobs(vault.value!, id); await refreshAttachments() })
 
 // Change cover: pick an image → crop/zoom in a modal → store the resized PNG as the cover blob →
 // bump coverVersion so <CoverImage> remounts and shows it (session-only per D3).
@@ -292,11 +297,20 @@ function toggleList(l: { id: string; patch: string[] }): void {
           :route-for="(c: string, i: string) => `/${c}/${i}`"
           @navigate="(e: { collection: string; id: string }) => navigateTo(`/${e.collection}/${e.id}`)"
         />
-        <!-- Secondary sections: attachments is a compact widget, so it shares the row with the
-             history log instead of stretching full-width. Stacks on narrow screens. -->
+        <!-- Media (Pattern ②): images + video, gallery ⇆ list, preview + duration/dimensions. -->
+        <MediaGallery
+          class="record-media"
+          :items="mediaItems"
+          :load-bytes="loadAttachmentBytes"
+          :busy="uploadBusy"
+          @upload="onUpload"
+          @remove="onRemoveAttachment"
+        />
+        <!-- Secondary sections: documents (files, type icons) + the history log, side by side. -->
         <div class="record-secondary">
           <AttachmentGallery
-            :items="attachments"
+            title="Documents"
+            :items="documentItems"
             :load-bytes="loadAttachmentBytes"
             :busy="uploadBusy"
             @upload="onUpload"
@@ -328,6 +342,7 @@ function toggleList(l: { id: string; patch: string[] }): void {
    ultra-wide (4K) from over-spreading. */
 .record-wrap { max-width: 2200px; margin-inline: auto; }
 
+.record-media { margin-top: 1rem; }
 /* Attachments (a compact widget) shares a row with the history log rather than spanning full width. */
 .record-secondary {
   display: grid; gap: 1rem; margin-top: 1rem; align-items: start;

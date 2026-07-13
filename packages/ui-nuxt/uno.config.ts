@@ -60,6 +60,11 @@ export default defineConfig({
     'i-lucide-file-cog',        // application / executable
     'i-lucide-file-audio',      // audio
     'i-lucide-film',            // video
+    // media gallery (showcase MediaGallery)
+    'i-lucide-images',          // media section header
+    'i-lucide-play',            // video play badge
+    'i-lucide-layout-grid',     // gallery view toggle
+    'i-lucide-list',            // list view toggle
     'i-lucide-list-checks',     // lists (P-D): menu + active-list banner
     'i-lucide-list-plus',       // lists (P-D): detail pin-to-list
     'i-lucide-check',           // lists (P-D): pinned membership

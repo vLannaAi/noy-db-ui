@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
   loadBytes: (slot: string) => Promise<Uint8Array | null>
   /** An upload is in flight — disables the add affordance. */
   busy?: boolean
+  /** Panel heading — defaults to the localized "Attachments". */
+  title?: string
 }>(), { items: () => [], busy: false })
 
 const emit = defineEmits<{ upload: [File]; remove: [slot: string] }>()
@@ -195,7 +197,7 @@ const rows = computed(() => props.items.map((item) => {
   >
     <div class="att-head">
       <span class="i-lucide-paperclip size-4 text-nui-muted" aria-hidden="true" />
-      <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted">{{ t('nui.attachments.title', 'Attachments') }}</h3>
+      <h3 class="text-xs font-medium uppercase tracking-wide text-nui-muted">{{ title ?? t('nui.attachments.title', 'Attachments') }}</h3>
       <span v-if="items.length" class="text-[10px] text-nui-subtle tabular-nums">{{ items.length }}</span>
     </div>
 
