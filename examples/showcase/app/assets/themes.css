@@ -315,6 +315,24 @@
    border alone separates them). */
 :root[data-palette="speed"] .nui-card { box-shadow: none; }
 
+/* Detail values read too small against the card whitespace — give them size and a touch of weight
+   so the data anchors each card instead of floating in it. Labels stay compact for the contrast. */
+:root[data-palette="speed"] .nui-detail dd { font-size: 0.98rem; line-height: 1.45; }
+:root[data-palette="speed"] .nui-detail dd :where(a, .nui-text) { font-weight: 500; }
+
+/* Edit mode was too faint — Speed's base border is a near-white pink, so an editable cell barely
+   reads as an input. Firm the outlines and mark focus with the crimson accent. */
+:root[data-palette="speed"] .nui-detail :is(input, select, textarea) {
+  border-color: color-mix(in oklab, var(--nui-accent) 30%, var(--nui-border));
+  background: color-mix(in oklab, var(--nui-accent) 3%, var(--nui-bg));
+}
+:root[data-palette="speed"] .nui-detail :is(input, select, textarea):focus,
+:root[data-palette="speed"] .nui-detail :is(input, select, textarea):focus-visible {
+  border-color: var(--nui-accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--nui-accent) 15%, transparent);
+}
+
 /* ─── GLOBAL SHELL STYLES ─────────────────────────────────────────────────── */
 /* All values come from CSS variables — no hardcoded colors/fonts/radius.      */
 

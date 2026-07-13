@@ -7,7 +7,7 @@ import { useLists } from '../../composables/useLists'
 import { buildRecordsView } from '../../lib/collectionView'
 import { saveCoverBytes } from '../../lib/cover'
 import { seedRecordBlobs } from '../../lib/recordBlobs'
-import { VAULT_USER } from '../../../src/data/vault'
+import { VAULT_USER, COVER_FIELD } from '../../../src/data/vault'
 import { GENRES, FORMATS, CONDITIONS } from '../../../src/data/types'
 
 interface RawHistoryEntry { version: number; timestamp: string; userId: string; record: Record<string, unknown> }
@@ -70,12 +70,16 @@ function goBack(): void {
   navigateTo('/records')
 }
 
-// async describe({}) → validator-derived optional + constraints drive the hints
+// async describe({}) → validator-derived optional + constraints drive the hints. The cover blob is
+// rendered by the masthead art (with its own edit affordance), so it's dropped from the detail cards
+// — otherwise it lands in a stray, empty "Cover —" cell.
 const described = await records.describe({})
-const fields = computed(() => described.fields.map((f) => {
-  const l = fieldLabel('records', f.key)
-  return l === f.key ? f : { ...f, label: l }
-}))
+const fields = computed(() => described.fields
+  .filter((f) => f.key !== COVER_FIELD)
+  .map((f) => {
+    const l = fieldLabel('records', f.key)
+    return l === f.key ? f : { ...f, label: l }
+  }))
 
 // Localized reference data — feeds the drum selector AND the edit-mode ref pickers. The names are
 // resolved by the hub at read time, so a locale switch must refetch (else the drums stay in the old
@@ -208,53 +212,31 @@ function toggleList(l: { id: string; patch: string[] }): void {
 <template>
   <article v-if="item.record.value" class="p-4">
     <div class="record-wrap space-y-5">
-      <TraverseBar
-        v-if="snapshot"
-        :snapshot="snapshot" :position="traverse.position.value"
-        :skimming="traverse.skimming.value" :editing="item.editing.value"
-        @go="traverse.go" @go-to="traverse.goTo" @first="traverse.first" @last="traverse.last" @back="goBack"
-      />
-      <NuxtLink v-else to="/records" class="text-sm text-nui-accent hover:underline">← records</NuxtLink>
+      <!-- Sticky top bar: back to the found set on the left, the record's actions on the right. It sits
+           in flow (never over the cover art) and sticks, so Save/Cancel stay reachable through a long
+           form without a floating overlay covering the page. -->
+      <div class="record-toolbar">
+        <div class="rt-lead">
+          <TraverseBar
+            v-if="snapshot"
+            :snapshot="snapshot" :position="traverse.position.value"
+            :skimming="traverse.skimming.value" :editing="item.editing.value"
+            @go="traverse.go" @go-to="traverse.goTo" @first="traverse.first" @last="traverse.last" @back="goBack"
+          />
+          <button v-else type="button" class="rt-back" @click="navigateTo('/records')">
+            <span class="i-lucide-chevron-left size-4" aria-hidden="true" /> records
+          </button>
+        </div>
 
-      <!-- Save/Cancel anchored top-right of the window while editing, so they never scroll away. -->
-      <div v-if="item.editing.value" class="edit-dock">
-        <span class="edit-dock-tag"><span class="edit-dock-dot" aria-hidden="true" /> Editing</span>
-        <button type="button" class="edit-dock-btn ghost" :disabled="item.submitting.value" @click="item.cancel">Cancel</button>
-        <button type="button" class="edit-dock-btn solid" :disabled="item.submitting.value" @click="onSave">
-          {{ item.submitting.value ? 'Saving…' : 'Save' }}
-        </button>
-      </div>
-
-      <div :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
-        <!-- Masthead: cover art + the identity navigator (Title headline · Artist · Label). -->
-        <header class="masthead">
-          <div class="record-cover">
-            <CoverImage :key="coverVersion" :id="id" />
-            <button
-              v-if="!item.editing.value"
-              type="button"
-              class="record-cover-change"
-              @click="pickCover"
-            >
-              <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
+        <div class="rt-actions">
+          <template v-if="item.editing.value">
+            <span class="rt-editing"><span class="rt-dot" aria-hidden="true" /> Editing</span>
+            <button type="button" class="edit-dock-btn ghost" :disabled="item.submitting.value" @click="item.cancel">Cancel</button>
+            <button type="button" class="edit-dock-btn solid" :disabled="item.submitting.value" @click="onSave">
+              {{ item.submitting.value ? 'Saving…' : 'Save' }}
             </button>
-            <input ref="coverFileEl" type="file" accept="image/*" class="hidden" @change="onCoverFile">
-          </div>
-
-          <div class="masthead-nav">
-            <SlotPath
-              :records="recordRows"
-              :labels="labelRows"
-              :artists="artistRows"
-              :current-id="id"
-              :captions="slotCaptions"
-              @navigate="(rid) => navigateTo(withQ(rid))"
-            />
-          </div>
-
-          <!-- Themed action cluster — the edit affordance is a single icon (flat in Speed, filled
-               elsewhere); the list pin sits beside it. -->
-          <div v-if="!item.editing.value" class="masthead-actions">
+          </template>
+          <template v-else>
             <button type="button" class="icon-btn" aria-label="Edit record" title="Edit" @click="item.enterEdit">
               <span class="i-lucide-pencil size-4" aria-hidden="true" />
             </button>
@@ -281,6 +263,40 @@ function toggleList(l: { id: string; patch: string[] }): void {
                 </button>
               </div>
             </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="record-body" :class="traverse.skimming.value ? 'opacity-60 pointer-events-none' : ''">
+        <!-- Masthead: cover art + the identity navigator (Title headline · Artist · Label). -->
+        <header class="masthead">
+          <div class="record-cover">
+            <CoverImage :key="coverVersion" :id="id" />
+            <button
+              v-if="!item.editing.value"
+              type="button"
+              class="record-cover-change"
+              @click="pickCover"
+            >
+              <span class="i-lucide-image-up size-3.5" aria-hidden="true" /> Change
+            </button>
+            <!-- Visually hidden, NOT display:none — a display:none input's programmatic .click() is
+                 blocked in some browsers, which left the Change button doing nothing. -->
+            <input
+              ref="coverFileEl" type="file" accept="image/*" @change="onCoverFile"
+              style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0"
+            >
+          </div>
+
+          <div class="masthead-nav">
+            <SlotPath
+              :records="recordRows"
+              :labels="labelRows"
+              :artists="artistRows"
+              :current-id="id"
+              :captions="slotCaptions"
+              @navigate="(rid) => navigateTo(withQ(rid))"
+            />
           </div>
         </header>
 
@@ -343,30 +359,31 @@ function toggleList(l: { id: string; patch: string[] }): void {
 .record-wrap { max-width: 2200px; margin-inline: auto; }
 
 .record-media { margin-top: 1rem; }
-/* Attachments (a compact widget) shares a row with the history log rather than spanning full width. */
+/* The body is a query container so documents + history land on the SAME column count as the detail
+   cards above (RecordDetail's own container breakpoints: 2 ≥900, 3 ≥1160, 4 ≥1700). Each is one
+   grid track wide, so they line up under the first cards instead of drifting off the grid. */
+.record-body { container-type: inline-size; }
 .record-secondary {
   display: grid; gap: 1rem; margin-top: 1rem; align-items: start;
-  grid-template-columns: minmax(0, 26rem) 1fr;
+  grid-template-columns: 1fr;
 }
-@media (max-width: 900px) { .record-secondary { grid-template-columns: 1fr; } }
+@container (min-width: 900px)  { .record-secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (min-width: 1160px) { .record-secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container (min-width: 1700px) { .record-secondary { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
-/* The masthead: a record "plate" — cover art on the left, the identity navigator (Title headline
-   with an Artist · Label byline) filling the middle, the action icons top-right. */
+/* The masthead: a record "plate" — cover art alongside the identity navigator (Title headline with
+   an Artist · Label byline). The record's actions live in the sticky toolbar above, not here. */
 .masthead { display: flex; align-items: flex-start; gap: 1.25rem; position: relative; margin-bottom: 2rem; }
 .record-cover { position: relative; flex: 0 0 auto; width: 176px; margin: 0; }
 .masthead-nav { flex: 1 1 auto; min-width: 0; }
-.masthead-actions { flex: 0 0 auto; display: flex; gap: 0.5rem; }
 
-/* Speed mirrors the plate: the drum navigator leads from the left, the cover art anchors the right
-   (the edit icon stays in its top-right corner). */
+/* Speed mirrors the plate: the drum navigator leads from the left, the cover art anchors the right. */
 [data-palette='speed'] .masthead-nav { order: 0; }
 [data-palette='speed'] .record-cover { order: 1; }
-[data-palette='speed'] .masthead-actions { order: 2; }
 
 @media (max-width: 640px) {
   .masthead { flex-direction: column; align-items: stretch; gap: 0.9rem; }
   .record-cover { width: 160px; align-self: flex-start; }
-  .masthead-actions { position: absolute; top: 0; right: 0; }
 }
 
 .record-cover-change {
@@ -408,23 +425,35 @@ function toggleList(l: { id: string; patch: string[] }): void {
 [data-palette='speed'] .icon-btn:hover { background: color-mix(in oklab, var(--nui-accent) 18%, transparent); filter: none; }
 [data-palette='speed'] .icon-btn.ghost { background: transparent; color: var(--nui-muted); border-color: var(--nui-border); }
 
-/* Edit action dock — pinned to the top-right of the window so Save/Cancel are always reachable
-   through a long form, independent of the page scroll. */
-.edit-dock {
-  position: fixed; top: 0.85rem; right: 1rem; z-index: 50;
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.4rem 0.5rem 0.4rem 0.8rem; border-radius: 11px;
-  background: color-mix(in oklab, var(--nui-bg) 88%, transparent);
+/* Sticky record toolbar — back affordance on the left, the record's actions on the right. In flow
+   (so it never overlaps the cover/masthead) yet sticky, so Save/Cancel follow through a long form. */
+.record-toolbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.45rem 0; margin-bottom: 0.25rem;
+  background: color-mix(in oklab, var(--nui-bg) 90%, transparent);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  border: 1px solid color-mix(in oklab, var(--nui-accent) 26%, var(--nui-border));
-  box-shadow: 0 6px 20px color-mix(in oklab, black 18%, transparent);
 }
-.edit-dock-tag {
-  display: inline-flex; align-items: center; gap: 0.35rem;
+.rt-lead { flex: 1 1 auto; min-width: 0; }
+/* The traverse stepper already carries its own sticky; inside the toolbar the toolbar owns that. */
+.rt-lead :deep(.nui-traverse) { position: static; padding-top: 0; padding-bottom: 0; }
+.rt-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 0.5rem; }
+
+/* Styled back-to-list — the counterpart to the traverse breadcrumb for a direct (no found-set) visit. */
+.rt-back {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.85rem; font-weight: 500; color: var(--nui-muted);
+  padding: 0.3rem 0.55rem 0.3rem 0.35rem; border-radius: 8px;
+  background: none; border: 0; cursor: pointer; transition: color 150ms, background 150ms;
+}
+.rt-back:hover { color: var(--nui-accent); background: var(--nui-bg-accent); }
+
+.rt-editing {
+  display: inline-flex; align-items: center; gap: 0.4rem;
   font-size: 0.72rem; letter-spacing: 0.02em; color: var(--nui-muted);
   font-family: 'Space Mono', ui-monospace, monospace;
 }
-.edit-dock-dot {
+.rt-dot {
   width: 7px; height: 7px; border-radius: 50%; background: var(--nui-accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--nui-accent) 22%, transparent);
 }
@@ -437,6 +466,4 @@ function toggleList(l: { id: string; patch: string[] }): void {
 .edit-dock-btn.ghost:hover:not(:disabled) { color: var(--nui-fg); background: var(--nui-bg-accent); }
 .edit-dock-btn.solid { background: var(--nui-accent); color: var(--nui-accent-fg); }
 .edit-dock-btn.solid:hover:not(:disabled) { filter: brightness(1.08); }
-
-@media (max-width: 640px) { .edit-dock { top: 0.6rem; right: 0.6rem; } }
 </style>
