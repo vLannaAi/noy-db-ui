@@ -13,5 +13,5 @@ export default defineNuxtPlugin((nuxtApp) => {
   // apply the initial theme (useTheme() takes over reactively once a component mounts)
   const dark = config.theme === 'dark' ||
     (config.theme === 'system' && !!window.matchMedia?.('(prefers-color-scheme: dark)').matches)
-  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+  document.documentElement.classList.toggle('dark', dark)
 })

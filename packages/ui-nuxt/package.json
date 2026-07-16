@@ -1,7 +1,7 @@
 {
   "name": "@noy-db/ui-nuxt",
   "version": "0.3.0-pre.2",
-  "description": "Nuxt binding for @noy-db/ui: schema-driven list + detail components + the Nuxt module. Domain-free; consumes collection.describe().",
+  "description": "Nuxt UI fork of the noy-db UI family: schema-driven list + detail components built on @nuxt/ui primitives, standard app.config theming, deliberately plain. Domain-free; consumes collection.describe().",
   "type": "module",
   "license": "MIT",
   "author": "vLannaAi <vicio@lanna.ai>",
@@ -18,12 +18,10 @@
     "noy-db",
     "nuxt",
     "nuxt-module",
+    "nuxt-ui",
     "schema-driven",
     "data-table",
     "vue"
-  ],
-  "sideEffects": [
-    "**/*.css"
   ],
   "main": "./dist/module.js",
   "types": "./dist/module.d.ts",
@@ -36,8 +34,7 @@
       "types": "./dist/module.d.ts",
       "default": "./dist/module.js"
     },
-    "./core": "./dist/runtime/core/index.ts",
-    "./style.css": "./dist/style.css"
+    "./core": "./dist/runtime/core/index.ts"
   },
   "files": [
     "dist",
@@ -48,15 +45,15 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "tsup && unocss \"src/runtime/{components,internal}/**/*.vue\" --config uno.config.ts -o dist/style.css",
-    "build:css": "unocss \"src/runtime/{components,internal}/**/*.vue\" --config uno.config.ts -o dist/style.css",
+    "build": "tsup",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint src/"
   },
   "peerDependencies": {
     "@noy-db/hub": "^0.3.0-pre.9",
     "vue": "^3.5.0",
-    "@nuxt/kit": "^3.0.0 || ^4.0.0"
+    "@nuxt/kit": "^3.0.0 || ^4.0.0",
+    "@nuxt/ui": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "@nuxt/kit": {
@@ -67,15 +64,13 @@
     "@noy-db/ui": "workspace:*"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.114",
     "@noy-db/hub": "^0.3.0-pre.9",
     "@noy-db/ui": "workspace:*",
     "@nuxt/kit": "^4.0.0",
     "@nuxt/schema": "^4.0.0",
-    "@unocss/cli": "^66.7.2",
     "nuxt": "^4.0.0",
-    "unocss": "^66.7.2",
-    "vue": "^3.5.0"
+    "vue": "^3.5.0",
+    "@nuxt/ui": "^4.0.0"
   },
   "publishConfig": {
     "access": "public",
