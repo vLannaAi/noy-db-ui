@@ -5,7 +5,6 @@ import { cpSync } from 'node:fs'
 // Nuxt imports during config). The runtime — .vue components, internal sub-components, core/
 // composables, the client plugin — ships as SOURCE under dist/runtime and is compiled by the
 // consuming Nuxt app (Nuxt transpiles module runtime). The module resolves to ./runtime/* at run time.
-// Pre-compiled CSS (dist/style.css) is produced by the build:css step after this (see package.json).
 export default defineConfig({
   entry: { module: 'src/module.ts' },
   format: ['esm'],

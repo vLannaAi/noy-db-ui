@@ -6,12 +6,19 @@
 ### Schema-driven UI for [noy-db](https://github.com/vLannaAi/noy-db) vaults
 
 **Drop in a collection — get a fully interactive list, detail, search and AI out of the box.**
-Domain-free · Nuxt-UI-free · themeable · local-first.
+Domain-free · built on Nuxt UI · deliberately plain · local-first.
 
 [Installation](../../docs/ui-nuxt/1.installation.md) ·
 [Components](../../docs/ui-nuxt/3.components.md) ·
 [Configuration](../../docs/ui-nuxt/2.configuration.md) ·
 [Theme](../../docs/ui-nuxt/4.theme.md)
+
+> **Fork status (rebuild in progress):** this package was rebuilt on **Nuxt UI** as the plain
+> fork of the family. It currently ships a subset — `CollectionList`, `SearchBox`, `EmptyState`,
+> `LoadingSkeleton`, `StatCard` — plus the full `core/` composable layer. The sophisticated
+> components described further down (record detail, traverse, header filters, galleries, themes)
+> live in **`@noy-db/ui-suai`**; sections below may still describe that richer surface until this
+> README is rewritten.
 
 Concepts (schema-driven, search engine, design tokens, architecture) live in **[`@noy-db/ui`](../../docs/ui/1.introduction.md)**.
 
@@ -116,7 +123,7 @@ family + the engine are production-validated (type-checked, `nuxt build`-clean).
 From the repo root (pnpm workspace):
 
 ```bash
-pnpm --filter @noy-db/ui-nuxt build       # tsup (module) + UnoCSS (style.css) + runtime copy
+pnpm --filter @noy-db/ui-nuxt build       # tsup (module) + runtime copy
 pnpm --filter @noy-db/ui-nuxt typecheck   # vue-tsc over src (.vue + .ts)
 ```
 
