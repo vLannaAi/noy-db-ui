@@ -25,3 +25,6 @@ pnpm-debug.log*
 # ─── Local-only AI configs (not published) ─────────────────────────
 CLAUDE.md
 .playwright-mcp/
+
+# local mirror of the private suai-css sync map — never publish
+SYNC.local.md
