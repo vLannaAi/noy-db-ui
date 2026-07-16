@@ -45,10 +45,11 @@ const tableColumns = computed<TableColumn<Record<string, any>>[]>(() =>
 </script>
 
 <template>
+  <!-- @select signature is (Event, TableRow) — event FIRST -->
   <UTable
     :data="rows"
     :columns="tableColumns"
     :loading="loading"
-    @select="(row: any) => emit('row-click', row.original ?? row)"
+    @select="(_e: Event, row: any) => emit('row-click', row?.original ?? row)"
   />
 </template>
