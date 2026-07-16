@@ -1,8 +1,8 @@
 import { defineConfig, presetWind4, presetIcons, transformerVariantGroup, transformerDirectives } from 'unocss'
 
 // Showcase UnoCSS — generates the utility classes THIS app's templates use, so we no longer depend
-// on whichever utilities happen to be baked into @noy-db/ui-nuxt's pre-compiled style.css (that trap
-// left `inset-0`, `bg-black/50`, `mt-5`, `hidden`, … silently doing nothing). Mirrors the ui-nuxt
+// on whichever utilities happen to be baked into @noy-db/ui-suai's pre-compiled style.css (that trap
+// left `inset-0`, `bg-black/50`, `mt-5`, `hidden`, … silently doing nothing). Mirrors the ui-suai
 // preset/theme so `nui-*` colours, the `nui-*` shortcuts, and `i-lucide-*` icons resolve identically;
 // the library's style.css still provides the wind4 reset (loaded first), so we skip ours to avoid a
 // duplicate preflight.

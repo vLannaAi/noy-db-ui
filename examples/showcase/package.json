@@ -15,7 +15,7 @@
     "@noy-db/hub": "file:../../../noy-db/packages/hub",
     "@noy-db/to-memory": "file:../../../noy-db/packages/to-memory",
     "@noy-db/ui": "file:../../packages/ui",
-    "@noy-db/ui-nuxt": "file:../../packages/ui-nuxt",
+    "@noy-db/ui-suai": "file:../../packages/ui-suai",
     "nuxt": "^4.0.0",
     "vue": "^3.5.0",
     "zod": "^4.4.3"

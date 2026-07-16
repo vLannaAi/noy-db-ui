@@ -1,4 +1,4 @@
-import { NUI_LOCALE_TH } from '@noy-db/ui-nuxt/core'
+import { NUI_LOCALE_TH } from '@noy-db/ui-suai/core'
 
 // SHOWCASE strings only: navigation, unlock, tour, stats, print header, and the DOMAIN words the
 // library can't know (entity nouns, per-entity "all" titles, vinyl-flavored placeholders). The

@@ -147,7 +147,7 @@ async function onAvatarConfirm(bytes: Uint8Array): Promise<void> {
 }
 .artist-change:hover { color: var(--nui-accent); }
 
-/* Modal overlay — `inset-0` / `bg-black/50` aren't in ui-nuxt's pre-compiled CSS, so style it here. */
+/* Modal overlay — `inset-0` / `bg-black/50` aren't in ui-suai's pre-compiled CSS, so style it here. */
 .crop-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .crop-dialog { width: 100%; max-width: 24rem; }
 </style>

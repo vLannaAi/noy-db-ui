@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provideNoydbUi } from '@noy-db/ui-nuxt/core'
+import { provideNoydbUi } from '@noy-db/ui-suai/core'
 import { useShowcaseI18n } from './composables/useShowcaseI18n'
 import { makeAnthropicLlm } from './lib/anthropicLlm'
 import { useApiKey } from './composables/useApiKey'

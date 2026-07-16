@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { LlmClient } from '@noy-db/ui-nuxt/core'
+import type { LlmClient } from '@noy-db/ui-suai/core'
 
 /** BYO-key Anthropic adapter. `getKey` is called per-request so the reactive key ref is always fresh. */
 export function makeAnthropicLlm(getKey: () => string | null): LlmClient {

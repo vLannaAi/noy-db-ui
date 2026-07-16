@@ -2,7 +2,7 @@ import UnoCSS from '@unocss/vite'
 
 export default defineNuxtConfig({
   ssr: false,
-  modules: ['@noy-db/ui-nuxt/module'],
+  modules: ['@noy-db/ui-suai/module'],
   noydbUi: { theme: 'system', locale: 'en' },
   // themes.css (tokens) → the library's pre-compiled utilities (via the module) → our own UnoCSS
   // output last, so the showcase's utility classes always resolve (see uno.config.ts).

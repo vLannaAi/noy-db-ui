@@ -27,9 +27,9 @@ importers:
       '@noy-db/ui':
         specifier: file:../../packages/ui
         version: file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
-      '@noy-db/ui-nuxt':
-        specifier: file:../../packages/ui-nuxt
-        version: file:../../packages/ui-nuxt(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))
+      '@noy-db/ui-suai':
+        specifier: file:../../packages/ui-suai
+        version: file:../../packages/ui-suai(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))
       nuxt:
         specifier: ^4.0.0
         version: 4.4.8(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@parcel/watcher@2.5.6)(@vue/compiler-sfc@3.5.39)(cac@6.7.14)(db0@0.3.4)(esbuild@0.28.1)(ioredis@5.11.1)(magicast@0.5.3)(rollup-plugin-visualizer@7.0.1(rollup@4.62.2))(rollup@4.62.2)(srvx@0.11.17)(terser@5.48.0)(tsx@4.22.4)(typescript@5.9.3)(vite@7.3.6(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0)
@@ -514,8 +514,8 @@ packages:
     peerDependencies:
       '@noy-db/hub': workspace:*
 
-  '@noy-db/ui-nuxt@file:../../packages/ui-nuxt':
-    resolution: {directory: ../../packages/ui-nuxt, type: directory}
+  '@noy-db/ui-suai@file:../../packages/ui-suai':
+    resolution: {directory: ../../packages/ui-suai, type: directory}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@noy-db/hub': ^0.3.0-pre.9
@@ -4240,7 +4240,7 @@ snapshots:
     dependencies:
       '@noy-db/hub': file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
 
-  '@noy-db/ui-nuxt@file:../../packages/ui-nuxt(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))':
+  '@noy-db/ui-suai@file:../../packages/ui-suai(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))':
     dependencies:
       '@noy-db/hub': file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3))
       '@noy-db/ui': file:../../packages/ui(@noy-db/hub@file:../../../noy-db/packages/hub(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
