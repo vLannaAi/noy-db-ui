@@ -3,7 +3,7 @@
 All notable changes to `@noy-db/ui` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
-## [Unreleased]
+## [0.3.0-pre.3] — 2026-08-02
 
 In-place editing: hints, i18n/unit inputs, and the edit-state composable. Also: found-set
 traversal — frozen query-derivable snapshots, path-shaped titles, and the skim controller.
