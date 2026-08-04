@@ -3,7 +3,7 @@ import { withAggregate } from '@noy-db/hub/aggregate'
 import { withBlobs } from '@noy-db/hub/blobs'
 import { withHistory } from '@noy-db/hub/history'
 import { withI18n } from '@noy-db/hub/i18n'
-import { memory } from '@noy-db/to-memory'
+import { toMemory } from '@noy-db/to-memory'
 
 export const VAULT_NAME = 'vinyl'
 export const LANGS = ['en', 'th'] as const
@@ -22,7 +22,7 @@ export const VAULT_USER = 'viewer'
  */
 export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Vault }> {
   const db = await createNoydb({
-    store: memory(),
+    store: toMemory(),
     user: VAULT_USER,
     secret,
     blobStrategy: withBlobs(),
@@ -48,7 +48,7 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
  */
 export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Promise<Vault> {
   const db = await createNoydb({
-    store: memory(),
+    store: toMemory(),
     user: VAULT_USER,
     secret,
     blobStrategy: withBlobs(),
