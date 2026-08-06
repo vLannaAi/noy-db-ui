@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Passphrase unlock — same hub flow as the showcase (bundle fetch + on-password unlock),
+// Secret unlock — same hub flow as the showcase (bundle fetch + on-password unlock),
 // plain Nuxt UI presentation.
 import { ref } from 'vue'
 
@@ -38,18 +38,18 @@ async function go() {
         <UAlert
           color="neutral"
           variant="subtle"
-          title="Passphrase hint"
+          title="Secret hint"
           description="spin-the-black-circle"
         />
         <UInput
           v-model="pass"
           type="password"
-          placeholder="passphrase"
+          placeholder="secret"
           class="w-full"
           autofocus
           @keydown.enter="go"
         />
-        <UAlert v-if="error" color="error" variant="subtle" title="Wrong passphrase" />
+        <UAlert v-if="error" color="error" variant="subtle" title="Wrong secret" />
         <UButton block :loading="busy" @click="go">Unlock</UButton>
       </div>
     </UCard>

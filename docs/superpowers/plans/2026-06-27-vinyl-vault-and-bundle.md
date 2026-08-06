@@ -1,5 +1,9 @@
 # Vinyl Vault & Bundle Implementation Plan (Plan A)
 
+> **Later change (2026-08-06):** `spike-passphrase.test.ts` is now `spike-secret.test.ts`,
+> and the plan's `passphrase` wording became `secret` across the examples, following the
+> noy-db `0.4.0-pre` `passphrase-*` → `secret-*` rename. The steps below are left as executed.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Produce a committed, passphrase-gated `examples/showcase/public/demo.noydb` bundle containing a vinyl collection (3 joined collections, 24 records with encrypted cover-art blobs, TH/EN localized labels), plus the seed tooling and verification tests that prove it round-trips in a browser-safe way.

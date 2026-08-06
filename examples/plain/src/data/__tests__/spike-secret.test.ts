@@ -4,14 +4,14 @@ import { buildVault, openVaultFromBundle } from '../vault'
 
 const PASS = 'spin-the-black-circle'
 
-describe('passphrase gates the bundle', () => {
-  it('right passphrase reads, wrong passphrase throws', async () => {
+describe('the secret gates the bundle', () => {
+  it('the right secret reads, the wrong secret throws', async () => {
     const { vault } = await buildVault(PASS)
     const col = vault.collection<{ id: string; n: number }>('probe')
     await col.put('a', { id: 'a', n: 1 })
     const bytes = await toBytes(vault)
 
-    // right passphrase: reads back
+    // right secret: reads back
     // note: list() (not query().toArray()) is used because list() triggers
     // ensureHydrated(), which loads records from the adapter into the in-memory
     // cache. query().toArray() is synchronous and reads the cache directly —
@@ -22,7 +22,7 @@ describe('passphrase gates the bundle', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]!.n).toBe(1)
 
-    // wrong passphrase: denied
+    // wrong secret: denied
     await expect(openVaultFromBundle(bytes, 'wrong-pass')).rejects.toThrow()
   })
 })
