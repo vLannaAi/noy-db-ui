@@ -31,7 +31,7 @@ async function submit() {
         <span class="nui-unlock-sub">noy-db · encrypted vault</span>
       </div>
       <div class="nui-unlock-hint">
-        {{ t('unlock.hint', 'Passphrase hint') }}
+        {{ t('unlock.hint', 'Secret hint') }}
         <code>spin-the-black-circle</code>
       </div>
       <form class="nui-unlock-form" @submit.prevent="submit">
@@ -39,7 +39,7 @@ async function submit() {
           v-model="pass"
           class="nui-unlock-input"
           type="password"
-          placeholder="passphrase"
+          placeholder="secret"
           autofocus
         />
         <button class="nui-unlock-btn" :disabled="busy || !pass">

@@ -10,7 +10,7 @@ const vault = shallowRef<Vault | null>(null)
 export function useVault() {
   async function unlock(secret: string) {
     const bytes = new Uint8Array(await fetch('/demo.noydb').then((r) => r.arrayBuffer()))
-    const v = await openVaultFromBundle(bytes, secret) // throws InvalidKeyError on wrong passphrase
+    const v = await openVaultFromBundle(bytes, secret) // throws InvalidKeyError on the wrong secret
     const { artists, labels, records } = declareCollections(v)
     await records.list()
     await artists.list()

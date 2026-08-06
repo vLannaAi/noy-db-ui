@@ -11,7 +11,7 @@ export const MESSAGES: Record<'en' | 'th', Record<string, string>> = {
     'nav.artists': 'Artists',
     'nav.labels': 'Labels',
     'unlock.title': 'noy-db · Vinyl',
-    'unlock.hint': 'Passphrase hint',
+    'unlock.hint': 'Secret hint',
     'unlock.button': 'Unlock',
     'unlock.error': "That didn't unlock the vault.",
     'cover.caption': 'decrypted from a vault blob',

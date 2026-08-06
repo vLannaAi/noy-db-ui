@@ -39,12 +39,12 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
  * Reopen a .noydb bundle. Throws if `secret` cannot unlock it.
  *
  * Working sequence (confirmed against sibling runtime):
- *   1. createNoydb with empty memory store + wrong/right passphrase
+ *   1. createNoydb with empty memory store + wrong/right secret
  *   2. openVault(VAULT_NAME, { create: true }) — creates a fresh owner keyring
- *   3. readNoydbBundle(bytes) — extracts the JSON dump (no passphrase needed)
+ *   3. readNoydbBundle(bytes) — extracts the JSON dump (no secret needed)
  *   4. vault.load(dumpJson) — restores keyrings + data, then calls reloadKeyring()
- *      which tries to decrypt the backup's keyring with the session passphrase.
- *      Wrong passphrase → InvalidKeyError thrown here (at load, not at first read).
+ *      which tries to decrypt the backup's keyring with the session secret.
+ *      Wrong secret → InvalidKeyError thrown here (at load, not at first read).
  */
 export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Promise<Vault> {
   const db = await createNoydb({

@@ -7,7 +7,7 @@ Thai/English localization, encrypted cover-art blobs, and a guided balloon tour.
 `ssr: false` — no server. Everything runs in the browser: vault decryption, schema-driven list/
 search/detail, cover blob round-trips, i18n switch, theme toggle.
 
-## Demo passphrase
+## Demo secret
 
 ```
 spin-the-black-circle
@@ -91,7 +91,7 @@ npx serve .output/public
 
 | Feature | Where |
 |---|---|
-| Passphrase unlock + wrong-pass error | `/` (unlock screen) |
+| Secret unlock + wrong-secret error | `/` (unlock screen) |
 | Schema-driven list + search | `/records`, `/artists`, `/labels` |
 | Joins surfaced in list columns | `/records` (artist + label join) |
 | Record detail with ref links | `/records/[id]` |
