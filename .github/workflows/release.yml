@@ -1,40 +1,228 @@
 name: Release
 
-# Manually triggered: publishes any package whose version in package.json is not
-# yet on npm (changeset publish is idempotent). Run from the Actions tab → Release
-# → "Run workflow", or `gh workflow run release.yml --ref main`.
+# Strict release pipeline for the three @noy-db/ui* packages.
+#
+# Design: docs/superpowers/specs/2026-08-09-release-trigger-design.md
+#
+# Triggered on GitHub Release `published`. Runs the full verification gate
+# (install + build + lint + typecheck + test) on a clean checkout at the
+# release tag, and only publishes if every gate passes.
+#
+# ── Why a repo-level `vX.Y.Z` tag ─────────────────────────────────────
+#
+# This repo publishes with CHANGESETS, which tags each package separately
+# (`@noy-db/ui@0.3.0-pre.5`, `@noy-db/ui-nuxt@0.3.0-pre.5`, …). A GitHub
+# Release must hang off exactly one tag, and each cut produces three — so
+# releases hang off a repo-level `vX.Y.Z` tag instead. Changesets' own
+# per-package tags are still created and pushed, alongside it, unchanged.
+# This makes `gh release list` read the same here as in noy-db /
+# noy-db-to / klum-db, which is what the family coordination sweep expects.
+#
+# That tag CLAIMS all three packages sit at X.Y.Z, and nothing upstream
+# enforces it: `.changeset/config.json` has `fixed: []` / `linked: []`.
+# It has held only because every changeset so far touched `@noy-db/ui`,
+# which cascades into both bindings via `updateInternalDependencies:
+# "patch"`. A changeset touching ONLY `ui-nuxt` would split them. Hence the
+# three-package version check in `verify` — see that step.
+#
+# ── npm dist-tag routing ──────────────────────────────────────────────
+#
+#   • `next`   — the in-flight pre-release line. Everything this repo has
+#     ever published lives here.
+#   • `latest` — curated stable releases. Currently parked at 0.3.0-pre.3.
+#
+# Routing rules:
+#   - `release` event, prerelease: true  → `--tag next`
+#   - `release` event, prerelease: false → `--tag latest`
+#   - `workflow_dispatch`                → the `tag` input (default `next`)
+#
+# ── Release procedure ─────────────────────────────────────────────────
+#
+#   1. pnpm changeset            # author
+#   2. pnpm changeset version    # bumps all three
+#   3. merge to main
+#   4. gh release create v0.3.0-pre.6 --target main --prerelease --generate-notes
+#
+# `gh release create` creates the tag, so there is no separate tagging step.
+# Omitting `--prerelease` is what routes a stable cut to `@latest`.
+#
+# Setup (one-time, repo Settings → Secrets and variables):
+#   - NPM_TOKEN — npm automation token with publish access to @noy-db/*
+
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
+      confirm:
+        description: 'Type PUBLISH to confirm manual trigger'
+        required: true
+        default: ''
       tag:
-        description: 'npm dist-tag to publish under. A pre-release MUST go to `next` — landing one on `latest` corrupts the tag for every consumer and only a manual `npm dist-tag` repair undoes it.'
+        description: 'npm dist-tag. A pre-release MUST go to `next` — landing one on `latest` corrupts the tag for every consumer and only a manual `npm dist-tag` repair undoes it.'
         type: choice
         required: true
         default: next
         options: [next, latest]
+  push:
+    branches: [main]
+    paths: ['.github/workflows/release.yml']
 
-concurrency: release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
-  contents: write # push the git tags `changeset publish` creates
+  contents: read
 
 jobs:
-  release:
-    name: Publish to npm (@${{ inputs.tag }})
+  # ── Gate 1: strict verification ──────────────────────────────────────
+  verify:
+    name: Verify (strict)
     runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event.inputs.confirm == 'PUBLISH' || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # full history + tags so `changeset publish` can create/push release tags
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
       - name: Enable corepack (pnpm)
         run: corepack enable
+
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
-      - name: Install
+
+      - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # The repo-level tag asserts all three packages sit at this version, and
+      # changesets does not enforce that (see the header). Check every package,
+      # not just the anchor: checking only `ui` would let a `ui-nuxt`-only
+      # changeset publish under a tag that misdescribes it.
+      - name: Verify package versions match the release tag
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          FAILED=0
+          for pkg in ui ui-nuxt ui-suai; do
+            PKG_VERSION=$(node -p "require('./packages/$pkg/package.json').version")
+            if [ "$PKG_VERSION" != "$VERSION" ]; then
+              echo "::error::@noy-db/$pkg is at $PKG_VERSION but the release tag is $VERSION"
+              FAILED=1
+            else
+              echo "✅ @noy-db/$pkg@$PKG_VERSION matches release tag v$VERSION"
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "Release aborted: bump every package to $VERSION, or cut a tag that matches." >&2
+            exit 1
+          fi
+
+      # Every version this repo has ever published is a semver pre-release, and
+      # `@latest` is parked at 0.3.0-pre.3. Under a Release trigger the only
+      # thing standing between a pre-release and `@latest` is an unticked
+      # checkbox — and landing one there is not self-healing: it takes a manual
+      # `npm dist-tag` repair, across three packages. @klum-db/lobby@latest is
+      # currently rotten in exactly this way. Refuse the mismatch instead.
+      - name: Refuse a semver pre-release routed to @latest
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          if [ "${{ github.event.release.prerelease }}" != "true" ] && [ "${VERSION#*-}" != "$VERSION" ]; then
+            echo "::error::$VERSION is a semver pre-release, but this Release is not marked as a pre-release."
+            echo "::error::Publishing would route it to @latest and corrupt the tag for all three packages."
+            echo "::error::Tick 'Set as a pre-release' on the Release and re-run."
+            exit 1
+          fi
+          echo "✅ routing check passed (version=$VERSION, prerelease=${{ github.event.release.prerelease }})"
+
+  # ── Gate 2: publish ──────────────────────────────────────────────────
+  #
+  # Explicit event guard: publish runs ONLY on a `release` event or a
+  # `workflow_dispatch` with `confirm: PUBLISH`. `verify` also runs on `push`
+  # to main when this file changes, so workflow edits get tested — but the
+  # publish job must never run on that path, or editing this file could
+  # publish to npm without confirmation.
+  publish:
+    name: Publish to npm
+    needs: verify
+    if: |
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'PUBLISH')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # push the git tags `changeset publish` creates
+      id-token: write   # required for npm provenance
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+          fetch-depth: 0 # full history + tags so `changeset publish` can create/push release tags
+
+      - name: Enable corepack (pnpm)
+        run: corepack enable
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # Resolve the npm dist-tag once and echo it to the run summary before any
+      # publish runs, so an unintended target is visible immediately. The
+      # allowlist guards against a typo in the dispatch input.
+      - name: Resolve npm dist-tag
+        id: dist_tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "release" ]; then
+            if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+              TAG="next"; REASON="release event, prerelease=true"
+            else
+              TAG="latest"; REASON="release event, prerelease=false"
+            fi
+          else
+            TAG="${{ github.event.inputs.tag }}"; REASON="workflow_dispatch tag input"
+          fi
+
+          case "$TAG" in
+            latest|next|canary|rc|beta|alpha) ;;
+            *)
+              echo "::error::Refusing to publish: tag '$TAG' is not in the allowlist (latest|next|canary|rc|beta|alpha)."
+              exit 1
+              ;;
+          esac
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "### npm dist-tag"
+            echo ""
+            echo "- **Tag:** \`$TAG\`"
+            echo "- **Reason:** $REASON"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Configure git identity
         # changesets creates ANNOTATED tags (`git tag -m`), which fail with exit 128 on a
         # runner with no committer identity — and changesets discards the exit code after
@@ -42,14 +230,43 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Check npm auth (whoami)
+        run: |
+          WHOAMI=$(npm whoami 2>&1) && echo "npm user: $WHOAMI" || echo "npm whoami failed: $WHOAMI"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true
+
+      # `changeset publish` takes no --provenance flag (verified against 2.31.0:
+      # nothing under node_modules/@changesets/ mentions provenance). It shells
+      # out to `pnpm publish`, so provenance is requested via the npm config env
+      # var below plus `id-token: write` on this job.
+      #
+      # UNVERIFIED end to end — the first Release-triggered cut must be checked
+      # for the attestation badge on npmjs.com. If the var does not reach npm,
+      # provenance is silently absent rather than broken, and workflow_dispatch
+      # remains as the fallback publish route.
       - name: Publish
         run: pnpm release # = pnpm build && changeset publish --tag "$DIST_TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          DIST_TAG: ${{ inputs.tag }}
+          DIST_TAG: ${{ steps.dist_tag.outputs.tag }}
+          NPM_CONFIG_PROVENANCE: true
+
       - name: Push release tags
         # `changeset tag` is idempotent (skips tags that exist locally or on the remote),
         # so this also back-fills tags for any release where tagging failed.
         run: |
           pnpm exec changeset tag
           git push origin --tags
+
+      - name: Summarise
+        run: |
+          {
+            echo "### Published"
+            echo ""
+            echo "- Release: \`${{ github.event.release.tag_name || github.ref_name }}\`"
+            echo "- npm dist-tag: \`${{ steps.dist_tag.outputs.tag }}\`"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } >> "$GITHUB_STEP_SUMMARY"
