@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useFoundSet, setReturnAnchor, useTraverse, pathSegments, rememberDirection, recallDirection, relatedColumns, summaryCards, type SummaryCard } from '@noy-db/ui'
-import { count, sum, avg } from '@noy-db/hub/aggregate'
+import { count, sum, avg } from '@noy-db/hub/reduce'
 import { useVault } from '../../composables/useVault'
 import { useShowcaseI18n } from '../../composables/useShowcaseI18n'
 import { buildRecordsView } from '../../lib/collectionView'

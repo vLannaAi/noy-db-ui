@@ -3,6 +3,30 @@
 All notable changes to `@noy-db/ui` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
+## [0.3.0-pre.5] — 2026-08-09
+
+The configurable layer moves here, so the two bindings stop carrying a copy each (#9).
+
+### Added
+- **The `core/` composables are now exported from `@noy-db/ui`** — `provideNoydbUi`, `useNoydbUi`,
+  `NOYDB_UI_KEY`, `useNuiI18n`, `useLlm`, `useViewport`, `useContainerSize`, `useVoiceInput`, the
+  `NoydbUiConfig` / `LlmClient` / `VoiceSource` / `ThemeMode` types, and the `NUI_LOCALE_TH` Thai
+  catalog. They were duplicated verbatim in `ui-nuxt` and `ui-suai` (six byte-identical files
+  apiece); every one is plain Vue with no Nuxt API, so there is no new dependency edge — `vue` was
+  already a peer.
+
+  **`useTheme` deliberately did not move.** It is the one piece the forks genuinely disagree on —
+  `.dark` class for Nuxt UI vs `data-theme` + `--nui-*` tokens for suai — and it stays in each
+  binding.
+
+  Additive: both bindings still re-export the identical set from their own `/core` subpath, which
+  remains the surface a host imports.
+
+### Tested
+- `provider.test.ts` covers the config-injection contract that had none: absent-provider defaults,
+  the zero-setup English fallback, key-as-last-resort, a configured translator, and `useLlm()`
+  degrading to `null`. Uses `app.runWithContext()`, so it needs no DOM.
+
 ## [0.3.0-pre.4] — 2026-08-09
 
 Sync onto the current family rail (hub `0.6.0-pre.4`), and close the last gap in the hub's

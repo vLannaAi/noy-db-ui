@@ -112,3 +112,19 @@ export * from './use-column-prefs'
 
 // shipped locale catalogs for the engine's own strings (hosts spread into their translator)
 export { LOCALE_TH } from './locale-th'
+export { NUI_LOCALE_TH } from './nui-locale-th'
+
+// The configurable layer, shared by every binding. These are plain Vue composables (no Nuxt API),
+// single-sourced here so `ui-nuxt` and `ui-suai` cannot drift apart; each binding re-exports them
+// from its own `/core` subpath, which stays the surface a host imports. `useTheme` is deliberately
+// NOT here — it is the one piece the forks genuinely disagree on (`.dark` class for Nuxt UI vs
+// `data-theme` + `--nui-*` tokens for suai), so it stays in each binding.
+export {
+  provideNoydbUi, useNoydbUi, NOYDB_UI_KEY,
+  type NoydbUiConfig, type LlmClient, type VoiceSource, type ThemeMode,
+} from './provider'
+export { useNuiI18n } from './i18n'
+export { useLlm } from './llm'
+export { useViewport } from './responsive'
+export { useContainerSize, type ContainerSize } from './container'
+export { useVoiceInput } from './voice'
