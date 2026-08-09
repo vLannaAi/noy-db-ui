@@ -4,7 +4,27 @@
 import type { DescribedField, StandardSchemaV1Issue } from '@noy-db/hub'
 import { detailFields } from './detail'
 
-export type InputKind = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox' | 'i18n-text'
+export type InputKind = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'autocomplete' | 'checkbox' | 'i18n-text'
+
+/**
+ * What an `autocomplete` control needs to ask the host for options — the matrix tier of a
+ * `lookup()` field, whose membership lives in a first-class reference collection that describe()
+ * deliberately does not embed. Mirrors the `DescribedField.lookup` block, narrowed to the parts a
+ * widget uses: `onDelete` is a write-path rule and `backing`/`altKeys` are already spent by the
+ * time this exists.
+ */
+export interface FieldInputLookup {
+  /** The backing collection to search. */
+  dimension?: string
+  /** The backing-collection field holding the value that gets stored on this record. */
+  key: string
+  /** `open` admits a value absent from the backing collection; `closed` does not. */
+  vocabulary: 'open' | 'closed'
+  /** The backing-collection field to display as the option label. */
+  present?: { label: string; by?: string }
+  /** The backing-collection field to order suggestions by. */
+  sortBy?: string
+}
 
 export interface FieldInput {
   key: string
@@ -12,6 +32,8 @@ export interface FieldInput {
   kind: InputKind
   /** select options (from the field's dictionary, or host-supplied for entity/other fields). */
   options?: { value: string; label: string }[]
+  /** For `autocomplete`: how the host resolves options for this field. */
+  lookup?: FieldInputLookup
   /** locale codes for an i18n-text input (one text box per locale). */
   locales?: readonly string[]
   /** display unit suffix for number inputs (e.g. 'USD', 'min'). */
@@ -23,16 +45,31 @@ export function fieldInput(field: DescribedField, extraOptions?: { value: string
   const options = extraOptions
     ?? field.dict?.values?.map((v) => ({ value: v.value, label: v.label ?? v.value }))
     ?? field.lookup?.keys?.map((k) => ({ value: k, label: k }))
+  // Only reached when nothing above enumerated the vocabulary: a host that passed `options`, a
+  // dict block, or a declared key set has already said what the choices are, and a <select> beats
+  // a typeahead for a list you can show whole.
+  const lk = field.lookup
+  const lookup: FieldInputLookup | undefined = !options && lk?.backing === 'collection'
+    ? {
+        ...(lk.dimension ? { dimension: lk.dimension } : {}),
+        key: lk.key,
+        vocabulary: lk.vocabulary,
+        ...(lk.present ? { present: lk.present } : {}),
+        ...(lk.sortBy ? { sortBy: lk.sortBy } : {}),
+      }
+    : undefined
   const w = field.widget
   let kind: InputKind = 'text'
   if (field.i18n) kind = 'i18n-text'
   else if (options) kind = 'select'
+  else if (lookup) kind = 'autocomplete'
   else if (w === 'textarea') kind = 'textarea'
   else if (w === 'checkbox' || field.type === 'boolean') kind = 'checkbox'
   else if (w === 'date' || field.semanticType === 'date' || field.semanticType === 'datetime') kind = 'date'
   else if (w === 'number' || w === 'money' || field.semanticType === 'currency' || field.semanticType === 'percent' || field.type === 'number' || field.type === 'integer') kind = 'number'
   return {
     key: field.key, label: field.label, kind, options,
+    ...(lookup ? { lookup } : {}),
     ...(field.i18n?.locales ? { locales: field.i18n.locales } : {}),
     ...(kind === 'number' && field.unit ? { unit: field.unit } : {}),
   }

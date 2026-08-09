@@ -15,19 +15,11 @@ spin-the-black-circle
 
 ## Prerequisites
 
-This app depends on the **local sibling `noy-db`** being built and on this repo's **UI packages**
-being built. It is a local/demo artifact — it is not installable from a clean clone and is not
-built in this repo's CI.
+The `@noy-db/*` runtime packages are consumed **from npm at a pinned version**, exactly as an
+outside consumer would — no sibling checkout is needed. Only this repo's own UI packages are
+linked locally, via `file:` paths, so they must be built first.
 
-### 1. Build the sibling `noy-db`
-
-```bash
-cd ../../../noy-db
-pnpm install
-pnpm build
-```
-
-### 2. Build this repo's UI packages
+### 1. Build this repo's UI packages
 
 From the repo root (`noy-db-ui/`):
 
@@ -37,19 +29,15 @@ pnpm install
 pnpm build
 ```
 
-This produces `@noy-db/ui` and `@noy-db/ui-nuxt` dist artifacts that the showcase links to via
-`file:` paths.
-
-### 3. Install and seed
+### 2. Install
 
 ```bash
 cd examples/showcase
 pnpm install
-pnpm seed
 ```
 
-`pnpm seed` runs `scripts/seed.ts`, which regenerates `public/demo.noydb` and `public/covers/`
-(24 PNG cover images). These are gitignored — you must seed locally before running.
+`public/demo.noydb` and `public/covers/` are **committed**, so the app runs as-is. `pnpm seed`
+re-runs `scripts/seed.ts` to regenerate them; you only need it if you change the dataset.
 
 ## Running
 
@@ -77,15 +65,15 @@ npx serve .output/public
 ## Notes
 
 - **`demo.noydb` is non-deterministic** across re-seeds (the vault re-encrypts with a fresh key
-  each time). After re-seeding, `git status` will show `public/demo.noydb` as modified — that
-  is expected and those changes should not be committed (the file is gitignored).
+  each time). It *is* committed, so after re-seeding `git status` will show it as modified —
+  that churn is expected and should not be committed on its own.
 
 - **A cosmetic console warning is expected** on first load:
   `[noy-db] Loaded a legacy backup with no ledgerHead` — this is benign and does not affect
   functionality.
 
-- The app depends on the local sibling `noy-db` being built (via the `file:` links in
-  `package.json`). It cannot be installed from npm or built in this repo's CI.
+- `src/data/__tests__/committed-bundle.test.ts` guards the committed bundle against the pinned
+  hub, so a `@noy-db/*` version bump cannot silently break it for anyone who never re-seeds.
 
 ## What it demonstrates
 

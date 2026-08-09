@@ -19,6 +19,12 @@ const props = withDefaults(defineProps<{
   groups?: { title: string; keys: string[] }[]
   /** Select options for fields the dictionary doesn't cover (e.g. entity refs), keyed by field key. */
   options?: Record<string, { value: string; label: string }[]>
+  /**
+   * Async option resolvers keyed by field key, for lookup fields backed by a reference collection
+   * (`fieldInput` gives those an `autocomplete` kind). Supplying `options` for the same field
+   * instead renders a plain select.
+   */
+  search?: Record<string, (term: string) => Promise<readonly { value: string; label: string }[]>>
   /** Per-field error text (from a failed put()). */
   errors?: Record<string, string>
   submitting?: boolean
@@ -54,6 +60,7 @@ function submit(): void { if (!props.submitting) emit('submit', { ...draft.value
           <label v-if="inp.kind !== 'checkbox'" class="block text-xs text-nui-muted mb-1" :for="inp.kind === 'i18n-text' && inp.locales?.length ? `f-${inp.key}-${inp.locales[0]}` : `f-${inp.key}`">{{ inp.label }}</label>
           <FieldControl
             :input="inp" :model-value="draft[inp.key]" :error="errors?.[inp.key]" :hint="hint"
+            :search="search?.[inp.key]"
             @update:model-value="(v) => { draft[inp.key] = v }"
           />
         </div>

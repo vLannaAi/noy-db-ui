@@ -39,6 +39,12 @@ const props = withDefaults(defineProps<{
   /** `{ value, label }` lists keyed by field key: select options in edit mode, AND the read-mode
    *  display labels for enum codes / bare entity ids (formatDetailCell's options). */
   options?: Record<string, { value: string; label: string }[]>
+  /**
+   * Async option resolvers keyed by field key, for lookup fields backed by a reference collection
+   * (`fieldInput` gives those an `autocomplete` kind). Supplying `options` for the same field
+   * instead renders a plain select.
+   */
+  search?: Record<string, (term: string) => Promise<readonly { value: string; label: string }[]>>
   submitting?: boolean
   /** Non-field failure message (generic banner over the cards). */
   errorBanner?: string | null
@@ -123,6 +129,7 @@ function onLink(c: DetailCell, e: MouseEvent): void {
               <FieldControl
                 v-if="editing && c.canEdit && draft"
                 :input="c.input" :model-value="draft[c.cell.key]" :error="errors?.[c.cell.key]" :hint="c.hint"
+                :search="search?.[c.cell.key]"
                 id-prefix="d" @update:model-value="(v) => { draft![c.cell.key] = v }"
               />
               <a

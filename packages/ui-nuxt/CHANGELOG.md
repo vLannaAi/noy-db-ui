@@ -3,6 +3,16 @@
 All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
+## [0.3.0-pre.4] — 2026-08-09
+
+### Changed
+- Dev pin moved to `@noy-db/hub` `0.6.0-pre.4`; the peer range `^0.6.0-pre.0` is unchanged.
+
+### Note
+- The `autocomplete` control added to `@noy-db/ui` in this release is rendered by `ui-suai`'s
+  `FieldControl`. This fork carries no form layer yet — `RecordForm`/`FieldControl` were not part
+  of the v1 slice (#9) — so nothing here consumes it until that layer is ported.
+
 ## [0.3.0-pre.3] — 2026-08-02
 
 **BREAKING** — the package is rebuilt as the **plain fork on Nuxt UI**, the regressed tier of the

@@ -91,6 +91,54 @@ describe('fieldInput — native lookup fields', () => {
   })
 })
 
+// The matrix tier: a lookup whose membership lives in a first-class reference collection.
+// describe() deliberately does NOT embed that collection's rows, so there is nothing to put in a
+// <select> — the control has to ask the host, search-as-you-type.
+describe('fieldInput — collection-backed lookup fields', () => {
+  const country = (over: Record<string, unknown> = {}) => f({
+    key: 'country', label: 'Country', widget: 'select',
+    lookup: {
+      dimension: 'countries', backing: 'collection', vocabulary: 'closed',
+      key: 'iso2', altKeys: ['iso3'], present: { label: 'name' }, sortBy: 'name', onDelete: 'restrict',
+      ...over,
+    },
+  } as Parameters<typeof f>[0])
+
+  it('becomes an autocomplete when the vocabulary cannot be enumerated inline', () => {
+    expect(fieldInput(country()).kind).toBe('autocomplete')
+  })
+
+  it('carries what the host needs to resolve options: collection, key, ordering and display field', () => {
+    expect(fieldInput(country()).lookup).toEqual({
+      dimension: 'countries', key: 'iso2', vocabulary: 'closed',
+      present: { label: 'name' }, sortBy: 'name',
+    })
+  })
+
+  it('reports an open vocabulary so the control can admit a value not in the collection', () => {
+    expect(fieldInput(country({ vocabulary: 'open' })).lookup?.vocabulary).toBe('open')
+  })
+
+  it('stays a select when the host enumerated the options itself', () => {
+    const inp = fieldInput(country(), [{ value: 'th', label: 'Thailand' }])
+    expect(inp.kind).toBe('select')
+    expect(inp.lookup).toBeUndefined()
+  })
+
+  it('stays a select when the collection tier still declared a closed key set', () => {
+    expect(fieldInput(country({ keys: ['th', 'jp'] })).kind).toBe('select')
+  })
+
+  it('leaves the enumerable tiers alone — no lookup descriptor on a static select', () => {
+    const inp = fieldInput(f({
+      key: 'priority', widget: 'select',
+      lookup: { backing: 'static', vocabulary: 'closed', key: 'id', onDelete: 'restrict', keys: ['low'] },
+    } as Parameters<typeof f>[0]))
+    expect(inp.kind).toBe('select')
+    expect(inp.lookup).toBeUndefined()
+  })
+})
+
 describe('fieldErrors', () => {
   it('keys issues by the first path segment, first message per field', () => {
     const err = { issues: [
