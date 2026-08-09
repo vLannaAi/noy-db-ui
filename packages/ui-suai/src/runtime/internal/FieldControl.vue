@@ -2,19 +2,66 @@
 // Item family — ONE widget renderer per FieldInput kind, shared by RecordForm (create) and
 // RecordDetail (in-place edit) so both surfaces stay pixel-consistent. Emits update:modelValue;
 // i18n-text edits emit the whole updated locale map. Error/hint lines render under the control.
-import { computed } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import type { FieldInput, FieldHint } from '@noy-db/ui'
+
+type Option = { value: string; label: string }
 
 const props = withDefaults(defineProps<{
   input: FieldInput
   modelValue: any
   error?: string
   hint?: FieldHint
+  /**
+   * Resolve options for an `autocomplete` input (the lookup matrix tier). `input.lookup` names the
+   * backing collection, key and display field; enumerating it is the host's job — describe() never
+   * embeds a reference collection's rows.
+   */
+  search?: (term: string) => Promise<readonly Option[]>
   idPrefix?: string
 }>(), { idPrefix: 'f' })
 
 const emit = defineEmits<{ 'update:modelValue': [value: any] }>()
 const id = computed(() => `${props.idPrefix}-${props.input.key}`)
+
+// ── autocomplete ────────────────────────────────────────────────────────────
+// Labels are only known for options the host has actually returned, so a stored key renders as
+// itself until it has been seen once. Nothing here guesses at the backing collection.
+const seen = new Map<string, string>()
+const term = ref('')
+const results = ref<readonly Option[]>([])
+const open = ref(false)
+let timer: ReturnType<typeof setTimeout> | undefined
+
+const committed = computed(() => {
+  const v = props.modelValue
+  return v == null || v === '' ? '' : (seen.get(String(v)) ?? String(v))
+})
+watch(committed, (v) => { term.value = v }, { immediate: true })
+onBeforeUnmount(() => clearTimeout(timer))
+
+function onTerm(v: string): void {
+  term.value = v
+  open.value = true
+  clearTimeout(timer)
+  timer = setTimeout(async () => {
+    const found = props.search ? await props.search(v) : []
+    for (const o of found) seen.set(o.value, o.label)
+    results.value = found
+  }, 200)
+}
+function choose(o: Option): void {
+  seen.set(o.value, o.label)
+  open.value = false
+  emit('update:modelValue', o.value)
+}
+function onBlur(): void {
+  open.value = false
+  // A closed vocabulary only accepts a value that exists in the backing collection, so free text
+  // is discarded; an open one stores what was typed.
+  if (props.input.lookup?.vocabulary === 'open') emit('update:modelValue', term.value || undefined)
+  else term.value = committed.value
+}
 
 const i18nMap = computed<Record<string, string>>(() =>
   (typeof props.modelValue === 'object' && props.modelValue !== null) ? props.modelValue : {})
@@ -48,6 +95,27 @@ function num(v: string): void {
       <option value="">—</option>
       <option v-for="o in input.options" :key="o.value" :value="o.value">{{ o.label }}</option>
     </select>
+    <div v-else-if="input.kind === 'autocomplete'" class="relative">
+      <input
+        :id="id" type="text" class="nui-field w-full" role="combobox" autocomplete="off"
+        aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`"
+        :value="term" @input="onTerm(($event.target as HTMLInputElement).value)"
+        @focus="onTerm(term)" @blur="onBlur" @keydown.esc="open = false"
+      >
+      <ul
+        v-if="open && results.length" :id="`${id}-list`" role="listbox"
+        class="absolute z-20 mt-1 w-full max-h-56 overflow-auto nui-panel py-1 shadow-lg"
+      >
+        <li
+          v-for="o in results" :key="o.value" role="option"
+          :aria-selected="o.value === modelValue"
+          class="px-2 py-1 text-sm cursor-pointer hover:bg-nui-subtle"
+          @mousedown.prevent="choose(o)"
+        >
+          {{ o.label }}
+        </li>
+      </ul>
+    </div>
     <label v-else-if="input.kind === 'checkbox'" class="flex items-center gap-2 h-9">
       <input
         :id="id" type="checkbox" class="accent-nui-accent"

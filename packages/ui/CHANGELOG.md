@@ -3,6 +3,29 @@
 All notable changes to `@noy-db/ui` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
+## [0.3.0-pre.4] — 2026-08-09
+
+Sync onto the current family rail (hub `0.6.0-pre.4`), and close the last gap in the hub's
+native `via-lookup` surface: a lookup field backed by a reference collection now resolves to a
+control that can actually be used.
+
+### Added
+- **`InputKind` gains `'autocomplete'`**, with a new **`FieldInput.lookup`** descriptor
+  (`FieldInputLookup`). `fieldInput()` splits a `lookup()` field by whether its vocabulary can be
+  shown whole: the `static` and `reserved` tiers keep rendering as a `select` sourced from
+  `dict.values` or the declared `lookup.keys`, while the **`collection` tier** — whose membership
+  lives in a first-class reference collection that `describe()` deliberately does not embed —
+  becomes an `autocomplete` carrying `{ dimension, key, vocabulary, present, sortBy }` so the host
+  can resolve options search-as-you-type. Previously such a field fell through to a **free-text
+  input**, because there were no inline options to build a select from.
+
+  Host-supplied `options` still win and still produce a `select`, so nothing that works today
+  changes shape; the new kind only appears where the control was previously wrong.
+
+### Changed
+- Dev pins moved to `@noy-db/hub` / `@noy-db/to-memory` `0.6.0-pre.4` (from `0.6.0-pre.1`). The
+  `peerDependencies` range `^0.6.0-pre.0` already admitted it and is untouched.
+
 ## [0.3.0-pre.3] — 2026-08-02
 
 In-place editing: hints, i18n/unit inputs, and the edit-state composable. Also: found-set

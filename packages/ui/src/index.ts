@@ -63,7 +63,7 @@ export { useCollectionList, type DisplayLine, type GroupLine, type RowLine } fro
 // Item family: detail-view value formatting + schema-driven form input resolution
 export { formatDetailCell, detailFields, type DetailCell } from './detail'
 export { groupFields, type FieldGroup } from './groups'
-export { fieldInput, formFields, fieldErrors, fieldHint, type FieldInput, type InputKind, type FieldHint } from './form'
+export { fieldInput, formFields, fieldErrors, fieldHint, type FieldInput, type FieldInputLookup, type InputKind, type FieldHint } from './form'
 export { useRecordItem, type ItemCollection } from './use-record-item'
 
 // Item family: change-history "what / who / when" timeline (P4)

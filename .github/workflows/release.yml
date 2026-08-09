@@ -5,6 +5,13 @@ name: Release
 # → "Run workflow", or `gh workflow run release.yml --ref main`.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'npm dist-tag to publish under. A pre-release MUST go to `next` — landing one on `latest` corrupts the tag for every consumer and only a manual `npm dist-tag` repair undoes it.'
+        type: choice
+        required: true
+        default: next
+        options: [next, latest]
 
 concurrency: release
 
@@ -13,7 +20,7 @@ permissions:
 
 jobs:
   release:
-    name: Publish to npm (@latest)
+    name: Publish to npm (@${{ inputs.tag }})
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -36,9 +43,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Publish
-        run: pnpm release # = pnpm build && changeset publish --tag latest
+        run: pnpm release # = pnpm build && changeset publish --tag "$DIST_TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ inputs.tag }}
       - name: Push release tags
         # `changeset tag` is idempotent (skips tags that exist locally or on the remote),
         # so this also back-fills tags for any release where tagging failed.

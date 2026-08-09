@@ -1,5 +1,19 @@
 # Changelog — @noy-db/ui-suai
 
+## [0.3.0-pre.4] — 2026-08-09
+
+### Added
+- **`FieldControl` renders the new `autocomplete` kind** — a dependency-free combobox for a lookup
+  field backed by a reference collection. `RecordForm` and `RecordDetail` (edit mode) gain a
+  **`search`** prop, `Record<fieldKey, (term) => Promise<{ value, label }[]>>`, mirroring the
+  existing `options` prop: supply `options` for a field and it stays a plain select, supply
+  `search` and it becomes a typeahead. A `closed` vocabulary discards free text on blur; an `open`
+  one stores what was typed. Option labels are only shown for options the host has returned — the
+  component never guesses at the backing collection.
+
+### Changed
+- Dev pin moved to `@noy-db/hub` `0.6.0-pre.4`; the peer range `^0.6.0-pre.0` is unchanged.
+
 ## [0.3.0-pre.3] — 2026-08-02
 
 **First published release.** `@noy-db/ui-suai` is the **flagship rendering fork** of the three-fork
