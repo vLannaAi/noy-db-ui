@@ -1,5 +1,17 @@
 # Changelog — @noy-db/ui-suai
 
+## [0.3.0-pre.5] — 2026-08-09
+
+### Changed
+- **`runtime/core/` is now a re-export shim over `@noy-db/ui`** (#9). The configuration layer —
+  `provideNoydbUi`/`useNoydbUi`, `useNuiI18n`, `useLlm`, `useViewport`, `useContainerSize`,
+  `useVoiceInput`, `NUI_LOCALE_TH` — was byte-identical in both bindings and now has one home.
+  `useTheme` stays here: it is the real fork.
+
+  **No surface change.** `/core` exports the same nine runtime names as `0.3.0-pre.4`, and the
+  files stay in `runtime/core/` so the Nuxt module's `addImportsDir` keeps auto-importing every
+  composable exactly as before.
+
 ## [0.3.0-pre.4] — 2026-08-09
 
 ### Added
