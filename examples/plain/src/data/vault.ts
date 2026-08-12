@@ -1,4 +1,4 @@
-import { createNoydb, readNoydbBundle, withSequence, type Noydb, type Vault } from '@noy-db/hub'
+import { createNoydb, readPod, withSequence, type Noydb, type Vault } from '@noy-db/hub'
 import { withReduce } from '@noy-db/hub/reduce'
 import { withBlobs } from '@noy-db/hub/blobs'
 import { withHistory } from '@noy-db/hub/history'
@@ -41,7 +41,7 @@ export async function buildVault(secret: string): Promise<{ db: Noydb; vault: Va
  * Working sequence (confirmed against sibling runtime):
  *   1. createNoydb with empty memory store + wrong/right secret
  *   2. openVault(VAULT_NAME, { create: true }) — creates a fresh owner keyring
- *   3. readNoydbBundle(bytes) — extracts the JSON dump (no secret needed)
+ *   3. readPod(bytes) — extracts the JSON dump (no secret needed)
  *   4. vault.load(dumpJson) — restores keyrings + data, then calls reloadKeyring()
  *      which tries to decrypt the backup's keyring with the session secret.
  *      Wrong secret → InvalidKeyError thrown here (at load, not at first read).
@@ -58,7 +58,7 @@ export async function openVaultFromBundle(bytes: Uint8Array, secret: string): Pr
     reduceStrategy: withReduce(),
   })
   const vault = await db.openVault(VAULT_NAME, { create: true })
-  const { dumpJson } = await readNoydbBundle(bytes)
+  const { dumpJson } = await readPod(bytes)
   await vault.load(dumpJson)
   return vault
 }
