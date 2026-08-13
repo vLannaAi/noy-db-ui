@@ -1,0 +1,60 @@
+name: Peer floor
+
+# Do all three packages actually COMPILE against the oldest @noy-db/* versions
+# their peer ranges admit?
+#
+# Ported from noy-db-to (PR #92), klum-db (PR #87) and doi-db (PR #2).
+#
+# Deliberately NOT part of the main CI workflow: every gate there — build, lint,
+# typecheck, 234 tests — resolves @noy-db/* from the exact DEV PIN, so none of
+# them exercises the declared peer RANGES. A range can promise versions the code
+# cannot run on and the whole suite stays green. klum-db shipped exactly that.
+#
+# Also enforces that the three packages declare the SAME floor. Their lockstep
+# is not enforced by changesets (`fixed: []`) and holds only because every
+# changeset so far cascaded through @noy-db/ui, so divergence is worth failing
+# on rather than handling.
+#
+# examples/ are out of scope: private: true, outside the pnpm workspace, and
+# they pin @noy-db/* as ordinary dependencies rather than peers. They are
+# verified by `nuxi build`.
+
+on:
+  pull_request:
+    paths: ['**/package.json', 'scripts/check-peer-floor.mjs', '.github/workflows/peer-floor.yml']
+  push:
+    branches: [main]
+    paths: ['**/package.json', 'scripts/check-peer-floor.mjs', '.github/workflows/peer-floor.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: peer-floor-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  peer-floor:
+    name: Compile against the advertised floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Enable corepack (pnpm)
+        run: corepack enable
+
+      # No pnpm store cache on purpose: this job resolves @noy-db versions that
+      # are NOT the dev pin, and a cache keyed on the lockfile would mask a
+      # floor that cannot even be installed.
+      - name: Install (dev pin)
+        run: pnpm install --frozen-lockfile
+
+      - name: Show the plan
+        run: node scripts/check-peer-floor.mjs --dry-run
+
+      - name: Compile against the declared floor
+        run: node scripts/check-peer-floor.mjs
