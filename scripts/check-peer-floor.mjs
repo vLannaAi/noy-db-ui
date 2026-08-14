@@ -51,8 +51,10 @@ if (invalid.length) {
   console.error('✗ peer range(s) with no usable floor:\n')
   for (const i of invalid) console.error(`  ${i.pkg}: ${i.name} "${i.range}"`)
   console.error('\nA range is unusable here when it is malformed, satisfiable by nothing, or')
-  console.error('unbounded — an empty range promises every version, so there is no floor to')
-  console.error('check it against. Declare a real lower bound.')
+  console.error('unbounded. Unbounded is the subtle one: `*`, `x`, `>=0.0.0`, `<1.0.0` and a')
+  console.error('half-finished `^0.6.0-pre.0 || ` all floor at 0.0.0, a version no @noy-db')
+  console.error('package has ever published — so there is no real version to check against.')
+  console.error('Declare a lower bound (and if you were widening by appending, finish the edit).')
   process.exit(1)
 }
 

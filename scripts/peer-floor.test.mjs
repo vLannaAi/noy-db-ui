@@ -31,13 +31,35 @@ describe('floorOf', () => {
     expect(floorOf('>1.0.0 <1.0.0')).toBeNull()
   })
 
-  // semver reads a blank range as `*` and floors it at 0.0.0 — a version no
-  // @noy-db package has ever had. Checking against it fails as a baffling "no
-  // matching version for @noy-db/hub@0.0.0"; the honest answer is that an
-  // unbounded range promises everything and so has no floor to check.
-  it('rejects a blank range rather than flooring it at 0.0.0', () => {
-    expect(floorOf('')).toBeNull()
-    expect(floorOf('   ')).toBeNull()
+  // An unbounded range floors at 0.0.0 — a version no @noy-db package has ever
+  // published (verified: @noy-db/hub@0.0.0 is E404, and none of its 86 versions
+  // is 0.0.0). Checking against it fails minutes later as a baffling "no
+  // matching version for @noy-db/hub@0.0.0" from the install step, which reads
+  // as a registry problem rather than a malformed manifest.
+  //
+  // Detection is on the VALUE, not the range text: `<1.0.0` has an upper bound
+  // and does not look unbounded at all, so any rule reasoning about "empty or
+  // wildcard" misses it. One value check covers every spelling, including ones
+  // nobody has enumerated yet.
+  it.each(['', '   ', '*', 'x', '>=0.0.0', '<1.0.0', '1 || '])(
+    'rejects the unbounded range %j rather than flooring it at 0.0.0',
+    (range) => { expect(floorOf(range)).toBeNull() },
+  )
+
+  // The one that is not pedantry. The family's documented way to widen a peer
+  // range is "widen by APPENDING (… || ^0.7.0-pre.0)", and this is exactly what
+  // an interrupted edit leaves behind — the failure state of the procedure the
+  // coordination file tells people to follow. It reads as almost-correct in a
+  // diff, and it silently floors the whole range at 0.0.0.
+  it('rejects a half-finished "widen by appending" edit', () => {
+    expect(floorOf('^0.6.0-pre.0 || ')).toBeNull()
+  })
+
+  // Easy to over-correct into rejecting any low floor. 0.0.0 is the sentinel
+  // precisely because it is unpublishable in this family; 0.0.1 is a real
+  // version shape and must still be accepted.
+  it('still accepts a genuinely low but bounded floor', () => {
+    expect(floorOf('>=0.0.1')).toBe('0.0.1')
   })
 
   // The negative assertion: whatever arrives, the caller gets a value it can

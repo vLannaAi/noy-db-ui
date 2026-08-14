@@ -30,17 +30,33 @@ const semver = createRequire(import.meta.url)('semver')
  * always report which package and which range, never a stack trace.
  */
 export function floorOf(range) {
-  // A blank range is `*` to semver, which floors at 0.0.0 — a version of no
-  // @noy-db package that has ever existed. Left alone it surfaces as a baffling
-  // "no matching version for @noy-db/hub@0.0.0" install failure; reported as
-  // invalid it says the true thing, which is that an unbounded peer range
-  // promises every version and so cannot be checked against one.
-  if (typeof range !== 'string' || range.trim() === '') return null
+  let min
   try {
-    return semver.minVersion(range)?.version ?? null
+    min = semver.minVersion(range)
   } catch {
     return null
   }
+  if (!min) return null
+
+  // An unbounded range floors at 0.0.0, and that is checked on the VALUE rather
+  // than on the range text on purpose. At least eight spellings reach it — ''
+  // '   ' '*' 'x' '>=0.0.0' '<1.0.0' '1 || ' '^0.6.0-pre.0 || ' — and two of
+  // them defeat any text rule: `<1.0.0` carries an UPPER bound so it does not
+  // read as unbounded at all, and `^0.6.0-pre.0 || ` is a half-finished "widen
+  // by appending", the failure state of the very procedure the family
+  // coordination file prescribes. One value check covers all of them, and the
+  // ninth nobody has found.
+  //
+  // The sentinel works because no @noy-db package has ever published 0.0.0 —
+  // verified for this repo's only peer: @noy-db/hub@0.0.0 is E404 and none of
+  // its 86 published versions is 0.0.0. If one ever ships a 0.0.0 this
+  // detection silently becomes wrong.
+  //
+  // Only 0.0.0 is the sentinel: '>=0.0.1' floors at 0.0.1 and is a real, if
+  // unusual, bound — rejecting low floors generally would be an over-correction.
+  if (min.version === '0.0.0') return null
+
+  return min.version
 }
 
 /**
