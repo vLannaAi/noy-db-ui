@@ -39,10 +39,20 @@ on:
         type: string
 
 concurrency:
-  # Keyed on the caller's event too, so a release-path run never shares a group
-  # with a standalone one on the same ref (both are `refs/heads/main` under
-  # workflow_dispatch). Cancelling is for superseded PR pushes only: cancelling
-  # a release gate would read as a failed release.
+  # Keyed on the caller's event so a release-path run cannot share a group with
+  # a standalone one. Note what is NOT the reason: a `release` event already
+  # runs under the TAG (`github.ref` = refs/tags/vX.Y.Z), so it is isolated from
+  # a push to main even without this key — but that is a property of how GitHub
+  # sets `github.ref`, not something this config states or guarantees. The
+  # genuinely reachable collisions are narrower: two push-triggered runs on the
+  # same ref (a push touching both a package.json and a workflow file fires the
+  # guard directly AND through release.yml), and, under workflow_dispatch, a
+  # release-path run against a standalone one — both `refs/heads/main`.
+  #
+  # The second line is the one that matters. A job whose entire value is being
+  # trusted to block a publish must not be cancellable by anything, which turns
+  # the isolation above from a coincidence into a stated invariant. Cancelling
+  # is scoped to superseded PR pushes, which is what it was for.
   group: peer-floor-${{ inputs.ref || github.ref }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
