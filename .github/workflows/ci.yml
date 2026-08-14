@@ -35,3 +35,8 @@ jobs:
         run: pnpm typecheck
       - name: Test
         run: pnpm test
+      # scripts/ is not part of any published package, so `turbo run test` does
+      # not reach it. Without this line the docs-bridge tests would exist and
+      # never run — the same shape as the bridge gap they were written for.
+      - name: Test repo tooling (scripts/)
+        run: pnpm test:scripts
