@@ -1,5 +1,22 @@
 # Changelog — @noy-db/ui-suai
 
+## [0.3.0-pre.6] — 2026-08-14
+
+No change to any published code — this release exists to put the repo's **first GitHub Release**
+through the Release-triggered publish path, which had never been exercised (both prior cuts went
+out via `workflow_dispatch`).
+
+### Changed (repo tooling only)
+- The release path is now gated on the **peer-floor guard** (#27). It was merged in #26 but
+  triggered only on `package.json` edits, and a Release event is not one — so it could not block
+  a release that advertised a peer range it would have rejected. Now called via `workflow_call`
+  at the release tag.
+- **A docs bridge** (#28): a release now attaches a `bridge: 1` payload and files a doc-sync issue
+  in noy-db-docs, which records this repo's versions but previously had no way to learn when they
+  changed.
+- The peer-floor guard **no longer dies with a stack trace on a bad peer range** (#30), and
+  detects an unbounded range by its computed floor rather than by its text.
+
 ## [0.3.0-pre.5] — 2026-08-09
 
 ### Changed
