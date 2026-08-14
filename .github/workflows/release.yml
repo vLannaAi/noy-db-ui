@@ -6,7 +6,10 @@ name: Release
 #
 # Triggered on GitHub Release `published`. Runs the full verification gate
 # (install + build + lint + typecheck + test) on a clean checkout at the
-# release tag, and only publishes if every gate passes.
+# release tag, PLUS the peer-floor guard called at that same tag, and only
+# publishes if every gate passes. Those two answer different questions: verify
+# proves the tree is green against the exact dev pin, peer-floor proves the
+# declared peer RANGES are true. Neither subsumes the other.
 #
 # ── Why a repo-level `vX.Y.Z` tag ─────────────────────────────────────
 #
@@ -155,7 +158,32 @@ jobs:
           fi
           echo "✅ routing check passed (version=$VERSION, prerelease=${{ github.event.release.prerelease }})"
 
-  # ── Gate 2: publish ──────────────────────────────────────────────────
+  # ── Gate 2: the peer ranges are TRUE ─────────────────────────────────
+  #
+  # `verify` above proves the tree is green against the exact DEV PIN, which
+  # says nothing about the declared peer RANGES — a range can promise versions
+  # the code cannot run on and every gate stays green. That is not theoretical:
+  # klum-db shipped 0.4.0-pre.5 advertising `^0.6.0-pre.0` while its code needed
+  # `pre.14`, with this very guard already merged in its repo. It could not fire,
+  # because `peer-floor.yml` triggers on `package.json` edits and a Release event
+  # is not one.
+  #
+  # Called, not inlined. `peer-floor.yml` deliberately runs with NO pnpm store
+  # cache and documents why next to the step; adding `run: node
+  # scripts/check-peer-floor.mjs` to `verify` would put that job's cache in front
+  # of it and quietly strip the property from the reason it exists.
+  #
+  # `ref` is required, not cosmetic: without it the called workflow checks out
+  # the default branch, so a release would be gated against `main` while
+  # publishing a tag — a check that runs and examines the wrong tree.
+  peer-floor:
+    name: Peer floor
+    if: github.event_name == 'release' || github.event.inputs.confirm == 'PUBLISH' || github.event_name == 'push'
+    uses: ./.github/workflows/peer-floor.yml
+    with:
+      ref: ${{ github.event.release.tag_name || github.ref }}
+
+  # ── Gate 3: publish ──────────────────────────────────────────────────
   #
   # Explicit event guard: publish runs ONLY on a `release` event or a
   # `workflow_dispatch` with `confirm: PUBLISH`. `verify` also runs on `push`
@@ -164,7 +192,7 @@ jobs:
   # publish to npm without confirmation.
   publish:
     name: Publish to npm
-    needs: verify
+    needs: [verify, peer-floor]
     if: |
       github.event_name == 'release' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'PUBLISH')

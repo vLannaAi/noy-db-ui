@@ -26,10 +26,25 @@ on:
     branches: [main]
     paths: ['**/package.json', 'scripts/check-peer-floor.mjs', '.github/workflows/peer-floor.yml']
   workflow_dispatch:
+  # Called by release.yml so the release path is gated on this too. Those path
+  # filters above are invisible to a Release event — a Release is not a
+  # package.json edit — so without this entry the guard sits merged in the repo
+  # and watches a release ship a peer range it would have rejected. klum-db did
+  # exactly that with 0.4.0-pre.5.
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Ref to check out. The release TAG, not the default branch — otherwise this gates main while publishing something else.'
+        required: false
+        type: string
 
 concurrency:
-  group: peer-floor-${{ github.ref }}
-  cancel-in-progress: true
+  # Keyed on the caller's event too, so a release-path run never shares a group
+  # with a standalone one on the same ref (both are `refs/heads/main` under
+  # workflow_dispatch). Cancelling is for superseded PR pushes only: cancelling
+  # a release gate would read as a failed release.
+  group: peer-floor-${{ inputs.ref || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -40,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
