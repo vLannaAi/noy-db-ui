@@ -59,8 +59,8 @@
     "vue": "^3.5.0"
   },
   "devDependencies": {
-    "@noy-db/hub": "0.6.0-pre.16",
-    "@noy-db/to-memory": "0.6.0-pre.16",
+    "@noy-db/hub": "0.6.0-pre.18",
+    "@noy-db/to-memory": "0.6.0-pre.18",
     "vue": "^3.5.0",
     "zod": "^4.4.3"
   },

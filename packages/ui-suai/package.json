@@ -69,7 +69,7 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.114",
-    "@noy-db/hub": "0.6.0-pre.16",
+    "@noy-db/hub": "0.6.0-pre.18",
     "@noy-db/ui": "workspace:*",
     "@nuxt/kit": "^4.0.0",
     "@nuxt/schema": "^4.0.0",
