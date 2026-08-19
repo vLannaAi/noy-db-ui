@@ -1,5 +1,52 @@
 # Changelog — @noy-db/ui-suai
 
+## [0.3.0-pre.7] — 2026-08-19
+
+Dev pins move onto `@noy-db/hub@0.6.0-pre.23`. **No change to any published UI code.**
+
+### ⚠️ This release does NOT move the hub peer floor
+
+The `peerDependencies` range stays `^0.6.0-pre.0`, unchanged and verified: all three packages
+still compile against `hub@0.6.0-pre.0`.
+
+**Upgrading `@noy-db/ui*` alone is safe.** A consumer already on an earlier `0.6.0-pre` keeps their
+hub, and that permissive floor is precisely what lets them take this release *without* their vault
+becoming unreadable. The breaks below arrive only if you **separately** take `@noy-db/hub@next`.
+
+### ⚠️ If you do take `hub@0.6.0-pre.23`: two format breaks, neither with a migration
+
+Both were found here, by the guard on this repo's committed demo pod.
+
+| | `pre.18` — record AAD (noy-db #1041) | `pre.21` — authenticated keyring |
+|---|---|---|
+| travels with | the payload | the vault |
+| fails at | first record read | **unlock** |
+| blast radius | one record | **the whole vault** |
+| a pre-break artefact | unopenable | **still opens until unlock** |
+
+`pre.18` began *applying* AAD (`pre.17` compiled the machinery without invoking it), so records
+written earlier fail their tag. `pre.21` made the keyring roster authenticated, so a vault written
+earlier fails at unlock with `KeyringTamperedError (roster-key-missing)`.
+
+Records are cross-readable across `pre.18 … pre.23`, so **a pod re-seeded under `pre.18` or later
+still fails on the keyring** if it carries one — a vault-at-rest pod does; an extracted compartment
+does not. Tracked as noy-db #1100.
+
+**The committed demo pods in `examples/` were re-seeded** for exactly this reason. If you keep a
+committed encrypted artefact of your own, expect to re-seed it; the error names the format
+transition rather than accusing your store (noy-db #1129), so it should be recognisable rather
+than something to debug.
+
+### Note: hub #1141 turns ref enforcement ON
+
+Not a change in this package, but upgrade-visible and worth knowing before you take the hub.
+`refs` declared on an **already-constructed** collection used to be silently discarded, so a strict
+`put()` with a dangling ref was **accepted**. It is now enforced — writes that previously succeeded
+may start raising `RefIntegrityError`. That is the fix working, not a regression.
+
+This repo's examples declare refs in `'warn'` mode and use no materialized views, so nothing here
+newly rejects; the fix means their post-`load()` re-declaration now actually takes effect.
+
 ## [0.3.0-pre.6] — 2026-08-14
 
 No change to any published code — this release exists to put the repo's **first GitHub Release**
