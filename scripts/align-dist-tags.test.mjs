@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { publishablePackages, planAlignment, readDistTags, classifyResults, exitCodeFor } from './align-dist-tags.mjs'
+import { publishablePackages, planAlignment, readDistTags, classifyResults, exitCodeFor, settle } from './align-dist-tags.mjs'
 
 function repo(pkgs) {
   const root = mkdtempSync(join(tmpdir(), 'dist-tags-'))
@@ -174,5 +174,95 @@ describe('exitCodeFor', () => {
 
   it('is zero when everything confirmed', () => {
     expect(exitCodeFor([{ outcome: 'confirmed' }])).toBe(0)
+  })
+})
+
+// The read-after-write defect itself is unreachable by any test that does not
+// write — invisible in every dry run and live pre-flight, first reachable on the
+// real cut. What IS testable is that the settling behaves: that it retries, that
+// a stale read followed by a fresh one ends confirmed, and that a write error is
+// never retried away. Those are what a refactor would silently break.
+describe('settle', () => {
+  const pkgs = [{ name: 'a', version: '1.0.0' }]
+  const fresh = { a: { latest: '1.0.0', next: '1.0.0' } }
+  const stale = { a: { latest: '1.0.0', next: '0.9.0' } }
+
+  it('confirms without sleeping when the first read is already fresh', () => {
+    const slept = []
+    const r = settle(pkgs, { read: () => fresh, sleep: (ms) => slept.push(ms) })
+    expect(r[0].outcome).toBe('confirmed')
+    expect(slept).toEqual([])
+  })
+
+  it('retries a stale read and confirms once the registry catches up', () => {
+    let call = 0
+    const slept = []
+    const r = settle(pkgs, { read: () => (++call === 1 ? stale : fresh), sleep: (ms) => slept.push(ms) })
+    expect(r[0].outcome).toBe('confirmed')
+    expect(slept).toHaveLength(1)
+  })
+
+  it('backs off between attempts rather than hammering the registry', () => {
+    const slept = []
+    settle(pkgs, { read: () => stale, sleep: (ms) => slept.push(ms), attempts: 3 })
+    expect(slept).toEqual([5000, 10000, 15000])
+  })
+
+  it('gives up as unconfirmed rather than failed when it never catches up', () => {
+    const r = settle(pkgs, { read: () => stale, sleep: () => {}, attempts: 2 })
+    expect(r[0].outcome).toBe('unconfirmed')
+    expect(exitCodeFor(r)).toBe(0)
+  })
+
+  // A failed write is not a visibility problem; retrying it wastes the settle
+  // budget and cannot change the answer.
+  it('never sleeps for a package whose write errored', () => {
+    const slept = []
+    const r = settle([{ name: 'a', version: '1.0.0' }], {
+      writeErrors: { a: 'E404' }, read: () => ({}), sleep: (ms) => slept.push(ms),
+    })
+    expect(r[0].outcome).toBe('failed')
+    expect(slept).toEqual([])
+  })
+
+  it('re-reads only the stragglers, not every package', () => {
+    const asked = []
+    const pkgs2 = [{ name: 'a', version: '1.0.0' }, { name: 'b', version: '1.0.0' }]
+    let call = 0
+    settle(pkgs2, {
+      read: (names) => {
+        asked.push([...names]); call++
+        return call === 1
+          ? { a: { latest: '1.0.0', next: '1.0.0' }, b: { latest: '1.0.0', next: '0.9.0' } }
+          : { b: { latest: '1.0.0', next: '1.0.0' } }
+      },
+      sleep: () => {},
+    })
+    expect(asked[0]).toEqual(['a', 'b'])
+    expect(asked[1]).toEqual(['b'])
+  })
+})
+
+// Pinned, not incidental. At three packages the write pass buys ~3s of settling,
+// so the retry IS the mechanism — see the note on settle(). A refactor that
+// trims this budget would be invisible until a real cut, because nothing before
+// one writes anything.
+describe('the settle budget outlasts the cache independent of package count', () => {
+  it('waits at least as long as noy-db\'s reference (45s) even for a single package', () => {
+    const slept = []
+    settle([{ name: 'a', version: '1.0.0' }], {
+      read: () => ({ a: { latest: '1.0.0', next: '0.9.0' } }),
+      sleep: (ms) => slept.push(ms),
+    })
+    expect(slept.reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(45_000)
+  })
+
+  it('probes quickly first, so a fast propagation is not punished', () => {
+    const slept = []
+    settle([{ name: 'a', version: '1.0.0' }], {
+      read: () => ({ a: { latest: '1.0.0', next: '0.9.0' } }),
+      sleep: (ms) => slept.push(ms),
+    })
+    expect(slept[0]).toBeLessThanOrEqual(5_000)
   })
 })
