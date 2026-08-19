@@ -11,12 +11,22 @@
  * Stable publishes only. A pre-release already sets `@next` and must never
  * touch `@latest`.
  *
+ * DELIBERATELY FATAL, unlike noy-db's `repoint-pre-only-latest.mjs`, which is
+ * the mirror operation (moving `latest` FORWARD onto a prerelease for packages
+ * that have no stable) and never fails its caller. That posture is right there:
+ * a stale `latest` on a pre-only package is cosmetic, and reddening a release
+ * over it only trains people to stop reading the log. It is wrong here. This
+ * runs as part of delivering a stable, and a half-applied state across three
+ * packages that ship together is worse than a loud failure — it is precisely
+ * the state a human then has to repair by hand, with an OTP. Do not "fix" this
+ * to match the sibling script.
+ *
  * The pure half lives here so the dangerous part is testable: a blind
  * `npm dist-tag add <pkg>@<version> next` is correct when the stable published
  * and catastrophic when the version is wrong. `planAlignment` refuses rather
  * than guessing.
  */
-import { readdirSync, readFileSync, existsSync } from 'node:fs'
+import { readdirSync, readFileSync, existsSync, appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
@@ -119,6 +129,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   if (!apply) { console.log('\n--apply not given; nothing written.'); process.exit(0) }
 
+  const summary = []
   for (const a of actions) {
     execFileSync('npm', ['dist-tag', 'add', `${a.name}@${a.version}`, 'next'], { stdio: 'inherit' })
   }
@@ -130,8 +141,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const t = after[name]
     const ok = t?.next === version && t?.latest === version
     console.log(`  ${ok ? '✓' : '✗'} ${name}: latest=${t?.latest} next=${t?.next}`)
-    if (!ok) bad++
+    summary.push(`- ${ok ? '✓' : '⚠️'} \`${name}\` — latest=\`${t?.latest}\` next=\`${t?.next}\``)
+    if (!ok) {
+      // The repair needs an OTP from a workstation, so hand over the exact
+      // command rather than leaving whoever reads this to reconstruct it.
+      summary.push(`    recover with: \`npm dist-tag add ${name}@${version} next --otp=<code>\``)
+      bad++
+    }
   }
+
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### dist-tag alignment\n\n${summary.join('\n')}\n\n`)
+  }
+
   if (bad) { console.error(`\n✗ ${bad} package(s) did not land as expected.`); process.exit(1) }
   console.log('\n✓ @latest and @next both on the stable for every package')
 }
