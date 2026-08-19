@@ -3,6 +3,50 @@
 All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
+## [0.3.0-pre.8] — 2026-08-19
+
+Dev pins move onto `@noy-db/hub@0.6.0-pre.24`. **No change to any published UI code.**
+
+### This release does not move the hub peer floor
+
+`peerDependencies` stays `^0.6.0-pre.0`, unchanged and still verified against `hub@0.6.0-pre.0`.
+Upgrading `@noy-db/ui*` alone is safe for an existing consumer; the break below arrives only if
+you **separately** take `@noy-db/hub@next`.
+
+### ⚠️ If you take `hub@0.6.0-pre.24`: this is the THIRD format break in the 0.6 pre line
+
+Not a new class — the same no-migration pattern, on the same artefact type as the second:
+
+| hub | what broke | fails at |
+|---|---|---|
+| `pre.18` | record AAD applied (#1041) | first record read |
+| `pre.21` | keyring roster authenticated | unlock |
+| **`pre.24`** | **`NOYDB_KEYRING_VERSION` → 2** (#1115) | **unlock** |
+
+`pre.24` also changes **blob addresses** — they now derive from a vault-lifetime keyring slot, so
+existing addresses do not carry over. Both demo pods in `examples/` were re-seeded again.
+
+**The error is worth reading rather than working around.** An upgrading vault now reports
+`format-superseded`:
+
+> This keyring was written by an OLDER FORMAT … that format change ships without a migration, so
+> an existing vault must be re-seeded. Access is refused either way, and the version field this
+> branch reads selects only the wording — never the decision — so a store cannot use it to weaken
+> anything.
+
+That reason exists **to protect the alarm**. Without it every upgrading vault would have reported
+`roster-tag-mismatch` — the one unqualified accusation in that union — for an entirely benign
+reason. It is classification only: refusal is identical either way, so a store rewriting the
+plaintext version field changes wording and nothing else.
+
+### Also in `pre.24`, relevant to this package's surfaces
+
+**#1126 is fixed.** A blob's eTag was an HMAC keyed by the DEK that rotates, so every blob written
+before any rotation failed its address check *permanently* — the external-object read path raised
+`TamperedError` on legitimate data forever. Addresses now derive from a root that rotation does not
+touch, still per tier. This repo reads blobs via `.blob(id).get()` rather than the presigned-URL
+path, so nothing here changed behaviour; a host using external objects should take `pre.24`.
+
 ## [0.3.0-pre.7] — 2026-08-19
 
 Dev pins move onto `@noy-db/hub@0.6.0-pre.23`. **No change to any published UI code.**
