@@ -40,15 +40,26 @@ committed encrypted artefact of your own, expect to re-seed it; the error names 
 transition rather than accusing your store (noy-db #1129), so it should be recognisable rather
 than something to debug.
 
-### Note: hub #1141 turns ref enforcement ON
+### Note: hub #1141 fixes a ref-declaration ORDERING bug
 
-Not a change in this package, but upgrade-visible and worth knowing before you take the hub.
-`refs` declared on an **already-constructed** collection used to be silently discarded, so a strict
-`put()` with a dangling ref was **accepted**. It is now enforced — writes that previously succeeded
-may start raising `RefIntegrityError`. That is the fix working, not a regression.
+> **Clarified 2026-08-19.** This section first said #1141 "turns ref enforcement ON", which
+> overstated it — enforcement was never globally off. Corrected in place rather than rewritten,
+> since the original wording was published.
 
-This repo's examples declare refs in `'warn'` mode and use no materialized views, so nothing here
-newly rejects; the fix means their post-`load()` re-declaration now actually takes effect.
+Not a change in this package, but worth knowing before you take the hub. `refs` declared on an
+**already-constructed** collection were silently discarded, so for those collections the reference
+closure was incomplete and a strict `put()` with a dangling ref was **accepted**. Declaring `refs`
+*before* first touching the collection always behaved correctly, under `pre.21` and `pre.23` alike.
+
+So the incomplete closure and the unenforced integrity were **one bug, not two**, and adopting
+`pre.23` is a **no-op** unless you hit the ordering. Only code that did will see new
+`RefIntegrityError`s — and those writes were genuinely invalid.
+
+This repo's examples declare refs in `'warn'` mode and use no materialized views (the other trigger:
+a query-form materialized view runs `db.collection(name)` inside `openVault()`, before any user code,
+so its sources' `refs` were discarded with no ordering the consumer could have chosen). Nothing here
+newly rejects; the fix means the post-`load()` re-declaration in `useVault.ts` now actually takes
+effect where it was previously discarded.
 
 ## [0.3.0-pre.6] — 2026-08-14
 
