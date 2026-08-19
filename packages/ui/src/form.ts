@@ -1,7 +1,15 @@
 // Schema-driven form logic — pick the input control for a describe() field. Pure; shared by
 // RecordForm (and any custom editor). Validation stays with the collection: the host calls put(),
 // noy-db zod-validates, and errors flow back to the form per field.
-import type { DescribedField, StandardSchemaV1Issue } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
+// StandardSchemaV1Issue deliberately stays on the bare root. It is NOT exported from
+// ./introspection until hub 0.6.0-pre.9 — measured against published tarballs: absent at
+// pre.8, present at pre.9 — while our declared peer floor is ^0.6.0-pre.0. Moving it would
+// make that range false, and the honest repair would be narrowing the floor to pre.9, which
+// compels an upgrade for every consumer on pre.0..pre.8 to satisfy import cosmetics. The
+// peer-floor guard caught this on the #1021 migration; it is not a lint exception, it is the
+// floor telling us where the seam actually is. Move it when the floor rises for a real reason.
+import type { StandardSchemaV1Issue } from '@noy-db/hub'
 import { detailFields } from './detail'
 
 export type InputKind = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'autocomplete' | 'checkbox' | 'i18n-text'

@@ -1,7 +1,7 @@
 // Path-shaped titles for the item family (spec D7): the detail title is a path —
 // the group-by trail when the found set was grouped, else the entity's natural
 // ref axis — terminating in the record title. Pure + framework-free.
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 import type { FoundSetItem } from './traverse'
 
 export interface PathSegment {
