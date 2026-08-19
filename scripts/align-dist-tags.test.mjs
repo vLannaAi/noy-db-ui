@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { publishablePackages, planAlignment, readDistTags } from './align-dist-tags.mjs'
+import { publishablePackages, planAlignment, readDistTags, classifyResults, exitCodeFor } from './align-dist-tags.mjs'
 
 function repo(pkgs) {
   const root = mkdtempSync(join(tmpdir(), 'dist-tags-'))
@@ -122,5 +122,57 @@ describe('readDistTags', () => {
     const out = readDistTags(['a', 'b'], (n) => { seen.push(n); return { latest: '1.0.0', next: '1.1.0-pre.0' } })
     expect(seen).toEqual(['a', 'b'])
     expect(out.a.latest).toBe('1.0.0')
+  })
+})
+
+// noy-db's alignment job reported all 52 packages failed while all 52 had
+// succeeded: `npm view` is CDN-served, so a read taken straight after
+// `dist-tag add` returns the old value. The damage was not the red run — it was
+// that the failure path printed 52 repair commands for packages needing none.
+describe('classifyResults — the stale-read hazard', () => {
+  const pkgs = [{ name: '@noy-db/ui', version: '0.3.0' }]
+
+  it('confirms when the registry reads back the target', () => {
+    const [r] = classifyResults(pkgs, { tags: { '@noy-db/ui': { latest: '0.3.0', next: '0.3.0' } } })
+    expect(r.outcome).toBe('confirmed')
+  })
+
+  it('does NOT call a stale read a failure — that is the bug being fixed', () => {
+    const [r] = classifyResults(pkgs, { tags: { '@noy-db/ui': { latest: '0.3.0', next: '0.3.0-pre.8' } } })
+    expect(r.outcome).toBe('unconfirmed')
+    expect(r.outcome).not.toBe('failed')
+  })
+
+  it('calls a real write error a failure', () => {
+    const [r] = classifyResults(pkgs, { writeErrors: { '@noy-db/ui': 'E404 Not Found' }, tags: {} })
+    expect(r.outcome).toBe('failed')
+    expect(r.detail).toMatch(/E404/)
+  })
+
+  it('prefers the write error over the read — a failed write is not merely unconfirmed', () => {
+    const [r] = classifyResults(pkgs, {
+      writeErrors: { '@noy-db/ui': 'boom' },
+      tags: { '@noy-db/ui': { latest: '0.3.0', next: '0.3.0' } },
+    })
+    expect(r.outcome).toBe('failed')
+  })
+
+  it('treats a missing registry entry as unconfirmed, not failed', () => {
+    expect(classifyResults(pkgs, { tags: {} })[0].outcome).toBe('unconfirmed')
+  })
+})
+
+describe('exitCodeFor', () => {
+  // The whole point: a correct release must not go red because a CDN read lagged.
+  it('does not fail the run on unconfirmed reads', () => {
+    expect(exitCodeFor([{ outcome: 'unconfirmed' }, { outcome: 'confirmed' }])).toBe(0)
+  })
+
+  it('fails the run on a real write error', () => {
+    expect(exitCodeFor([{ outcome: 'confirmed' }, { outcome: 'failed' }])).toBe(1)
+  })
+
+  it('is zero when everything confirmed', () => {
+    expect(exitCodeFor([{ outcome: 'confirmed' }])).toBe(0)
   })
 })

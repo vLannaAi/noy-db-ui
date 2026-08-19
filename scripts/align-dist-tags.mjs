@@ -97,6 +97,38 @@ export function planAlignment(pkgs, current) {
   return { actions, skipped, refusals }
 }
 
+/**
+ * Classify what happened to each package after the writes.
+ *
+ * THREE outcomes, not two, and the third is the point. `npm view` is CDN-served,
+ * so a read taken immediately after `dist-tag add` can still return the OLD
+ * value for a write that landed perfectly. noy-db's alignment job reported all
+ * 52 packages failed while all 52 had succeeded, and the damage was not the red
+ * — it was that the failure path printed 52 repair commands for packages that
+ * needed no repair (noy-db #1156).
+ *
+ *   failed       the `dist-tag add` itself errored. A real problem. Repair.
+ *   confirmed    the registry reads back the target. Done.
+ *   unconfirmed  the write did not error but the read has not caught up.
+ *                CHECK, do not repair — and do not fail the run over it.
+ *
+ * Collapsing `unconfirmed` into `failed` is what turns a correct release red and
+ * hands out instructions to fix something that is not broken.
+ */
+export function classifyResults(pkgs, { writeErrors = {}, tags = {} } = {}) {
+  return pkgs.map(({ name, version }) => {
+    if (writeErrors[name]) return { name, version, outcome: 'failed', detail: writeErrors[name] }
+    const t = tags[name]
+    if (t?.next === version && t?.latest === version) return { name, version, outcome: 'confirmed', detail: `latest=${t.latest} next=${t.next}` }
+    return { name, version, outcome: 'unconfirmed', detail: `read back latest=${t?.latest ?? '(none)'} next=${t?.next ?? '(none)'}` }
+  })
+}
+
+/** Only a real write error fails the run. An unconfirmed read does not. */
+export function exitCodeFor(results) {
+  return results.some((r) => r.outcome === 'failed') ? 1 : 0
+}
+
 /** Read `{ latest, next }` per package from the registry. */
 export function readDistTags(names, view = npmView) {
   const out = {}
@@ -129,24 +161,47 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   if (!apply) { console.log('\n--apply not given; nothing written.'); process.exit(0) }
 
-  const summary = []
+  // Write everything in one pass, recording errors rather than stopping — a
+  // half-written state across packages that ship together is the outcome to
+  // avoid, so finish the pass and report all of it.
+  const writeErrors = {}
   for (const a of actions) {
-    execFileSync('npm', ['dist-tag', 'add', `${a.name}@${a.version}`, 'next'], { stdio: 'inherit' })
+    try {
+      execFileSync('npm', ['dist-tag', 'add', `${a.name}@${a.version}`, 'next'], { stdio: 'pipe' })
+      console.log(`  wrote ${a.name}@${a.version} → next`)
+    } catch (err) {
+      writeErrors[a.name] = (err?.stderr?.toString() ?? err?.message ?? 'unknown').split('\n')[0]
+      console.error(`  ✗ write failed for ${a.name}: ${writeErrors[a.name]}`)
+    }
   }
 
-  // A zero exit is not evidence. Re-read the registry.
-  const after = readDistTags(pkgs.map((p) => p.name))
-  let bad = 0
-  for (const { name, version } of pkgs) {
-    const t = after[name]
-    const ok = t?.next === version && t?.latest === version
-    console.log(`  ${ok ? '✓' : '✗'} ${name}: latest=${t?.latest} next=${t?.next}`)
-    summary.push(`- ${ok ? '✓' : '⚠️'} \`${name}\` — latest=\`${t?.latest}\` next=\`${t?.next}\``)
-    if (!ok) {
-      // The repair needs an OTP from a workstation, so hand over the exact
-      // command rather than leaving whoever reads this to reconstruct it.
-      summary.push(`    recover with: \`npm dist-tag add ${name}@${version} next --otp=<code>\``)
-      bad++
+  // Confirm AFTER all writes, and let the registry settle. npm view is
+  // CDN-served: an immediate read can return the old value for a write that
+  // landed. Re-check only the packages that have not caught up.
+  const names = pkgs.map((p) => p.name)
+  let tags = readDistTags(names)
+  let results = classifyResults(pkgs, { writeErrors, tags })
+  for (let attempt = 1; attempt <= 4 && results.some((r) => r.outcome === 'unconfirmed'); attempt++) {
+    const pending = results.filter((r) => r.outcome === 'unconfirmed').map((r) => r.name)
+    console.log(`  … ${pending.length} not yet visible; settling (attempt ${attempt})`)
+    execFileSync('sleep', [String(attempt * 5)])
+    tags = { ...tags, ...readDistTags(pending) }
+    results = classifyResults(pkgs, { writeErrors, tags })
+  }
+
+  const summary = []
+  const mark = { confirmed: '✓', unconfirmed: '…', failed: '⚠️' }
+  for (const r of results) {
+    console.log(`  ${mark[r.outcome]} ${r.name}: ${r.detail}`)
+    summary.push(`- ${mark[r.outcome]} \`${r.name}\` — ${r.detail}`)
+    if (r.outcome === 'failed') {
+      summary.push(`    repair: \`npm dist-tag add ${r.name}@${r.version} next --otp=<code>\``)
+    } else if (r.outcome === 'unconfirmed') {
+      // Deliberately NOT a repair command. The write did not error; the read has
+      // not caught up. Telling someone to repair a tag that is probably already
+      // correct is the failure mode this exists to avoid.
+      summary.push(`    the write did not error — the registry read has not caught up yet.`)
+      summary.push(`    CHECK, do not repair: \`npm view ${r.name} dist-tags\``)
     }
   }
 
@@ -154,6 +209,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### dist-tag alignment\n\n${summary.join('\n')}\n\n`)
   }
 
-  if (bad) { console.error(`\n✗ ${bad} package(s) did not land as expected.`); process.exit(1) }
-  console.log('\n✓ @latest and @next both on the stable for every package')
+  const failed = results.filter((r) => r.outcome === 'failed').length
+  const unconfirmed = results.filter((r) => r.outcome === 'unconfirmed').length
+  if (failed) console.error(`\n✗ ${failed} package(s) failed to write.`)
+  if (unconfirmed) console.log(`\n… ${unconfirmed} package(s) written but not yet visible. Verify with npm view; this is not a failure.`)
+  if (!failed && !unconfirmed) console.log('\n✓ @latest and @next both on the stable for every package')
+  process.exit(exitCodeFor(results))
 }
