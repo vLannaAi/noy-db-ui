@@ -56,6 +56,12 @@ name: Release
 #     doc-sync issue. Absent it, the bridge still attaches its payload to the
 #     Release and says plainly in the run summary that the notification half
 #     was skipped — so a missing token degrades rather than fails.
+#
+# NPM_TOKEN is also what writes the dist-tag alignment on a STABLE cut — an
+# automation token needs no OTP for `npm dist-tag add` from CI (probed by
+# klum-db, run 32260394291). That is true of THIS path only: the same operation
+# from a local `~/.npmrc` does prompt, and `npm deprecate` was NOT probed and
+# must not be assumed automatable on the strength of this.
 
 on:
   release:
@@ -472,4 +478,75 @@ jobs:
             echo "node scripts/docs-bridge/build-payload.mjs --tag ${{ github.event.release.tag_name }} --channel next --run-url local"
             echo "pnpm test:scripts"
             echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── Gate 5 is not a gate: align @next onto a STABLE ──────────────────
+  #
+  # Cutting `0.3.0` to `@latest` while `@next` sits at `0.3.0-pre.8` leaves the
+  # in-flight tag pointing BEHIND the stable one — the "lying tag" state the
+  # family sweep flags, and this repo holds three of the family's rotten
+  # `@latest` tags precisely because of npm's first-publish rule. The stable is
+  # what clears them; this job stops it creating a fresh defect in the same
+  # operation.
+  #
+  # The repair is an extraordinary alignment: both tags on the stable. It is
+  # self-correcting — the next pre-release moves `@next` forward again.
+  #
+  # STABLE ONLY. A pre-release already sets `@next` via the publish, and must
+  # never touch `@latest`; the `prerelease == false` guard is what keeps those
+  # two paths apart.
+  #
+  # NOT `continue-on-error`. The docs bridge is non-fatal because a docs outage
+  # must not fail a publish that already succeeded; this is different — a
+  # half-applied dist-tag state is worse than a loud failure, and it is exactly
+  # the state a human then has to repair by hand with an OTP.
+  align-dist-tags:
+    name: Align @next onto the stable
+    needs: publish
+    if: github.event_name == 'release' && github.event.release.prerelease == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      # npm reports write-path auth failures as 404, never 401 — a dist-tag
+      # write against a dead token reads as "package does not exist". Establish
+      # identity first so that failure is not misread as a naming problem.
+      - name: Check npm auth (whoami)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          WHOAMI=$(npm whoami)
+          echo "npm user: $WHOAMI"
+
+      # Plan first, without writing. The script derives the package set from
+      # packages/ and reads each package's OWN version — this repo's lockstep is
+      # not enforced (`fixed: []`), so assuming one version for all three would,
+      # on the day they diverge, move two tags to a version those packages never
+      # published. It refuses unless @latest ALREADY points at each version,
+      # because a blind `dist-tag add` is correct when the stable published and
+      # catastrophic when the version input is wrong.
+      - name: Plan the alignment
+        run: node scripts/align-dist-tags.mjs
+
+      - name: Apply, then verify against the registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/align-dist-tags.mjs --apply
+
+      - name: Summarise
+        run: |
+          {
+            echo "### dist-tag alignment"
+            echo ""
+            echo "\`@next\` moved onto the stable \`${{ github.event.release.tag_name }}\` so it does not"
+            echo "trail \`@latest\`. Self-correcting: the next pre-release restores the usual invariant."
           } >> "$GITHUB_STEP_SUMMARY"
