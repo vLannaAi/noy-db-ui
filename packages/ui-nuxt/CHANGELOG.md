@@ -3,49 +3,62 @@
 All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
-## [0.3.0-pre.8] — 2026-08-19
+## [0.3.0] — 2026-08-20
 
-Dev pins move onto `@noy-db/hub@0.6.0-pre.24`. **No change to any published UI code.**
+**The first stable release of this package.** Everything before it was a pre-release, and
+`@latest` had been frozen at `0.3.0-pre.3` since this package's debut — npm sets `latest` on a
+package's *first* publish regardless of `--tag`, so a package born inside a pre-release line
+stays pinned there until a stable exists. This is that stable, and it clears the tag.
 
-### This release does not move the hub peer floor
+`@latest` and `@next` both point at `0.3.0`. That is deliberate: leaving `@next` on a
+pre-release would put it *below* `@latest`. The next pre-release restores the usual invariant.
 
-`peerDependencies` stays `^0.6.0-pre.0`, unchanged and still verified against `hub@0.6.0-pre.0`.
-Upgrading `@noy-db/ui*` alone is safe for an existing consumer; the break below arrives only if
-you **separately** take `@noy-db/hub@next`.
+### What a consumer gets
 
-### ⚠️ If you take `hub@0.6.0-pre.24`: this is the THIRD format break in the 0.6 pre line
+Pins `@noy-db/hub@0.6.0` — the hub's own first `0.6` stable. `peerDependencies` stays
+`^0.6.0-pre.0`, unchanged and still verified: all three packages compile against
+`hub@0.6.0-pre.0`, and the range admits `0.6.0` without an edit. **Nothing forces an existing
+consumer off the hub they are on.**
 
-Not a new class — the same no-migration pattern, on the same artefact type as the second:
+### ⚠️ On the format breaks in the 0.6 pre line
 
-| hub | what broke | fails at |
-|---|---|---|
-| `pre.18` | record AAD applied (#1041) | first record read |
-| `pre.21` | keyring roster authenticated | unlock |
-| **`pre.24`** | **`NOYDB_KEYRING_VERSION` → 2** (#1115) | **unlock** |
+If you are coming from a `0.6.0-pre.*` hub, three no-migration format changes happened along the
+way — record AAD at `pre.18`, an authenticated keyring roster at `pre.21`, and
+`NOYDB_KEYRING_VERSION → 2` at `pre.24`. A vault written before the relevant change refuses to
+open and says so, naming the transition rather than accusing your store.
 
-`pre.24` also changes **blob addresses** — they now derive from a vault-lifetime keyring slot, so
-existing addresses do not carry over. Both demo pods in `examples/` were re-seeded again.
+`0.6.0` itself adds **no** further break: a pod written under `pre.24` opens under `0.6.0`
+unchanged — measured here, by the guard on this repo's committed demo pod, before re-seeding it.
 
-**The error is worth reading rather than working around.** An upgrading vault now reports
-`format-superseded`:
+**Coming from `0.5.x` or earlier, expect to re-seed.** The format is replaced rather than
+migrated; see noy-db #1100.
 
-> This keyring was written by an OLDER FORMAT … that format change ships without a migration, so
-> an existing vault must be re-seeded. Access is refused either way, and the version field this
-> branch reads selects only the wording — never the decision — so a store cannot use it to weaken
-> anything.
+### Since 0.3.0-pre.7
 
-That reason exists **to protect the alarm**. Without it every upgrading vault would have reported
-`roster-tag-mismatch` — the one unqualified accusation in that union — for an entirely benign
-reason. It is classification only: refusal is identical either way, so a store rewriting the
-plaintext version field changes wording and nothing else.
+`0.3.0-pre.8` was prepared and never published; its changes are folded in here.
 
-### Also in `pre.24`, relevant to this package's surfaces
+- Dev pins moved onto `@noy-db/hub@0.6.0` (via `0.6.0-pre.24`), the whole `@noy-db` lockstep line
+  as a unit. Peer range untouched.
+- **The describe types now bind `@noy-db/hub/introspection`** rather than the bare package root
+  (noy-db #1021). Published source takes `DescribedField` from the subpath — nine files, all
+  type-only, no runtime hub import anywhere in shipped code. This is what a stable should promise:
+  a hub root-export change is no longer a potential break here.
 
-**#1126 is fixed.** A blob's eTag was an HMAC keyed by the DEK that rotates, so every blob written
-before any rotation failed its address check *permanently* — the external-object read path raised
-`TamperedError` on legitimate data forever. Addresses now derive from a root that rotation does not
-touch, still per tier. This repo reads blobs via `.blob(id).get()` rather than the presigned-URL
-path, so nothing here changed behaviour; a host using external objects should take `pre.24`.
+  One symbol stayed on the root, deliberately: `StandardSchemaV1Issue` only reached
+  `./introspection` in hub `0.6.0-pre.9`, and our floor is `^0.6.0-pre.0`. Moving it would have
+  made the declared range false, and narrowing the floor to repair that would compel an upgrade
+  for consumers on `pre.0..pre.8` to satisfy import cosmetics. `/ui` will never exist — noy-db
+  #1002 is closed `NOT_PLANNED`.
+- The demo pods in `examples/` are re-seeded under `0.6.0`, so the shipped artefact is written by
+  the same version that reads it.
+
+### Note: hub #1141 fixes a ref-declaration ordering bug
+
+`refs` declared on an **already-constructed** collection were silently discarded, so for those
+collections the reference closure was incomplete and a strict `put()` with a dangling ref was
+accepted. Declaring `refs` before first touching the collection always behaved correctly. Adopting
+the fix is a **no-op** unless you hit that ordering; only code that did sees new
+`RefIntegrityError`s, and those writes were genuinely invalid.
 
 ## [0.3.0-pre.7] — 2026-08-19
 
