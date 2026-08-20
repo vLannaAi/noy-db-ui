@@ -9,7 +9,7 @@
 // facts (per the data-vs-view boundary): which free-string fields to facet as enums, and which
 // fields free-text search scans. Everything else derives.
 
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 import type { EntitySchema, FieldDef, FieldType } from './types'
 
 export interface SchemaFromDescribeOptions {

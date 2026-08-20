@@ -1,7 +1,7 @@
 // Detail-view value formatting — the Item-family counterpart to the table's column derivation.
 // Turns a `describe()` field + a record into a display cell: formatted value, entity link, PII mask.
 // Pure + framework-free, so RecordDetail (and an export/print view) share it.
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 
 export interface DetailCell {
   key: string

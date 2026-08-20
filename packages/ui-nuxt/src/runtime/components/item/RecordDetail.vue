@@ -5,7 +5,7 @@
 // emit `ref` for the host to turn into a route; http(s) values render as links.
 import { computed } from 'vue'
 import { detailFields, formatDetailCell } from '@noy-db/ui'
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 
 const props = defineProps<{
   fields: readonly DescribedField[]

@@ -1,6 +1,6 @@
 // Card grouping for the Item family — turns describe()'s group/order metadata into ordered
 // card sections. Pure + framework-free; RecordDetail (and the form views) share it.
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 
 export interface FieldGroup {
   /** The raw group id from field.group ('_default' for the ungrouped bucket). */

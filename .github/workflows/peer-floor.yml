@@ -18,13 +18,22 @@ name: Peer floor
 # examples/ are out of scope: private: true, outside the pnpm workspace, and
 # they pin @noy-db/* as ordinary dependencies rather than peers. They are
 # verified by `nuxi build`.
+#
+# `packages/*/src/**` is in the trigger, not just `**/package.json`. A SOURCE
+# change falsifies a peer range as surely as a manifest change: the #1021
+# migration moved a type import to `@noy-db/hub/introspection`, touched no
+# manifest, and broke the build at the declared floor, because that subpath
+# only gained `StandardSchemaV1Issue` in 0.6.0-pre.9 while the floor is
+# ^0.6.0-pre.0. Scoped to manifests, this guard would not have run on the PR
+# that broke it — the same shape as the Release event this workflow already
+# learned it could not see.
 
 on:
   pull_request:
-    paths: ['**/package.json', 'scripts/check-peer-floor.mjs', '.github/workflows/peer-floor.yml']
+    paths: ['**/package.json', 'packages/*/src/**', 'scripts/check-peer-floor.mjs', 'scripts/peer-floor.mjs', '.github/workflows/peer-floor.yml']
   push:
     branches: [main]
-    paths: ['**/package.json', 'scripts/check-peer-floor.mjs', '.github/workflows/peer-floor.yml']
+    paths: ['**/package.json', 'packages/*/src/**', 'scripts/check-peer-floor.mjs', 'scripts/peer-floor.mjs', '.github/workflows/peer-floor.yml']
   workflow_dispatch:
   # Called by release.yml so the release path is gated on this too. Those path
   # filters above are invisible to a Release event — a Release is not a

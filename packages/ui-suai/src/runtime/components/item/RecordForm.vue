@@ -4,7 +4,7 @@
 // to the collection: emit `submit` with the edited record, the host calls put() (noy-db zod-validates)
 // and passes any per-field `errors` back. Nuxt-UI-free; pairs with RecordDetail (card-matching).
 import { ref, watch, computed } from 'vue'
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 import { fieldInput, formFields, fieldHint } from '@noy-db/ui'
 import { useNuiI18n } from '../../core/i18n'
 import FieldControl from '../../internal/FieldControl.vue'

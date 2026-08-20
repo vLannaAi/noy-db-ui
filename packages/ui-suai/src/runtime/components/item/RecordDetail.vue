@@ -6,7 +6,7 @@
 // (useContainerSize), not viewport-measured, like the list. i18n fields read with { locale: 'raw' }
 // render one row per language. Schema-driven, Nuxt-UI-free; the edit form (RecordForm) is a sibling.
 import { ref, computed } from 'vue'
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 import {
   detailFields, formatDetailCell, groupFields, type DetailCell,
   fieldInput, formFields, fieldHint, type FieldInput,

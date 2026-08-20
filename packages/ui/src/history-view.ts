@@ -8,7 +8,7 @@
 // Why a diff FUNCTION is injected rather than called here: the hub's per-record diff lives in
 // `@noy-db/hub/history` and needs a vault; keeping it out makes this module a pure unit the tests
 // exercise with a hand-rolled object differ.
-import type { DescribedField } from '@noy-db/hub'
+import type { DescribedField } from '@noy-db/hub/introspection'
 import { relativeTime } from './history'
 
 export type HistoryChangeType = 'added' | 'removed' | 'changed'
