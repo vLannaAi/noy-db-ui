@@ -115,12 +115,32 @@ export function planAlignment(pkgs, current) {
  * Collapsing `unconfirmed` into `failed` is what turns a correct release red and
  * hands out instructions to fix something that is not broken.
  */
-export function classifyResults(pkgs, { writeErrors = {}, tags = {} } = {}) {
+export function classifyResults(pkgs, { writeErrors = {}, tags = {}, previous = {} } = {}) {
   return pkgs.map(({ name, version }) => {
     if (writeErrors[name]) return { name, version, outcome: 'failed', detail: writeErrors[name] }
+
     const t = tags[name]
-    if (t?.next === version && t?.latest === version) return { name, version, outcome: 'confirmed', detail: `latest=${t.latest} next=${t.next}` }
-    return { name, version, outcome: 'unconfirmed', detail: `read back latest=${t?.latest ?? '(none)'} next=${t?.next ?? '(none)'}` }
+    // A read that did not come back is a read problem, not corruption.
+    if (!t) return { name, version, outcome: 'stale', detail: 'no dist-tags read back yet' }
+
+    // This script NEVER writes `latest`. So a wrong `latest` cannot be our lag —
+    // it is something else acting on the package, and elapsed time will not fix
+    // it. That is the discriminator: lag vs corruption decided by what this
+    // script is CAPABLE of having written, not by how long we have waited.
+    if (t.latest !== version) {
+      return { name, version, outcome: 'unexpected', detail: `latest=${t.latest ?? '(none)'}, expected ${version} — this script never writes latest` }
+    }
+    if (t.next === version) return { name, version, outcome: 'confirmed', detail: `latest=${t.latest} next=${t.next}` }
+
+    // The PREVIOUS value still showing is exactly what propagation lag looks
+    // like. Anything else is a third value nobody here wrote.
+    if (previous[name] !== undefined && t.next === previous[name]) {
+      return { name, version, outcome: 'stale', detail: `next still ${t.next}, waiting for ${version}` }
+    }
+    if (previous[name] === undefined) {
+      return { name, version, outcome: 'stale', detail: `next=${t.next}, waiting for ${version}` }
+    }
+    return { name, version, outcome: 'unexpected', detail: `next=${t.next} — neither ${previous[name]} (lag) nor ${version} (target)` }
   })
 }
 
@@ -128,58 +148,40 @@ export function classifyResults(pkgs, { writeErrors = {}, tags = {} } = {}) {
  * Confirm the writes, re-reading only the packages that have not caught up.
  *
  * `read` and `sleep` are injected so this is testable. That matters more than
- * usual here: the underlying defect — a read-after-write against a distributed
- * cache — is unreachable by any test that does not actually write, so it is
- * invisible in every dry run and every live pre-flight, and first reachable on
- * the real cut. What CAN be tested is that this retries at all, that a stale
- * read followed by a fresh one ends `confirmed`, and that a write error is
- * never retried away. Those are the parts a refactor would silently break.
+ * usual: the underlying defect — a read-after-write against a distributed cache
+ * — is unreachable by any test that does not actually write, so it is invisible
+ * in every dry run and live pre-flight and first reachable on a real cut. What
+ * CAN be tested is that it retries, that a stale read followed by a fresh one
+ * ends `confirmed`, that a write error is never retried away, and that only
+ * stragglers are re-read. Those are what a refactor would silently break.
  *
- * Three packages is WORSE than fifty-two for this, on both axes.
+ * THE RETRY IS THE MECHANISM, not belt-and-braces, and this is measured rather
+ * than argued. klum-db's alignment job — ONE package — needed FIVE reads on its
+ * 0.4.0 cut; the first four came back stale. So propagation lag is not a
+ * scale artefact of noy-db's 52 packages, it is the default behaviour, and one
+ * package is the case with the LEAST free settling from the write pass.
  *
- * DETECTION: noy-db got 52 of 52 "failures", and that uniformity is what made
- * it implausible enough to re-check. One stale read out of three looks exactly
- * like a genuine straggler — no tell. The design answer is that `unconfirmed`
- * covers both and neither needs repairing, so telling them apart is not needed.
+ * The budget is therefore sized past the only live observation we have rather
+ * than to it: 5 attempts (6 reads, ~75s) against klum's observed 5. Sitting
+ * exactly on a measured boundary is not a margin. Pinned by test.
  *
- * INCIDENCE — and this is why the retry below is LOAD-BEARING, not
- * belt-and-braces. In a write-all-then-confirm design the free settling a
- * package gets is roughly one pass duration, so the MINIMUM scales with package
- * count: ~80s at noy-db's 52 packages, ~4.5s at our three, zero at one. (That
- * figure is derived from the shape, not measured — but the direction is what
- * matters and it is not in doubt.)
- *
- * So the two-pass split — the structurally satisfying half, and the half anyone
- * skimming noy-db #1156 would take to BE the fix — buys us seconds where it
- * bought them a minute and a half. It carried the weight there because 52
- * packages is a lot to hide behind. A three-package job that adopts the split
- * and drops the retry has a few seconds of settling and no uniformity tell:
- * strictly worse than the original.
- *
- * DO NOT shorten or remove the retry on the grounds that the writes already
- * separate write from read. At this package count they barely do. The budget is
- * pinned by a test for that reason.
- *
- * NOTE ON ORDERING, which this deliberately does NOT depend on. The "settle ≈
- * one pass" property holds only if the write and read passes iterate in the
- * SAME order; reverse the read loop and the minimum goes to zero. That is an
- * unstated load-bearing property in a design where the pass IS the settle.
- * Here it is not: the retry is unconditional rather than a backstop, so
- * correctness is order-independent and a future reordering cannot cost
- * anything. Do not add an ordering assumption on the strength of that
- * property — take the retry instead.
+ * ORDERING, which this deliberately does NOT depend on: "settle ≈ one pass"
+ * holds only if the write and read passes iterate in the same order, and
+ * reversing the read loop takes the free minimum to zero. Here the retry is
+ * unconditional rather than a backstop, so correctness is order-independent.
+ * Do not add an ordering assumption on the strength of that — take the retry.
  */
-export function settle(pkgs, { writeErrors = {}, read, sleep, attempts = 4 } = {}) {
+export function settle(pkgs, { writeErrors = {}, previous = {}, read, sleep, attempts = 5 } = {}) {
   const names = pkgs.map((p) => p.name)
   let tags = read(names)
-  let results = classifyResults(pkgs, { writeErrors, tags })
+  let results = classifyResults(pkgs, { writeErrors, tags, previous })
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    const pending = results.filter((r) => r.outcome === 'unconfirmed').map((r) => r.name)
+    const pending = results.filter((r) => r.outcome === 'stale').map((r) => r.name)
     if (pending.length === 0) break
     sleep(attempt * 5000)
     tags = { ...tags, ...read(pending) }
-    results = classifyResults(pkgs, { writeErrors, tags })
+    results = classifyResults(pkgs, { writeErrors, tags, previous })
   }
   return results
 }
@@ -189,9 +191,13 @@ export function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
 }
 
-/** Only a real write error fails the run. An unconfirmed read does not. */
+/**
+ * `stale` never fails the run — it is propagation, and the instruction is to
+ * check. `failed` and `unexpected` do: a write that errored, and a tag state
+ * this script could not have produced, both need a human.
+ */
 export function exitCodeFor(results) {
-  return results.some((r) => r.outcome === 'failed') ? 1 : 0
+  return results.some((r) => r.outcome === 'failed' || r.outcome === 'unexpected') ? 1 : 0
 }
 
 /** Read `{ latest, next }` per package from the registry. */
@@ -243,20 +249,27 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // Confirm AFTER all writes, and let the registry settle. npm view is
   // CDN-served: an immediate read can return the old value for a write that
   // landed. Re-check only the packages that have not caught up.
+  // The plan knows what @next pointed at before we wrote — that is what tells
+  // propagation lag apart from a third value nobody here wrote.
+  const previous = Object.fromEntries(actions.map((a) => [a.name, a.from]))
   const results = settle(pkgs, {
     writeErrors,
+    previous,
     read: (names) => readDistTags(names),
     sleep: (ms) => { console.log(`  … not yet visible; settling ${ms / 1000}s`); sleepSync(ms) },
   })
 
   const summary = []
-  const mark = { confirmed: '✓', unconfirmed: '…', failed: '⚠️' }
+  const mark = { confirmed: '✓', stale: '…', unexpected: '⚠️', failed: '⚠️' }
   for (const r of results) {
     console.log(`  ${mark[r.outcome]} ${r.name}: ${r.detail}`)
     summary.push(`- ${mark[r.outcome]} \`${r.name}\` — ${r.detail}`)
     if (r.outcome === 'failed') {
       summary.push(`    repair: \`npm dist-tag add ${r.name}@${r.version} next --otp=<code>\``)
-    } else if (r.outcome === 'unconfirmed') {
+    } else if (r.outcome === 'unexpected') {
+      summary.push(`    the tag is in a state this script does not write. Investigate before repairing.`)
+      summary.push(`    \`npm view ${r.name} dist-tags\``)
+    } else if (r.outcome === 'stale') {
       // Deliberately NOT a repair command. The write did not error; the read has
       // not caught up. Telling someone to repair a tag that is probably already
       // correct is the failure mode this exists to avoid.
@@ -270,9 +283,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
 
   const failed = results.filter((r) => r.outcome === 'failed').length
-  const unconfirmed = results.filter((r) => r.outcome === 'unconfirmed').length
+  const unexpected = results.filter((r) => r.outcome === 'unexpected').length
+  const stale = results.filter((r) => r.outcome === 'stale').length
   if (failed) console.error(`\n✗ ${failed} package(s) failed to write.`)
-  if (unconfirmed) console.log(`\n… ${unconfirmed} package(s) written but not yet visible. Verify with npm view; this is not a failure.`)
-  if (!failed && !unconfirmed) console.log('\n✓ @latest and @next both on the stable for every package')
+  if (unexpected) console.error(`\n✗ ${unexpected} package(s) are in a tag state this script does not write.`)
+  if (stale) console.log(`\n… ${stale} package(s) written but not yet visible after ~75s. Verify with npm view; this is propagation, not a failure.`)
+  if (!failed && !unexpected && !stale) console.log('\n✓ @latest and @next both on the stable for every package')
   process.exit(exitCodeFor(results))
 }

@@ -139,7 +139,7 @@ describe('classifyResults — the stale-read hazard', () => {
 
   it('does NOT call a stale read a failure — that is the bug being fixed', () => {
     const [r] = classifyResults(pkgs, { tags: { '@noy-db/ui': { latest: '0.3.0', next: '0.3.0-pre.8' } } })
-    expect(r.outcome).toBe('unconfirmed')
+    expect(r.outcome).toBe('stale')
     expect(r.outcome).not.toBe('failed')
   })
 
@@ -149,7 +149,7 @@ describe('classifyResults — the stale-read hazard', () => {
     expect(r.detail).toMatch(/E404/)
   })
 
-  it('prefers the write error over the read — a failed write is not merely unconfirmed', () => {
+  it('prefers the write error over the read — a failed write is not merely stale', () => {
     const [r] = classifyResults(pkgs, {
       writeErrors: { '@noy-db/ui': 'boom' },
       tags: { '@noy-db/ui': { latest: '0.3.0', next: '0.3.0' } },
@@ -157,15 +157,15 @@ describe('classifyResults — the stale-read hazard', () => {
     expect(r.outcome).toBe('failed')
   })
 
-  it('treats a missing registry entry as unconfirmed, not failed', () => {
-    expect(classifyResults(pkgs, { tags: {} })[0].outcome).toBe('unconfirmed')
+  it('treats a missing registry entry as stale, not failed', () => {
+    expect(classifyResults(pkgs, { tags: {} })[0].outcome).toBe('stale')
   })
 })
 
 describe('exitCodeFor', () => {
   // The whole point: a correct release must not go red because a CDN read lagged.
-  it('does not fail the run on unconfirmed reads', () => {
-    expect(exitCodeFor([{ outcome: 'unconfirmed' }, { outcome: 'confirmed' }])).toBe(0)
+  it('does not fail the run on stale reads', () => {
+    expect(exitCodeFor([{ outcome: 'stale' }, { outcome: 'confirmed' }])).toBe(0)
   })
 
   it('fails the run on a real write error', () => {
@@ -208,9 +208,9 @@ describe('settle', () => {
     expect(slept).toEqual([5000, 10000, 15000])
   })
 
-  it('gives up as unconfirmed rather than failed when it never catches up', () => {
+  it('gives up as stale rather than failed when it never catches up', () => {
     const r = settle(pkgs, { read: () => stale, sleep: () => {}, attempts: 2 })
-    expect(r[0].outcome).toBe('unconfirmed')
+    expect(r[0].outcome).toBe('stale')
     expect(exitCodeFor(r)).toBe(0)
   })
 
@@ -264,5 +264,66 @@ describe('the settle budget outlasts the cache independent of package count', ()
       sleep: (ms) => slept.push(ms),
     })
     expect(slept[0]).toBeLessThanOrEqual(5_000)
+  })
+})
+
+// klum-db's 0.4.0 cut: ONE package needed FIVE reads, the first four stale. So
+// lag is the default behaviour, not a scale artefact of noy-db's 52 packages —
+// and one package is the case with the LEAST free settling from the write pass.
+// The discriminator below tells lag from corruption by what this script is
+// CAPABLE of having written, rather than by elapsed time.
+describe('stale vs unexpected — lag told apart from corruption', () => {
+  const pkgs = [{ name: 'a', version: '1.0.0' }]
+  const prev = { a: '0.9.0' }
+
+  it('calls the PREVIOUS value still showing stale — that is what lag looks like', () => {
+    const [r] = classifyResults(pkgs, { tags: { a: { latest: '1.0.0', next: '0.9.0' } }, previous: prev })
+    expect(r.outcome).toBe('stale')
+    expect(exitCodeFor([r])).toBe(0)
+  })
+
+  // This script only ever writes `next`. A wrong `latest` therefore cannot be
+  // our lag, and waiting will not fix it.
+  it('calls a wrong @latest unexpected, because this script never writes latest', () => {
+    const [r] = classifyResults(pkgs, { tags: { a: { latest: '0.8.0', next: '1.0.0' } }, previous: prev })
+    expect(r.outcome).toBe('unexpected')
+    expect(exitCodeFor([r])).toBe(1)
+  })
+
+  it('calls a THIRD value unexpected — neither the old value nor the target', () => {
+    const [r] = classifyResults(pkgs, { tags: { a: { latest: '1.0.0', next: '0.7.0' } }, previous: prev })
+    expect(r.outcome).toBe('unexpected')
+    expect(exitCodeFor([r])).toBe(1)
+  })
+
+  it('confirms the target', () => {
+    expect(classifyResults(pkgs, { tags: { a: { latest: '1.0.0', next: '1.0.0' } }, previous: prev })[0].outcome).toBe('confirmed')
+  })
+
+  it('a failed write outranks any read state', () => {
+    const [r] = classifyResults(pkgs, { writeErrors: { a: 'E404' }, tags: { a: { latest: '1.0.0', next: '1.0.0' } }, previous: prev })
+    expect(r.outcome).toBe('failed')
+  })
+})
+
+describe('the settle budget is sized PAST the live observation, not to it', () => {
+  it('attempts at least 6 reads — klum needed 5, and a measured boundary is not a margin', () => {
+    let reads = 0
+    settle([{ name: 'a', version: '1.0.0' }], {
+      previous: { a: '0.9.0' },
+      read: () => { reads++; return { a: { latest: '1.0.0', next: '0.9.0' } } },
+      sleep: () => {},
+    })
+    expect(reads).toBeGreaterThanOrEqual(6)
+  })
+
+  it('waits at least 70s in total', () => {
+    const slept = []
+    settle([{ name: 'a', version: '1.0.0' }], {
+      previous: { a: '0.9.0' },
+      read: () => ({ a: { latest: '1.0.0', next: '0.9.0' } }),
+      sleep: (ms) => slept.push(ms),
+    })
+    expect(slept.reduce((x, y) => x + y, 0)).toBeGreaterThanOrEqual(70_000)
   })
 })
