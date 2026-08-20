@@ -272,12 +272,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # FATAL, deliberately. This ran as `continue-on-error` on the v0.3.0 cut,
+      # correctly reported `npm error code E401`, and then let the publish go
+      # ahead anyway — where npm reported the same dead token as
+      # `E404 ... '@noy-db/ui@0.3.0' is not in this registry`, which reads as a
+      # naming or version problem rather than an auth one.
+      #
+      # npm reports write-path auth failures as 404, never 401. `whoami` is the
+      # one call that gives the honest answer, so it is the one place the real
+      # cause is visible — and it has to be able to stop the publish, or it is a
+      # diagnosis nobody acts on.
       - name: Check npm auth (whoami)
-        run: |
-          WHOAMI=$(npm whoami 2>&1) && echo "npm user: $WHOAMI" || echo "npm whoami failed: $WHOAMI"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if ! WHOAMI=$(npm whoami 2>&1); then
+            echo "::error::npm auth failed BEFORE publishing: $WHOAMI"
+            echo "::error::The NPM_TOKEN secret is missing, expired or revoked. Rotate it in"
+            echo "::error::Settings → Secrets and variables → Actions, then re-run this job."
+            echo "::error::Publishing with a dead token fails as E404 'not in this registry',"
+            echo "::error::which looks like a naming problem and is not one."
+            exit 1
+          fi
+          echo "npm user: $WHOAMI"
 
       # `changeset publish` takes no --provenance flag (verified against 2.31.0:
       # nothing under node_modules/@changesets/ mentions provenance). It shells
