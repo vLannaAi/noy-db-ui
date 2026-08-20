@@ -352,8 +352,13 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
-      # Space-separated npm dist-tags currently synced to docs. Pre-1.0: `next`
-      # only — `@latest` is parked at 0.3.0-pre.3 and is not a synced rail.
+      # Space-separated npm dist-tags currently synced to docs. `next` only:
+      # `latest` is a PARKED rail in noy-db-docs — resolved and reported, never
+      # applied (scripts/sync/diff.mjs checks `parked` ahead of every other
+      # classification; apply.mjs never sees a parked entry). A stable release
+      # therefore owes docs no work, and filing an issue for it would train
+      # people to close doc-sync issues with no diff. The payload asset is
+      # attached regardless, so the record survives if the rail is ever unparked.
       DOC_SYNC_CHANNELS: next
     permissions:
       contents: write   # gh release upload
