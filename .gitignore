@@ -2,7 +2,11 @@
 node_modules/
 
 # build output
-dist/
+# NOTE: no trailing slash — `dist/` matches DIRECTORIES only, and `nuxt generate`
+# leaves `examples/showcase/dist` as a SYMLINK to `.output/public`, which git
+# treats as a file. A run of it committed that link, carrying an absolute path
+# from one machine into the repo (#42).
+dist
 *.tsbuildinfo
 
 # turbo
