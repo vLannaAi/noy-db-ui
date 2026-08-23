@@ -21,6 +21,19 @@
  * the state a human then has to repair by hand, with an OTP. Do not "fix" this
  * to match the sibling script.
  *
+ * BECAUSE IT IS FATAL, IT MUST STAY ITS OWN JOB, `needs: publish`, ALONGSIDE
+ * `docs-bridge` — never a step inside `publish`. A job's exit code conflates
+ * "my purpose failed" with "something after my purpose failed", and everything
+ * downstream of `needs:` inherits the conflation. noy-db put its alignment
+ * INSIDE `publish`; when it false-alarmed it took the publish job's exit code
+ * with it, and the bridge — `needs: publish` — was skipped, leaving a correct
+ * release with zero assets. The sibling layout makes that impossible here.
+ *
+ * Untested, deliberately noted: this repo has never observed a red alignment
+ * beside a green bridge, because `settle()`'s retry has so far prevented one.
+ * The immunity is structural, derived from the job graph, not demonstrated.
+ * Two independent defences; do not remove either on the strength of the other.
+ *
  * The pure half lives here so the dangerous part is testable: a blind
  * `npm dist-tag add <pkg>@<version> next` is correct when the stable published
  * and catastrophic when the version is wrong. `planAlignment` refuses rather
