@@ -3,6 +3,24 @@
 All notable changes to `@noy-db/ui-nuxt` are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versioning will follow the noy-db line on release.
 
+## [0.4.0-pre.0] — 2026-08-24
+
+**Onto the hub 0.7 line.**
+
+### Compatibility
+
+- **Peer range widened by appending, not narrowed**: `^0.6.0-pre.0 || ^0.7.0-pre.0`,
+  uniform across all three packages. A consumer on a `0.6.x` hub keeps it; nothing
+  compels an upgrade. Verified by compiling all three packages against the **oldest**
+  hub the range admits, not just against the dev pin.
+- This package imports **zero** symbols retired by hub 0.7's `Provider`-suffix
+  removal (measured against the shipped codemod map), which is why widening rather
+  than narrowing is honest here.
+- The committed-bundle canary — the only thing that opens this repo's checked-in
+  encrypted artefact — passes under hub `0.7.0-pre.2`, so this line carries **no
+  format break** for existing vaults.
+
+
 ## [0.3.0] — 2026-08-20
 
 **The first stable release of this package.** Everything before it was a pre-release, and
