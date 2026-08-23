@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@noy-db/attestation': 0.7.0-pre.0
+  '@noy-db/attestation': 0.7.0-pre.2
   '@noy-db/ui': file:../../packages/ui
 
 importers:
@@ -16,20 +16,20 @@ importers:
         specifier: 1.2.114
         version: 1.2.114
       '@noy-db/as-noydb':
-        specifier: 0.7.0-pre.0
-        version: 0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0)
+        specifier: 0.7.0-pre.2
+        version: 0.7.0-pre.2(@noy-db/hub@0.7.0-pre.2)
       '@noy-db/hub':
-        specifier: 0.7.0-pre.0
-        version: 0.7.0-pre.0
+        specifier: 0.7.0-pre.2
+        version: 0.7.0-pre.2
       '@noy-db/to-memory':
-        specifier: 0.7.0-pre.0
-        version: 0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0)
+        specifier: 0.7.0-pre.2
+        version: 0.7.0-pre.2(@noy-db/hub@0.7.0-pre.2)
       '@noy-db/ui':
         specifier: file:../../packages/ui
-        version: file:../../packages/ui(@noy-db/hub@0.7.0-pre.0)(vue@3.5.40(typescript@5.9.3))
+        version: file:../../packages/ui(@noy-db/hub@0.7.0-pre.2)(vue@3.5.40(typescript@5.9.3))
       '@noy-db/ui-nuxt':
         specifier: file:../../packages/ui-nuxt
-        version: file:../../packages/ui-nuxt(@noy-db/hub@0.7.0-pre.0)(@nuxt/kit@4.4.8(magicast@0.5.3))(@nuxt/ui@4.10.0(gstvbj37f2hmjea2o57qrd7mmu))(vue@3.5.40(typescript@5.9.3))
+        version: file:../../packages/ui-nuxt(@noy-db/hub@0.7.0-pre.2)(@nuxt/kit@4.4.8(magicast@0.5.3))(@nuxt/ui@4.10.0(gstvbj37f2hmjea2o57qrd7mmu))(vue@3.5.40(typescript@5.9.3))
       '@nuxt/ui':
         specifier: ^4.0.0
         version: 4.10.0(gstvbj37f2hmjea2o57qrd7mmu)
@@ -657,18 +657,18 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@noy-db/as-noydb@0.7.0-pre.0':
-    resolution: {integrity: sha512-NDMfiaKzoJYDd6W2tcBqOnpR7bXjibyOzw7EuDqmQVGsb1mhj9KGL9noTX/LOQ0Db2Rul3aCshEWU70L1rqAPA==}
+  '@noy-db/as-noydb@0.7.0-pre.2':
+    resolution: {integrity: sha512-a8wsAhZa+Sd4A5u/sjly5CKaFSz0zES+KJp1DB26sKt7K4EzWSADoGRY3VthsAS6gzCX39OdcC73FbWkpcsZlw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': 0.7.0-pre.0
+      '@noy-db/hub': 0.7.0-pre.2
 
-  '@noy-db/attestation@0.7.0-pre.0':
-    resolution: {integrity: sha512-vpsx7JM7+lRB+vl8ULqzZXG1HQ1IuuFfqszfgPpusuTAeF2ooY9F0OfqPc1mNA3yhMYbzvw9gnrwfVpnmea+ug==}
+  '@noy-db/attestation@0.7.0-pre.2':
+    resolution: {integrity: sha512-i3mC6r4SU/0OON/hdKmlNBLd295pdJTlt/HDQx2CS+6Txo2OZouPbbs+JZeVcpLeaaReOAvkpr4gEm+ZuWDYXA==}
     engines: {node: '>=22.0.0'}
 
-  '@noy-db/hub@0.7.0-pre.0':
-    resolution: {integrity: sha512-gmB6Iu6WndvzE+KbjRxNxK0/gukdQvZ7iu2K37XDaLgAzSbdabLy/b2b1S3AqgIAg3ekewSDNQCR14YfG3NcRw==}
+  '@noy-db/hub@0.7.0-pre.2':
+    resolution: {integrity: sha512-GsbI8y/J0ICHrfZvefU0LYdC3VDQbPBFkCTeZPN1tsq7ZB3Lq44ev6jWlGG4Uca4poZUsBHP+Cnb1E1/aW9EtA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       zod-to-json-schema: ^3.25.0
@@ -676,11 +676,11 @@ packages:
       zod-to-json-schema:
         optional: true
 
-  '@noy-db/to-memory@0.7.0-pre.0':
-    resolution: {integrity: sha512-Iggip5i2SNTuFE3wttJomehVa5gmC+ENyJZGOuIUmsnxRKvK4nePPPg0ibJuLrM7hvup6b0y9pl3efITBiMxwQ==}
+  '@noy-db/to-memory@0.7.0-pre.2':
+    resolution: {integrity: sha512-KcM4PDDz2cSBxu6QRvdGBGNzKwoSKoVdXjuhT79TlVASbcDIAAAPFoIQl7p4qDXRhd5m9sXSWXHZ+QI4vk6r+w==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': 0.7.0-pre.0
+      '@noy-db/hub': 0.7.0-pre.2
 
   '@noy-db/ui-nuxt@file:../../packages/ui-nuxt':
     resolution: {directory: ../../packages/ui-nuxt, type: directory}
@@ -4932,32 +4932,32 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@noy-db/as-noydb@0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0)':
+  '@noy-db/as-noydb@0.7.0-pre.2(@noy-db/hub@0.7.0-pre.2)':
     dependencies:
-      '@noy-db/hub': 0.7.0-pre.0
+      '@noy-db/hub': 0.7.0-pre.2
 
-  '@noy-db/attestation@0.7.0-pre.0': {}
+  '@noy-db/attestation@0.7.0-pre.2': {}
 
-  '@noy-db/hub@0.7.0-pre.0':
+  '@noy-db/hub@0.7.0-pre.2':
     dependencies:
-      '@noy-db/attestation': 0.7.0-pre.0
+      '@noy-db/attestation': 0.7.0-pre.2
 
-  '@noy-db/to-memory@0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0)':
+  '@noy-db/to-memory@0.7.0-pre.2(@noy-db/hub@0.7.0-pre.2)':
     dependencies:
-      '@noy-db/hub': 0.7.0-pre.0
+      '@noy-db/hub': 0.7.0-pre.2
 
-  '@noy-db/ui-nuxt@file:../../packages/ui-nuxt(@noy-db/hub@0.7.0-pre.0)(@nuxt/kit@4.4.8(magicast@0.5.3))(@nuxt/ui@4.10.0(gstvbj37f2hmjea2o57qrd7mmu))(vue@3.5.40(typescript@5.9.3))':
+  '@noy-db/ui-nuxt@file:../../packages/ui-nuxt(@noy-db/hub@0.7.0-pre.2)(@nuxt/kit@4.4.8(magicast@0.5.3))(@nuxt/ui@4.10.0(gstvbj37f2hmjea2o57qrd7mmu))(vue@3.5.40(typescript@5.9.3))':
     dependencies:
-      '@noy-db/hub': 0.7.0-pre.0
-      '@noy-db/ui': file:../../packages/ui(@noy-db/hub@0.7.0-pre.0)(vue@3.5.40(typescript@5.9.3))
+      '@noy-db/hub': 0.7.0-pre.2
+      '@noy-db/ui': file:../../packages/ui(@noy-db/hub@0.7.0-pre.2)(vue@3.5.40(typescript@5.9.3))
       '@nuxt/ui': 4.10.0(gstvbj37f2hmjea2o57qrd7mmu)
       vue: 3.5.40(typescript@5.9.3)
     optionalDependencies:
       '@nuxt/kit': 4.4.8(magicast@0.5.3)
 
-  '@noy-db/ui@file:../../packages/ui(@noy-db/hub@0.7.0-pre.0)(vue@3.5.40(typescript@5.9.3))':
+  '@noy-db/ui@file:../../packages/ui(@noy-db/hub@0.7.0-pre.2)(vue@3.5.40(typescript@5.9.3))':
     dependencies:
-      '@noy-db/hub': 0.7.0-pre.0
+      '@noy-db/hub': 0.7.0-pre.2
       vue: 3.5.40(typescript@5.9.3)
 
   '@nuxt/cli@3.37.0(@nuxt/schema@4.4.8)(cac@6.7.14)(magicast@0.5.3)':
