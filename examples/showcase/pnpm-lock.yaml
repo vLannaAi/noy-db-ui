@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@noy-db/attestation': 0.6.0
+  '@noy-db/attestation': 0.7.0-pre.0
   '@noy-db/ui': file:../../packages/ui
 
 importers:
@@ -16,20 +16,20 @@ importers:
         specifier: ^0.69.0
         version: 0.69.0(zod@4.4.3)
       '@noy-db/as-noydb':
-        specifier: 0.6.0
-        version: 0.6.0(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))
+        specifier: 0.7.0-pre.0
+        version: 0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))
       '@noy-db/hub':
-        specifier: 0.6.0
-        version: 0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3))
+        specifier: 0.7.0-pre.0
+        version: 0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3))
       '@noy-db/to-memory':
-        specifier: 0.6.0
-        version: 0.6.0(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))
+        specifier: 0.7.0-pre.0
+        version: 0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))
       '@noy-db/ui':
         specifier: file:../../packages/ui
-        version: file:../../packages/ui(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
+        version: file:../../packages/ui(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
       '@noy-db/ui-suai':
         specifier: file:../../packages/ui-suai
-        version: file:../../packages/ui-suai(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))
+        version: file:../../packages/ui-suai(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))
       nuxt:
         specifier: ^4.0.0
         version: 4.4.8(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@parcel/watcher@2.5.6)(@vue/compiler-sfc@3.5.39)(cac@6.7.14)(db0@0.3.4)(esbuild@0.28.1)(ioredis@5.11.1)(magicast@0.5.3)(rollup-plugin-visualizer@7.0.1(rollup@4.62.2))(rollup@4.62.2)(srvx@0.11.17)(terser@5.48.0)(tsx@4.22.4)(typescript@5.9.3)(vite@7.3.6(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(yaml@2.9.0)
@@ -489,18 +489,18 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@noy-db/as-noydb@0.6.0':
-    resolution: {integrity: sha512-GzUb7tVVfnNnb6GXafgoPHCLJWn5V5J0sikETMkY8vEH5DzBCSvyIycBYHYgHSMcNlfDJqvpwPjmCgkQBB0qQA==}
+  '@noy-db/as-noydb@0.7.0-pre.0':
+    resolution: {integrity: sha512-NDMfiaKzoJYDd6W2tcBqOnpR7bXjibyOzw7EuDqmQVGsb1mhj9KGL9noTX/LOQ0Db2Rul3aCshEWU70L1rqAPA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': 0.6.0
+      '@noy-db/hub': 0.7.0-pre.0
 
-  '@noy-db/attestation@0.6.0':
-    resolution: {integrity: sha512-+4Ak27Bs8DVM67YLSTkPs4OXpJoWER7U7vwoOWC5NZZ6Yrc7xvNrKBqqmP1OqDxXhXENoQ7tolPjPWJ8T1+0gg==}
+  '@noy-db/attestation@0.7.0-pre.0':
+    resolution: {integrity: sha512-vpsx7JM7+lRB+vl8ULqzZXG1HQ1IuuFfqszfgPpusuTAeF2ooY9F0OfqPc1mNA3yhMYbzvw9gnrwfVpnmea+ug==}
     engines: {node: '>=22.0.0'}
 
-  '@noy-db/hub@0.6.0':
-    resolution: {integrity: sha512-horBVeN0nKGbeNsrEXgv3qSRqEEigXwmF3s12WyTFTgLsP3ZUIcunGqLv9yUtlCS1H4XugVy6GO2T4RdJWtIOg==}
+  '@noy-db/hub@0.7.0-pre.0':
+    resolution: {integrity: sha512-gmB6Iu6WndvzE+KbjRxNxK0/gukdQvZ7iu2K37XDaLgAzSbdabLy/b2b1S3AqgIAg3ekewSDNQCR14YfG3NcRw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       zod-to-json-schema: ^3.25.0
@@ -508,17 +508,17 @@ packages:
       zod-to-json-schema:
         optional: true
 
-  '@noy-db/to-memory@0.6.0':
-    resolution: {integrity: sha512-4O+4n+Bao74FN3GIru69eoxEdrwC8pIVpogPg7ST7MYLvabCIJSmjdxXgoZZxj7mNJNj1Hhmxet1C5DCdAKQug==}
+  '@noy-db/to-memory@0.7.0-pre.0':
+    resolution: {integrity: sha512-Iggip5i2SNTuFE3wttJomehVa5gmC+ENyJZGOuIUmsnxRKvK4nePPPg0ibJuLrM7hvup6b0y9pl3efITBiMxwQ==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': 0.6.0
+      '@noy-db/hub': 0.7.0-pre.0
 
   '@noy-db/ui-suai@file:../../packages/ui-suai':
     resolution: {directory: ../../packages/ui-suai, type: directory}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@noy-db/hub': ^0.6.0-pre.0
+      '@noy-db/hub': ^0.6.0-pre.0 || ^0.7.0-pre.0
       '@nuxt/kit': ^3.0.0 || ^4.0.0
       vue: ^3.5.0
     peerDependenciesMeta:
@@ -529,7 +529,7 @@ packages:
     resolution: {directory: ../../packages/ui, type: directory}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      '@noy-db/hub': ^0.6.0-pre.0
+      '@noy-db/hub': ^0.6.0-pre.0 || ^0.7.0-pre.0
       vue: ^3.5.0
 
   '@nuxt/cli@3.36.1':
@@ -4224,33 +4224,33 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@noy-db/as-noydb@0.6.0(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))':
+  '@noy-db/as-noydb@0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))':
     dependencies:
-      '@noy-db/hub': 0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3))
+      '@noy-db/hub': 0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3))
 
-  '@noy-db/attestation@0.6.0': {}
+  '@noy-db/attestation@0.7.0-pre.0': {}
 
-  '@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3))':
+  '@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3))':
     dependencies:
-      '@noy-db/attestation': 0.6.0
+      '@noy-db/attestation': 0.7.0-pre.0
     optionalDependencies:
       zod-to-json-schema: 3.25.2(zod@4.4.3)
 
-  '@noy-db/to-memory@0.6.0(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))':
+  '@noy-db/to-memory@0.7.0-pre.0(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))':
     dependencies:
-      '@noy-db/hub': 0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3))
+      '@noy-db/hub': 0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3))
 
-  '@noy-db/ui-suai@file:../../packages/ui-suai(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))':
+  '@noy-db/ui-suai@file:../../packages/ui-suai(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(@nuxt/kit@4.4.8(magicast@0.5.3))(vue@3.5.39(typescript@5.9.3))':
     dependencies:
-      '@noy-db/hub': 0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3))
-      '@noy-db/ui': file:../../packages/ui(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
+      '@noy-db/hub': 0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3))
+      '@noy-db/ui': file:../../packages/ui(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))
       vue: 3.5.39(typescript@5.9.3)
     optionalDependencies:
       '@nuxt/kit': 4.4.8(magicast@0.5.3)
 
-  '@noy-db/ui@file:../../packages/ui(@noy-db/hub@0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))':
+  '@noy-db/ui@file:../../packages/ui(@noy-db/hub@0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3)))(vue@3.5.39(typescript@5.9.3))':
     dependencies:
-      '@noy-db/hub': 0.6.0(zod-to-json-schema@3.25.2(zod@4.4.3))
+      '@noy-db/hub': 0.7.0-pre.0(zod-to-json-schema@3.25.2(zod@4.4.3))
       vue: 3.5.39(typescript@5.9.3)
 
   '@nuxt/cli@3.36.1(@nuxt/schema@4.4.8)(cac@6.7.14)(magicast@0.5.3)':
