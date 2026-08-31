@@ -20,11 +20,10 @@ A framework binding adds the components on top; this package never renders anyth
 
 ## Docs
 
-- [Introduction](../../docs/ui/1.introduction.md) — the family, its principles, the package map
-- [Schema-driven](../../docs/ui/2.schema-driven.md) — `describe()` → columns / filters / widgets / joins
-- [Search engine](../../docs/ui/3.search-engine.md) — the query AST/DSL pipeline + `useCollectionList`
-- [Design tokens](../../docs/ui/4.design-tokens.md) — the `--nui-*` variables
-- [Architecture](../../docs/ui/5.architecture.md) — the two-axis / three-tier model
+- Schema-driven — `describe()` → columns / filters / widgets / joins
+- Search engine — the query AST/DSL pipeline + `useCollectionList`
+- Design tokens — the `--nui-*` variables
+- Architecture — the two-axis / three-tier model
 
 > Naming: **bare = base, suffix = binding.** `@noy-db/ui` is the agnostic core; `@noy-db/ui-<framework>`
 > packages are thin adapters that depend on it.
