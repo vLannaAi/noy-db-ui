@@ -50,8 +50,6 @@ export default defineNuxtConfig({
 
 ## Docs
 
-- **[Family (`@noy-db/ui`)](docs/ui)** — introduction, schema-driven model, search engine, design tokens, architecture.
-- **[Nuxt binding (`@noy-db/ui-nuxt`)](docs/ui-nuxt)** — installation, configuration, components, theme, AI & voice, internals.
 
 ## Develop
 

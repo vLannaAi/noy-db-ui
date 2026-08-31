@@ -13,12 +13,7 @@ visuals, progressively adopting [SUAI](https://github.com/vLannaAi/suai-css) com
 Sibling forks (`ui-nuxt` on Nuxt UI, `ui-vanilla`) share the same `@noy-db/ui` engine —
 identical data capability, different visual tier.
 
-[Installation](../../docs/ui-nuxt/1.installation.md) ·
-[Components](../../docs/ui-nuxt/3.components.md) ·
-[Configuration](../../docs/ui-nuxt/2.configuration.md) ·
-[Theme](../../docs/ui-nuxt/4.theme.md)
-
-Concepts (schema-driven, search engine, design tokens, architecture) live in **[`@noy-db/ui`](../../docs/ui/1.introduction.md)**.
+Concepts (schema-driven, search engine, design tokens, architecture) live in **`@noy-db/ui`**.
 
 </div>
 <!-- prettier-ignore-end -->
@@ -60,7 +55,7 @@ Three tiers, by how often a developer touches them:
 The engine itself (AST search, schema adapters, `useCollectionList`, tokens) is the framework-agnostic
 **`@noy-db/ui`** base this package depends on.
 
-→ See **[Architecture](../../docs/ui/5.architecture.md)** for the full philosophy.
+
 
 ## Quick start
 
@@ -108,7 +103,7 @@ const list = useCollectionList({ baseRows, query, entity: 'sales', columns, defa
 | 🗂️ | **GroupByControl** | group-by + expand/collapse to level |
 
 …with **`Item` · `Asset` · `Auth` · `Owner`** families on the roadmap (record detail/edit, blob
-viewer, vault unlock/keyring, identity & federation). See **[Components](../../docs/ui-nuxt/3.components.md)**.
+viewer, vault unlock/keyring, identity & federation).
 
 ## Status
 

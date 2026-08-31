@@ -8,11 +8,6 @@
 **Drop in a collection — get a fully interactive list, detail, search and AI out of the box.**
 Domain-free · built on Nuxt UI · deliberately plain · local-first.
 
-[Installation](../../docs/ui-nuxt/1.installation.md) ·
-[Components](../../docs/ui-nuxt/3.components.md) ·
-[Configuration](../../docs/ui-nuxt/2.configuration.md) ·
-[Theme](../../docs/ui-nuxt/4.theme.md)
-
 > **Fork status (rebuild in progress):** this package was rebuilt on **Nuxt UI** as the plain
 > fork of the family. It currently ships a subset — `CollectionList`, `SearchBox`, `EmptyState`,
 > `LoadingSkeleton`, `StatCard` — plus the full `core/` composable layer. The sophisticated
@@ -20,7 +15,7 @@ Domain-free · built on Nuxt UI · deliberately plain · local-first.
 > live in **`@noy-db/ui-suai`**; sections below may still describe that richer surface until this
 > README is rewritten.
 
-Concepts (schema-driven, search engine, design tokens, architecture) live in **[`@noy-db/ui`](../../docs/ui/1.introduction.md)**.
+Concepts (schema-driven, search engine, design tokens, architecture) live in **`@noy-db/ui`**.
 
 </div>
 <!-- prettier-ignore-end -->
@@ -62,7 +57,7 @@ Three tiers, by how often a developer touches them:
 The engine itself (AST search, schema adapters, `useCollectionList`, tokens) is the framework-agnostic
 **`@noy-db/ui`** base this package depends on.
 
-→ See **[Architecture](../../docs/ui/5.architecture.md)** for the full philosophy.
+
 
 ## Quick start
 
@@ -110,7 +105,7 @@ const list = useCollectionList({ baseRows, query, entity: 'sales', columns, defa
 | 🗂️ | **GroupByControl** | group-by + expand/collapse to level |
 
 …with **`Item` · `Asset` · `Auth` · `Owner`** families on the roadmap (record detail/edit, blob
-viewer, vault unlock/keyring, identity & federation). See **[Components](../../docs/ui-nuxt/3.components.md)**.
+viewer, vault unlock/keyring, identity & federation).
 
 ## Status
 
