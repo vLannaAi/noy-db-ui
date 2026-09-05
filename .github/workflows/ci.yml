@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches: [main]
+  # No `branches:` filter here on purpose. Under `pull_request` that key filters
+  # on the BASE branch, so `branches: [main]` silently skips every PR stacked on
+  # another branch — and GitHub renders the result as "no checks reported",
+  # which reads as pending rather than never-ran. noy-db-docs shipped a stacked
+  # PR on that basis whose green came from a hand dispatch. The test: ask what
+  # green would look like if the check had not run. If it looks the same, it is
+  # not evidence.
   pull_request:
-    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
