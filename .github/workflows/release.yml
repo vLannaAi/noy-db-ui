@@ -2,8 +2,6 @@ name: Release
 
 # Strict release pipeline for the three @noy-db/ui* packages.
 #
-# Design: docs/superpowers/specs/2026-08-09-release-trigger-design.md
-#
 # Triggered on GitHub Release `published`. Runs the full verification gate
 # (install + build + lint + typecheck + test) on a clean checkout at the
 # release tag, PLUS the peer-floor guard called at that same tag, and only
